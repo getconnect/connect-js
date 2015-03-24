@@ -1,0 +1,28 @@
+{
+    "name": "connect-js",
+    "description": "JavaScript SDK for Connect (http://getconnect.io/)",
+    "authors": [{
+            "name": "Tipi HQ"
+        }
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/getconnect/connect-js.git"
+    },
+    "description": "Connect Javascript SDK",
+    "version": "0.0.1",
+    "main": ["dist/core/connect.js", "dist/viz/connect-viz.js"],
+    "keywords": [    
+        "Connect",
+        "JavaScript",
+        "js",
+        "Tipi",
+        "SDK"
+    ],
+    "license": "MIT",
+    "homepage": "http://getconnect.io/",
+    "dependencies": {
+        "c3": "https://github.com/masayuki0812/c3",
+        "d3": "https://github.com/mbostock/d3"
+    }
+}

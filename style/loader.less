@@ -1,0 +1,50 @@
+@import "mixins";
+
+//Big thanks to @tobiasahlin for the loader https://github.com/tobiasahlin/SpinKit
+.connect-loader {
+    position:absolute;
+    width: 50px;
+    height: 30px;
+    text-align: center;
+    font-size: 10px;
+    
+    .middle();
+
+    .connect-loader-bar2 {
+        animation-delay: -1.1s;
+    }
+
+    .connect-loader-bar3 {
+        animation-delay: -1.0s;
+    }
+
+    .connect-loader-bar4 {
+        animation-delay: -0.9s;
+    }
+
+    .connect-loader-bar5 {
+        animation-delay: -0.8s;
+    }
+
+    > div {
+        height: 100%;
+        width: 7px;
+        margin: 0 3px 0 0;
+        background-color: #2C97DE;
+        display: inline-block;
+        animation: connect-loader-stretchdelay 1.2s infinite ease-in-out;
+    }
+}
+
+.connect-viz-loading{
+    opacity: 0.35;
+}
+
+
+@keyframes connect-loader-stretchdelay {
+    0%, 40%, 100% { 
+        transform: scaleY(0.4);
+    }  20% { 
+        transform: scaleY(1.0);
+    }
+}

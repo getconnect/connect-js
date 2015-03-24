@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package>
+  <metadata>
+    <id>Connect.Javascript.Sdk</id>
+    <version>0.0.1</version>
+    <authors>TipiHq</authors>
+    <description>Tipi Connect Javascript SDK</description>
+    <language>en-US</language>
+    <projectUrl>http://tipihq.com/</projectUrl>
+    <licenseUrl>http://tipihq.com/</licenseUrl>
+  </metadata>
+</package>

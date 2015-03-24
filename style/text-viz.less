@@ -1,0 +1,17 @@
+@import "variables";
+@import "mixins";
+
+.connect-text{
+    box-sizing: @box-sizing;
+    position: relative;
+
+    .middle();
+
+    .connect-text-value{
+        display: block;
+        text-align: center;
+        font: @text-value-size @text-value-font-family;
+        color: @label-color;
+        line-height: @text-value-line-height;
+    }
+}
