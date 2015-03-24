@@ -9,8 +9,6 @@
         "type": "git",
         "url": "https://github.com/getconnect/connect-js.git"
     },
-    "description": "Connect Javascript SDK",
-    "version": "0.0.1",
     "main": ["dist/core/connect.js", "dist/viz/connect-viz.js"],
     "keywords": [    
         "Connect",
