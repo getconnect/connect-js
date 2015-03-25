@@ -1,4 +1,4 @@
-# Tipi Connect Javascript SDK
+# Connect Javascript SDK
 
 ## Getting Access
 
