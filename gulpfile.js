@@ -81,6 +81,19 @@ gulp.task('compile:lib',  function() {
     return es.merge(js, dts);
 });
 
+gulp.task('readme',  function() {
+    var readmeSrc = gulp.src('./README.md')
+        .on('error', handleError);
+
+    var core = readmeSrc
+        .pipe(gulp.dest(dest.lib + '/core'));
+
+    var viz = readmeSrc
+        .pipe(gulp.dest(dest.lib + '/viz'));
+
+    return es.merge(core, viz);
+});
+
 gulp.task('compile:config',  function() {
     var corePackage = gulp.src('./package.json')
         .pipe(gulp.dest(dest.lib + '/core'))
@@ -305,7 +318,7 @@ gulp.task('watch', ['dist'], function() {
     gulp.watch([sources.lib, sources.style], ['dist']);
 });
 
-gulp.task('build', ['compile:lib', 'compile:style', 'compile:config']);
+gulp.task('build', ['compile:lib', 'compile:style', 'compile:config', 'readme']);
 gulp.task('examples:build', ['examples:compile:lib', 'examples:compile:style']);
 gulp.task('test', ['compile:tests', 'test:karma', 'test:mocha']);
 gulp.task('dist', ['build', 'combineCss', 'browserify', 'uglify']);
