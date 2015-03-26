@@ -46,6 +46,18 @@ module ErrorHandling {
         };
     }
 
+    export function clearError(selector: string){
+        var elementForError = document.querySelector(selector),
+            errorContainer = <HTMLElement>elementForError.querySelector('.connect-error'),
+            viz = <HTMLElement>elementForError.querySelector('.connect-viz');
+            
+            viz.classList.remove('connect-viz-in-error');
+
+            if (errorContainer){
+                elementForError.removeChild(errorContainer);
+            }
+    }
+
     export function displayFriendlyError(selector: string, type?: string, message?: string){
         var errorType = type || 'other',
             errorIcon = errorTypes[type].icon,
@@ -61,8 +73,8 @@ module ErrorHandling {
             return;
 
         errorMessageElement.textContent = errorMessage;
-        errorIconElement.className += errorIcon;        
-        errorElement.className += errorClassName;
+        errorIconElement.className += errorIcon + ' connect-error-icon';        
+        errorElement.className += errorClassName + ' connect-error-message';
 
         errorElement.appendChild(errorIconElement);
         errorElement.appendChild(errorMessageElement);

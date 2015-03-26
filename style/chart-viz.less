@@ -112,8 +112,10 @@
     .std-border(@light-label-color);
 }
 
-.connect-viz-loading, .connect-viz-in-error{
-    .c3 text{
-        display: none;
-    }
+.connect-chart-line, .connect-chart-spline, .connect-chart-bar{
+    &.connect-viz-loading, &.connect-viz-in-error{
+        .c3 text{
+            display: none;
+        }
+    }    
 }

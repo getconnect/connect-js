@@ -22,11 +22,14 @@ class DataVisualization{
             return;
 
         this._isLoading = true;
-        var qryPromise = this._query.execute(),
+
+        var targetElementId = this._visualization.targetElementId,
+            qryPromise = this._query.execute(),
             loadingTracker = qryPromise.then(
                 (data) => { this._isLoading = false }, 
                 (error: Error) => this._renderError(error));
-
+                
+        ErrorHandling.clearError(targetElementId);
         this._visualization.displayData(qryPromise, this._query.metadata());
     }
 
