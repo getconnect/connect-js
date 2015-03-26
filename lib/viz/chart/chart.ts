@@ -53,13 +53,16 @@ class Chart implements Common.Visualization {
             firstSelect = metadata.selects[0],
             options = this._options,
             fieldOptions = options.fieldOptions,
-            type = options.type;
+            type = options.type,
+            isSingleArc = fields.length == 1 &&
+                          options[type].label &&
+                          options[type].label.format;
 
         _.each(fields, (fieldName) => {
             fieldOptions[fieldName] = fieldOptions[fieldName] || {}
         });
 
-        if (type === 'gauge'){
+        if (isSingleArc){
             fieldOptions[firstSelect].valueFormatter = fieldOptions[firstSelect].valueFormatter || options[type].label.format;
             options[type].label.format = fieldOptions[firstSelect].valueFormatter;
         }
