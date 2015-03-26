@@ -41,11 +41,15 @@ module Config {
         type: string;
         height?: number;
         colors?: ChartColors;
-        padding?:   {
-            top: number;
-            right: number;
-            bottom: number;
-            left: number;
+        padding?: {
+            top?: number;
+            right?: number;
+            bottom?: number;
+            left?: number;
+        };
+        gauge?:{
+            min?: number;
+            max?: number;
         };
         yAxisValueFormatter?: (value: any) => any;
     }
@@ -71,7 +75,17 @@ module Config {
     export var defaultC3Options = {
         line: {
             connectNull: true
-        }
+        },
+        spline: {
+            connectNull: true
+        },
+        gauge: {
+            label: {
+                format: (value) => d3.format('.1f')(value) + '%'
+            },
+            expand: false
+        },
+        bar: {}
     }
 }
 

@@ -24,6 +24,17 @@
     color: @label-color;
 }
 
+.c3-chart-arc, .c3-chart-arcs{
+    .c3-gauge-value, .c3-chart-arcs-gauge-min, .c3-chart-arcs-gauge-max{
+        font-family: @label-font-family;
+        fill: @label-color;
+    }
+
+    .c3-chart-arcs-gauge-min, .c3-chart-arcs-gauge-max{
+        font-size: @label-size;
+    }
+}
+
 .c3-axis, .c3-line{    
     fill: @light-label-color;
 }
@@ -59,6 +70,11 @@
     }
     tr{        
         border-width: 0;
+    }
+    .name{
+        span{
+            border-radius: 50%;
+        }
     }
     .std-border(@light-label-color);
 }

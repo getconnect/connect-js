@@ -26,7 +26,6 @@ var line = new Connect.Viz.Chart('#sales-line', {
     yAxisValueFormatter: d3.format('$,.2f')
 });
 
-
 var text = new Connect.Viz.Text('#sales-text', {
     title: 'Sales',
     fieldOptions: fieldOptions

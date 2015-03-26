@@ -19,7 +19,14 @@ class Chart implements Common.Visualization {
     private _loader: Loader;
     private _currentDataset: Dataset;
     
-    constructor(targetElementId: string, chartOptions: Config.ChartOptions) {
+    constructor(targetElementId: string, chartOptions: Config.ChartOptions) {     
+        this._options = this._parseOptions(chartOptions);
+        this.targetElementId = targetElementId;
+        this._loadData = ErrorHandling.makeSafe(this._loadData, this);
+        this._loader = new Loader(this.targetElementId);
+    }
+
+    private _parseOptions(chartOptions: Config.ChartOptions): Config.ChartOptions{
         var defaultOptions: Config.ChartOptions = {
                 type: 'bar',
                 intervalOptions: {},
@@ -28,24 +35,41 @@ class Chart implements Common.Visualization {
             },
             defaultIntervalOptions = {
                 formats: Config.defaultTimeSeriesFormats
-            };        
-            
-        this.targetElementId = targetElementId;
-        this._options = _.extend(defaultOptions, chartOptions);
-        this._options.intervalOptions = _.extend(this._options.intervalOptions, defaultIntervalOptions);
-        this._loadData = ErrorHandling.makeSafe(this._loadData, this);
-        this._loader = new Loader(this.targetElementId);
+            },
+            defaultC3Options = Config.defaultC3Options,
+            type = chartOptions.type,
+            options = null;
+
+        options = _.extend(defaultOptions, chartOptions);
+        options.intervalOptions = _.extend(options.intervalOptions, defaultIntervalOptions);
+        options[type] = _.extend(options[type] || {}, defaultC3Options[type]);
+
+        return options;
+
+    }
+
+    private _initializeFieldOptions(metadata: Queries.Metadata): void{
+        var fields = metadata.selects.concat(metadata.groups),
+            firstSelect = metadata.selects[0],
+            options = this._options,
+            fieldOptions = options.fieldOptions,
+            type = options.type;
+
+        _.each(fields, (fieldName) => {
+            fieldOptions[fieldName] = fieldOptions[fieldName] || {}
+        });
+
+        if (type === 'gauge'){
+            fieldOptions[firstSelect].valueFormatter = fieldOptions[firstSelect].valueFormatter || options[type].label.format;
+            options[type].label.format = fieldOptions[firstSelect].valueFormatter;
+        }
     }
 
     public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata): void {        
-        var fields = metadata.selects.concat(metadata.groups);
 
+        this._initializeFieldOptions(metadata);
         this._renderChart(metadata);
         this._loader.show();
-
-        _.each(fields, (fieldName) => {
-            this._options.fieldOptions[fieldName] = this._options.fieldOptions[fieldName] || {}
-        });
 
         resultsPromise.then(results => {
             this._loadData(results, metadata);
@@ -98,6 +122,7 @@ class Chart implements Common.Visualization {
         if (valueFormatter){
             return valueFormatter(value);
         }
+        
         return value;
     }
 
@@ -105,8 +130,9 @@ class Chart implements Common.Visualization {
         var fieldOption = this._options.fieldOptions[groupByName],
             valueFormatter = fieldOption.valueFormatter;
 
-        if (valueFormatter)
+        if (valueFormatter){
             return valueFormatter(groupValue);
+        }
 
         return groupValue;
     }
@@ -120,7 +146,6 @@ class Chart implements Common.Visualization {
             c3Element: HTMLElement = document.createElement('div'),
             rootElement = document.querySelector(this.targetElementId),
             titleElement = document.createElement('span'),
-            defaultC3Options = Config.defaultC3Options,
             timezone = options.timezone || metadata.timezone,
             dateFormat = null,
             standardDateformatter = (value) => Formatters.formatDate(value, timezone, dateFormat),
@@ -167,9 +192,8 @@ class Chart implements Common.Visualization {
         connectChartContainer.appendChild(titleElement);
         connectChartContainer.appendChild(c3Element);
         rootElement.appendChild(connectChartContainer);
-        
-        config[options.type] = defaultC3Options[options.type];
 
+        config[options.type] = options[options.type];
         if(metadata.interval) {
             dateFormat = options.intervalOptions.formats[metadata.interval];
             config.data['xFormat'] = '%Y-%m-%dT%H:%M:%SZ';
