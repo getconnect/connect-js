@@ -14,4 +14,27 @@
         color: @label-color;
         line-height: @text-value-line-height;
     }
+
+    .connect-error{    
+        box-sizing: @box-sizing;
+        position: absolute;
+        font: @label-size @label-font-family;
+        color: @light-label-color;
+        span{
+            display: block;
+            text-align: center;
+            font-size: 14px;        
+        }
+
+        .middle();
+    }
+
+    &.connect-viz-in-error{
+        .connect-text-value{
+            visibility: hidden;
+        }
+        .connect-viz-title{
+            visibility: hidden;
+        }
+    }
 }

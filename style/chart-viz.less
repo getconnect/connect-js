@@ -17,6 +17,39 @@
         bottom: 0;
         right: 0;
     }
+    
+    &.connect-chart-line, &.connect-chart-spline, &.connect-chart-bar{
+        .connect-error{    
+            box-sizing: @box-sizing;
+            position: absolute;
+            font: @label-size @label-font-family;
+            color: @light-label-color;
+            span{
+                display: block;
+                text-align: center;
+                font-size: 14px;        
+            }
+
+            .middle();
+        }
+
+    }
+
+    &.connect-chart-gauge{
+        .connect-error{    
+            position: absolute;
+            font: @label-size @label-font-family;
+            color: @light-label-color;
+            span{
+                display: block;
+                text-align: center;
+                font-size: 14px;        
+            }
+            bottom: 10px;
+            left: 0;
+            right: 0;
+        }
+    }
 }
 
 .c3-legend-item{
@@ -79,7 +112,7 @@
     .std-border(@light-label-color);
 }
 
-.connect-viz-loading{
+.connect-viz-loading, .connect-viz-in-error{
     .c3 text{
         display: none;
     }

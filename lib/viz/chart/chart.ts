@@ -22,8 +22,8 @@ class Chart implements Common.Visualization {
     constructor(targetElementId: string, chartOptions: Config.ChartOptions) {     
         this._options = this._parseOptions(chartOptions);
         this.targetElementId = targetElementId;
-        this._loadData = ErrorHandling.makeSafe(this._loadData, this);
         this._loader = new Loader(this.targetElementId);
+        this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
     }
 
     private _parseOptions(chartOptions: Config.ChartOptions): Config.ChartOptions{
@@ -188,7 +188,7 @@ class Chart implements Common.Visualization {
 
         this.clear();
         titleElement.className = 'connect-viz-title';
-        connectChartContainer.className = 'connect-viz connect-chart';
+        connectChartContainer.className = 'connect-viz connect-chart connect-chart-' + options.type;
         connectChartContainer.appendChild(titleElement);
         connectChartContainer.appendChild(c3Element);
         rootElement.appendChild(connectChartContainer);

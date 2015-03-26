@@ -1,4 +1,5 @@
 @import "variables";
+@import "mixins";
 
 @viz-title-height: 24px;
 
@@ -22,6 +23,20 @@
     position: relative;
     height: 100%;
     overflow-y: hidden;
+
+    .connect-error{    
+        box-sizing: @box-sizing;
+        position: absolute;
+        font: @label-size @label-font-family;
+        color: @light-label-color;
+        span{
+            display: block;
+            text-align: center;
+            font-size: 14px;        
+        }
+
+        .middle();
+    }
 
     .connect-table-wrapper {
         position: absolute;
