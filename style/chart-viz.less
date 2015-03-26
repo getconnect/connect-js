@@ -18,34 +18,26 @@
     
     &.connect-chart-line, &.connect-chart-spline, &.connect-chart-bar{
         .connect-error{    
-            box-sizing: @box-sizing;
-            position: absolute;
-            font: @label-size @label-font-family;
-            color: @light-label-color;
-            span{
-                display: block;
-                text-align: center;
-                font-size: 14px;        
-            }
-
             .middle();
         }
-
-    }
+        &.connect-viz-loading, &.connect-viz-in-error{
+            .c3 text{
+                display: none;
+            }
+        }
+    }   
 
     &.connect-chart-gauge{
         .connect-error{    
-            position: absolute;
-            font: @label-size @label-font-family;
-            color: @light-label-color;
-            span{
-                display: block;
-                text-align: center;
-                font-size: 14px;        
-            }
-            bottom: 10px;
+            bottom: 25px;
             left: 0;
             right: 0;
+        }
+
+        &.connect-viz-loading{
+            .c3-chart-arcs-background{
+                opacity: 0.5;
+            }
         }
     }
 }
@@ -108,12 +100,4 @@
         }
     }
     .std-border(@light-label-color);
-}
-
-.connect-chart-line, .connect-chart-spline, .connect-chart-bar{
-    &.connect-viz-loading, &.connect-viz-in-error{
-        .c3 text{
-            display: none;
-        }
-    }    
 }
