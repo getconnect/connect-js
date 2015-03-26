@@ -26,10 +26,20 @@ var line = new Connect.Viz.Chart('#sales-over-15-mins-by-payment-line', {
     yAxisValueFormatter: d3.format('$,.2f')
 });
 
+
+var spline = new Connect.Viz.Chart('#sales-over-15-mins-by-payment-spline', {
+    title: 'Sales Over 15 Minutes by Payment Type',
+    type: 'spline',
+    fieldOptions: fieldOptions,
+    yAxisValueFormatter: d3.format('$,.2f')
+});
+
 bar.displayData(queryResults.results, queryResults.metadata);
 line.displayData(queryResults.results, queryResults.metadata);
+spline.displayData(queryResults.results, queryResults.metadata);
 
 module.exports = {
     bar: bar,
-    line: line
+    line: line,
+    spline: spline
 }
