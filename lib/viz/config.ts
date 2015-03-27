@@ -83,7 +83,7 @@ module Config {
             label: {
                 format: (value) => d3.format('.1f')(value) + '%'
             },
-            expand: false
+            expand: true
         },
         bar: {}
     }
