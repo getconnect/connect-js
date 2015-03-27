@@ -20,9 +20,49 @@
       -ms-flex-positive: 1;
           flex-grow: 1;
 }
+.connect-chart.connect-chart-line .connect-error,
+.connect-chart.connect-chart-spline .connect-error,
+.connect-chart.connect-chart-bar .connect-error {
+  left: 50%;
+  top: 50%;
+  -webkit-transform: translate(-50%, -50%);
+      -ms-transform: translate(-50%, -50%);
+          transform: translate(-50%, -50%);
+}
+.connect-chart.connect-chart-line.connect-viz-loading .c3 text,
+.connect-chart.connect-chart-spline.connect-viz-loading .c3 text,
+.connect-chart.connect-chart-bar.connect-viz-loading .c3 text,
+.connect-chart.connect-chart-line.connect-viz-in-error .c3 text,
+.connect-chart.connect-chart-spline.connect-viz-in-error .c3 text,
+.connect-chart.connect-chart-bar.connect-viz-in-error .c3 text {
+  display: none;
+}
+.connect-chart.connect-chart-gauge .connect-error {
+  bottom: 25px;
+  left: 0;
+  right: 0;
+}
+.connect-chart.connect-chart-gauge.connect-viz-loading .c3-chart-arcs-background {
+  opacity: 0.5;
+}
 .c3-legend-item {
   font: 12px 'Roboto', sans-serif;
   color: #34495e;
+}
+.c3-chart-arc .c3-gauge-value,
+.c3-chart-arcs .c3-gauge-value,
+.c3-chart-arc .c3-chart-arcs-gauge-min,
+.c3-chart-arcs .c3-chart-arcs-gauge-min,
+.c3-chart-arc .c3-chart-arcs-gauge-max,
+.c3-chart-arcs .c3-chart-arcs-gauge-max {
+  font-family: 'Roboto', sans-serif;
+  fill: #34495e;
+}
+.c3-chart-arc .c3-chart-arcs-gauge-min,
+.c3-chart-arcs .c3-chart-arcs-gauge-min,
+.c3-chart-arc .c3-chart-arcs-gauge-max,
+.c3-chart-arcs .c3-chart-arcs-gauge-max {
+  font-size: 12px;
 }
 .c3-axis,
 .c3-line {
@@ -58,8 +98,8 @@
 .c3-tooltip-container tr {
   border-width: 0;
 }
-.connect-viz-loading .c3 text {
-  display: none;
+.c3-tooltip-container .name span {
+  border-radius: 50%;
 }
 
 .connect-viz {
@@ -73,17 +113,17 @@
 }
 
 .connect-error {
-  box-sizing: border-box;
-  position: relative;
+  position: absolute;
   font: 12px 'Roboto', sans-serif;
-  color: #34495e;
+  color: #bdc3c7;
+}
+.connect-error span {
   display: block;
   text-align: center;
-  left: 50%;
-  top: 50%;
-  -webkit-transform: translate(-50%, -50%);
-      -ms-transform: translate(-50%, -50%);
-          transform: translate(-50%, -50%);
+  font-size: 14px;
+}
+.connect-error .connect-error-icon {
+  font-size: 18px;
 }
 
 .connect-loader {
@@ -158,6 +198,13 @@
   position: relative;
   height: 100%;
   overflow-y: hidden;
+}
+.connect-table .connect-error {
+  left: 50%;
+  top: 50%;
+  -webkit-transform: translate(-50%, -50%);
+      -ms-transform: translate(-50%, -50%);
+          transform: translate(-50%, -50%);
 }
 .connect-table .connect-table-wrapper {
   position: absolute;
@@ -314,5 +361,18 @@
   font: 42px 'Open Sans', sans-serif;
   color: #34495e;
   line-height: 1.1;
+}
+.connect-text .connect-error {
+  left: 50%;
+  top: 50%;
+  -webkit-transform: translate(-50%, -50%);
+      -ms-transform: translate(-50%, -50%);
+          transform: translate(-50%, -50%);
+}
+.connect-text.connect-viz-in-error .connect-text-value {
+  visibility: hidden;
+}
+.connect-text.connect-viz-in-error .connect-viz-title {
+  visibility: hidden;
 }
 

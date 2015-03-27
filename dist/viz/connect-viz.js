@@ -18,6 +18,12 @@ var Loader = require('../loader');
 var Formatters = require('../formatters');
 var Chart = (function () {
     function Chart(targetElementId, chartOptions) {
+        this._options = this._parseOptions(chartOptions);
+        this.targetElementId = targetElementId;
+        this._loader = new Loader(this.targetElementId);
+        this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
+    }
+    Chart.prototype._parseOptions = function (chartOptions) {
         var defaultOptions = {
             type: 'bar',
             intervalOptions: {},
@@ -25,21 +31,27 @@ var Chart = (function () {
             yAxisValueFormatter: function (value) { return value; }
         }, defaultIntervalOptions = {
             formats: Config.defaultTimeSeriesFormats
-        };
-        this.targetElementId = targetElementId;
-        this._options = _.extend(defaultOptions, chartOptions);
-        this._options.intervalOptions = _.extend(this._options.intervalOptions, defaultIntervalOptions);
-        this._loadData = ErrorHandling.makeSafe(this._loadData, this);
-        this._loader = new Loader(this.targetElementId);
-    }
+        }, defaultC3Options = Config.defaultC3Options, type = chartOptions.type, options = null;
+        options = _.extend(defaultOptions, chartOptions);
+        options.intervalOptions = _.extend(options.intervalOptions, defaultIntervalOptions);
+        options[type] = _.extend(options[type] || {}, defaultC3Options[type]);
+        return options;
+    };
+    Chart.prototype._initializeFieldOptions = function (metadata) {
+        var fields = metadata.selects.concat(metadata.groups), firstSelect = metadata.selects[0], options = this._options, fieldOptions = options.fieldOptions, type = options.type, isSingleArc = fields.length == 1 && options[type].label && options[type].label.format;
+        _.each(fields, function (fieldName) {
+            fieldOptions[fieldName] = fieldOptions[fieldName] || {};
+        });
+        if (isSingleArc) {
+            fieldOptions[firstSelect].valueFormatter = fieldOptions[firstSelect].valueFormatter || options[type].label.format;
+            options[type].label.format = fieldOptions[firstSelect].valueFormatter;
+        }
+    };
     Chart.prototype.displayData = function (resultsPromise, metadata) {
         var _this = this;
-        var fields = metadata.selects.concat(metadata.groups);
+        this._initializeFieldOptions(metadata);
         this._renderChart(metadata);
         this._loader.show();
-        _.each(fields, function (fieldName) {
-            _this._options.fieldOptions[fieldName] = _this._options.fieldOptions[fieldName] || {};
-        });
         resultsPromise.then(function (results) {
             _this._loadData(results, metadata);
         });
@@ -77,15 +89,16 @@ var Chart = (function () {
     };
     Chart.prototype._formatGroupValue = function (groupByName, groupValue) {
         var fieldOption = this._options.fieldOptions[groupByName], valueFormatter = fieldOption.valueFormatter;
-        if (valueFormatter)
+        if (valueFormatter) {
             return valueFormatter(groupValue);
+        }
         return groupValue;
     };
     Chart.prototype._renderChart = function (metadata) {
         var _this = this;
         if (this._rendered)
             return;
-        var options = this._options, connectChartContainer = document.createElement('div'), c3Element = document.createElement('div'), rootElement = document.querySelector(this.targetElementId), titleElement = document.createElement('span'), defaultC3Options = Config.defaultC3Options, timezone = options.timezone || metadata.timezone, dateFormat = null, standardDateformatter = function (value) { return Formatters.formatDate(value, timezone, dateFormat); }, customDateFormatter = options.intervalOptions.valueFormatter, tooltipValueFormatter = function (value, ratio, id, index) { return _this._formatValueForKey(id, value); }, config = {
+        var options = this._options, connectChartContainer = document.createElement('div'), c3Element = document.createElement('div'), rootElement = document.querySelector(this.targetElementId), titleElement = document.createElement('span'), timezone = options.timezone || metadata.timezone, dateFormat = null, standardDateformatter = function (value) { return Formatters.formatDate(value, timezone, dateFormat); }, customDateFormatter = options.intervalOptions.valueFormatter, tooltipValueFormatter = function (value, ratio, id, index) { return _this._formatValueForKey(id, value); }, config = {
             bindto: c3Element,
             size: {
                 height: options.height
@@ -121,11 +134,11 @@ var Chart = (function () {
         };
         this.clear();
         titleElement.className = 'connect-viz-title';
-        connectChartContainer.className = 'connect-viz connect-chart';
+        connectChartContainer.className = 'connect-viz connect-chart connect-chart-' + options.type;
         connectChartContainer.appendChild(titleElement);
         connectChartContainer.appendChild(c3Element);
         rootElement.appendChild(connectChartContainer);
-        config[options.type] = defaultC3Options[options.type];
+        config[options.type] = options[options.type];
         if (metadata.interval) {
             dateFormat = options.intervalOptions.formats[metadata.interval];
             config.data['xFormat'] = '%Y-%m-%dT%H:%M:%SZ';
@@ -243,7 +256,17 @@ var Config;
     Config.defaultC3Options = {
         line: {
             connectNull: true
-        }
+        },
+        spline: {
+            connectNull: true
+        },
+        gauge: {
+            label: {
+                format: function (value) { return d3.format('.1f')(value) + '%'; }
+            },
+            expand: false
+        },
+        bar: {}
     };
 })(Config || (Config = {}));
 module.exports = Config;
@@ -262,9 +285,10 @@ var DataVisualization = (function () {
         if (this._isLoading)
             return;
         this._isLoading = true;
-        var qryPromise = this._query.execute(), loadingTracker = qryPromise.then(function (data) {
+        var targetElementId = this._visualization.targetElementId, qryPromise = this._query.execute(), loadingTracker = qryPromise.then(function (data) {
             _this._isLoading = false;
         }, function (error) { return _this._renderError(error); });
+        ErrorHandling.clearError(targetElementId);
         this._visualization.displayData(qryPromise, this._query.metadata());
     };
     DataVisualization.prototype._renderError = function (error) {
@@ -278,35 +302,65 @@ var DataVisualization = (function () {
 module.exports = DataVisualization;
 
 },{"./error-handling":7}],7:[function(require,module,exports){
-var Clear = require('./clear');
 var ErrorHandling;
 (function (ErrorHandling) {
-    function makeSafe(functionToWrap, visualization) {
+    var errorTypes = {
+        noResults: {
+            icon: 'ion-sad-outline',
+            defaultMessage: 'No Results'
+        },
+        network: {
+            icon: 'ion-ios-bolt',
+            defaultMessage: 'No Results'
+        },
+        setup: {
+            icon: 'ion-sad-outline',
+            defaultMessage: 'Invalid Query'
+        },
+        other: {
+            icon: 'ion-bug',
+            defaultMessage: 'Oops, something went wrong displaying the visualization'
+        }
+    };
+    function makeSafe(functionToWrap, visualization, loader) {
         return function (results, metadata) {
             var targetElementId = visualization.targetElementId;
             try {
                 if (results == null || !results.length) {
-                    displayFriendlyError(targetElementId, "No Results");
+                    loader.hide();
+                    displayFriendlyError(targetElementId, 'noResults');
                     return;
                 }
                 return functionToWrap.call(visualization, results, metadata);
             }
             catch (error) {
-                visualization.clear();
                 logError(error);
                 displayFriendlyError(targetElementId);
             }
         };
     }
     ErrorHandling.makeSafe = makeSafe;
-    function displayFriendlyError(selector, errorMessage) {
-        Clear.removeAllChildren(selector);
-        var elementForError = document.querySelector(selector), errorElement = document.createElement('span'), errorClassName = 'connect-error';
+    function clearError(selector) {
+        var elementForError = document.querySelector(selector), errorContainer = elementForError.querySelector('.connect-error'), viz = elementForError.querySelector('.connect-viz');
+        viz.classList.remove('connect-viz-in-error');
+        if (errorContainer) {
+            elementForError.removeChild(errorContainer);
+        }
+    }
+    ErrorHandling.clearError = clearError;
+    function displayFriendlyError(selector, type, message) {
+        var errorType = type || 'other', errorIcon = errorTypes[type].icon, errorMessage = message || errorTypes[type].defaultMessage, elementForError = document.querySelector(selector), errorIconElement = document.createElement('span'), errorMessageElement = document.createElement('span'), errorElement = document.createElement('div'), errorClassName = 'connect-error', viz = elementForError.querySelector('.connect-viz');
         if (!elementForError)
             return;
-        errorElement.textContent = errorMessage || 'Oops, something went wrong displaying the visualization.';
-        errorElement.className += errorClassName;
-        elementForError.appendChild(errorElement);
+        errorMessageElement.textContent = errorMessage;
+        errorIconElement.className += errorIcon + ' connect-error-icon';
+        errorElement.className += errorClassName + ' connect-error-message';
+        errorElement.appendChild(errorIconElement);
+        errorElement.appendChild(errorMessageElement);
+        if (viz) {
+            viz.appendChild(errorElement);
+            viz.className += ' connect-viz-in-error';
+        }
     }
     ErrorHandling.displayFriendlyError = displayFriendlyError;
     function logError(error) {
@@ -318,7 +372,7 @@ var ErrorHandling;
 })(ErrorHandling || (ErrorHandling = {}));
 module.exports = ErrorHandling;
 
-},{"./clear":4}],8:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 var moment = require('moment-timezone');
 var _ = require('underscore');
 function formatDate(dateToFormat, timezone, format) {
@@ -572,7 +626,7 @@ var Table = (function () {
         this._options = _.extend(defaultTableOptions, suppliedOptions);
         this._options.intervalOptions = _.extend(this._options.intervalOptions, defaultIntervalOptions);
         this._loader = new Loader(this.targetElementId);
-        this._loadData = ErrorHandling.makeSafe(this._loadData, this);
+        this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
     }
     Table.prototype.displayData = function (resultsPromise, metadata) {
         var _this = this;
@@ -636,8 +690,8 @@ var Text = (function () {
             valueFormatter: function (value) { return value; }
         }, textOptions);
         this.targetElementId = targetElementId;
-        this._loadData = ErrorHandling.makeSafe(this._loadData, this);
         this._loader = new Loader(this.targetElementId);
+        this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
     }
     Text.prototype.displayData = function (resultsPromise, metadata) {
         var _this = this;
@@ -682,7 +736,7 @@ var Text = (function () {
         container.appendChild(valueElement);
         elementForWidget.appendChild(container);
         this._valueElement = valueElement;
-        this._valueElement.textContent = ' ';
+        this._valueElement.textContent = '...';
         this._titleElement = label;
         this._showTitle(metadata);
         this._rendered = true;
