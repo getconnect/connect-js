@@ -14,4 +14,17 @@
         color: @label-color;
         line-height: @text-value-line-height;
     }
+
+    .connect-error{    
+        .middle();
+    }
+
+    &.connect-viz-in-error{
+        .connect-text-value{
+            visibility: hidden;
+        }
+        .connect-viz-title{
+            visibility: hidden;
+        }
+    }
 }

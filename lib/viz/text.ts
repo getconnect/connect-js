@@ -21,8 +21,8 @@ class Text implements Common.Visualization {
         }, textOptions);
 
         this.targetElementId = targetElementId;
-        this._loadData = ErrorHandling.makeSafe(this._loadData, this);
         this._loader = new Loader(this.targetElementId);
+        this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
     }
 
     public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata): void {        
@@ -92,7 +92,7 @@ class Text implements Common.Visualization {
         elementForWidget.appendChild(container);
 
         this._valueElement = valueElement;
-        this._valueElement.textContent = ' '
+        this._valueElement.textContent = '...'
         this._titleElement = label;
         this._showTitle(metadata);
         this._rendered = true;

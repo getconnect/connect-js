@@ -15,11 +15,47 @@
     div.c3{
         flex-grow: 1;
     }
+    
+    &.connect-chart-line, &.connect-chart-spline, &.connect-chart-bar{
+        .connect-error{    
+            .middle();
+        }
+        &.connect-viz-loading, &.connect-viz-in-error{
+            .c3 text{
+                display: none;
+            }
+        }
+    }   
+
+    &.connect-chart-gauge{
+        .connect-error{    
+            bottom: 25px;
+            left: 0;
+            right: 0;
+        }
+
+        &.connect-viz-loading{
+            .c3-chart-arcs-background{
+                opacity: 0.5;
+            }
+        }
+    }
 }
 
 .c3-legend-item{
     font: @label-size @label-font-family;
     color: @label-color;
+}
+
+.c3-chart-arc, .c3-chart-arcs{
+    .c3-gauge-value, .c3-chart-arcs-gauge-min, .c3-chart-arcs-gauge-max{
+        font-family: @label-font-family;
+        fill: @label-color;
+    }
+
+    .c3-chart-arcs-gauge-min, .c3-chart-arcs-gauge-max{
+        font-size: @label-size;
+    }
 }
 
 .c3-axis, .c3-line{    
@@ -58,11 +94,10 @@
     tr{        
         border-width: 0;
     }
-    .std-border(@light-label-color);
-}
-
-.connect-viz-loading{
-    .c3 text{
-        display: none;
+    .name{
+        span{
+            border-radius: 50%;
+        }
     }
+    .std-border(@light-label-color);
 }

@@ -24,6 +24,30 @@ function sales(){
     };
 }
 
+function marketSharePercent(){
+    var resultsPromise = q.fcall(function(){
+        return [{share: 77.2345, _count: 1}]
+    });
+    var metadata = {"selects":["share"],"groups":[],"interval":null,"timezone":"UTC"}
+
+    return {
+        results: resultsPromise,
+        metadata: metadata
+    };
+}
+
+function marketShareDollars(){
+    var resultsPromise = q.fcall(function(){
+        return [{share: 22.2345, _count: 1}]
+    });
+    var metadata = {"selects":["share"],"groups":[],"interval":null,"timezone":"UTC"}
+
+    return {
+        results: resultsPromise,
+        metadata: metadata
+    };
+}
+
 function salesSellPrice(){
     var resultsPromise = q.fcall(function(){
         return [{sellPriceTotal: 100001.7793, _count: 2388740}]
@@ -140,6 +164,8 @@ function salesOver15MinsByPayment(){
 
 module.exports = {
     empty: empty(),
+    marketSharePercent: marketSharePercent(),
+    marketShareDollars: marketShareDollars(),
     sales: sales(),
     salesSellPrice: salesSellPrice(),
     salesByPayment: salesByPayment(),

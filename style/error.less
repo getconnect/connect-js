@@ -1,13 +1,16 @@
 @import "variables";
-@import "mixins";
 
 .connect-error{    
-    box-sizing: @box-sizing;
-    position: relative;
+    position: absolute;
     font: @label-size @label-font-family;
-    color: @label-color;
-    display: block;
-    text-align: center;
+    color: @light-label-color;
+    span{
+        display: block;
+        text-align: center;      
+        font-size: 14px;  
+    }
 
-    .middle();
-}
+    .connect-error-icon{
+        font-size: 18px;                  
+    }
+}  
