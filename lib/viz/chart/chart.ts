@@ -1,4 +1,6 @@
 import Config = require('../config');
+import GroupedIntervalDataset = require('./grouped-interval-dataset');
+import StandardDataset = require('./standard-dataset');
 import Dataset = require('./dataset');
 import Queries = require('../../core/queries/queries');
 import Api = require('../../core/api');
@@ -17,7 +19,7 @@ class Chart implements Common.Visualization {
     private _rendered: boolean;
     private _titleElement: HTMLElement;
     private _loader: Loader;
-    private _currentDataset: Dataset;
+    private _currentDataset: Dataset.ChartDataset;
     
     constructor(targetElementId: string, chartOptions: Config.ChartOptions) {     
         this._options = this._parseOptions(chartOptions);
@@ -81,17 +83,16 @@ class Chart implements Common.Visualization {
 
     private _loadData(results: Api.QueryResults, metadata: Queries.Metadata): void {
         var options = this._options,
-            selectLabelFormatter = (select) => options.fieldOptions[select].label || select,
-            groupValueFormatter = (groupByName, groupValue) => this._formatGroupValue(groupByName, groupValue),
-            dataset = new Dataset(results, metadata, selectLabelFormatter, groupValueFormatter),
-            keys = dataset.getKeys(),
+            dataset = this._buildDataset(results, metadata),
+            keys = dataset.getLabels(),
             uniqueKeys = _.unique(keys),
             colors = _.extend(_.object(uniqueKeys, Palette.defaultSwatch), options.colors);
 
         this._currentDataset = dataset;
         this._loader.hide();    
+        console.log(dataset.getData());
         this._chart.load({
-            json: dataset.data,
+            json: dataset.getData(),
             keys: {
                 x: '_x',
                 value: keys
@@ -106,6 +107,19 @@ class Chart implements Common.Visualization {
         Clear.removeAllChildren(this.targetElementId)
     }
 
+    private _buildDataset(results: Api.QueryResults, metadata: Queries.Metadata): Dataset.ChartDataset{
+        var options = this._options,
+            formatters = {        
+                selectLabelFormatter:  (select) => options.fieldOptions[select].label || select,
+                groupValueFormatter: (groupByName, groupValue) => this._formatGroupValue(groupByName, groupValue)
+            },
+            isGroupedInterval = metadata.interval && metadata.groups.length;
+
+            return isGroupedInterval ? new GroupedIntervalDataset(results, metadata, formatters)
+                                     : new StandardDataset(results, metadata, formatters);
+
+    }
+
     private _showTitle(){
         var options = this._options,
             titleText = options.title ? options.title.toString() : '',
@@ -115,11 +129,11 @@ class Chart implements Common.Visualization {
         this._titleElement.style.display = !showTitle ? 'none' : '';      
     }
 
-    private _formatValueForKey(key: string, value: any){ 
+    private _formatValueForLabel(label: string, value: any){ 
         var dataset = this._currentDataset,
-            fieldName = this._currentDataset.getFieldNameForKey(key),
+            select = this._currentDataset.getSelect(label),
             options = this._options,
-            fieldOption = options.fieldOptions[fieldName],
+            fieldOption = options.fieldOptions[select],
             valueFormatter = fieldOption.valueFormatter;
 
         if (valueFormatter){
@@ -153,7 +167,7 @@ class Chart implements Common.Visualization {
             dateFormat = null,
             standardDateformatter = (value) => Formatters.formatDate(value, timezone, dateFormat),
             customDateFormatter = options.intervalOptions.valueFormatter,
-            tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForKey(id, value),
+            tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
             config = {
                 bindto: c3Element,
                 size: {
