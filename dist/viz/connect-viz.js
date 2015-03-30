@@ -7,9 +7,10 @@ function applyMixins(targetClass, mixinClass) {
 }
 module.exports = applyMixins;
 
-},{"underscore":22}],2:[function(require,module,exports){
+},{"underscore":24}],2:[function(require,module,exports){
 var Config = require('../config');
-var Dataset = require('./dataset');
+var GroupedIntervalDataset = require('./grouped-interval-dataset');
+var StandardDataset = require('./standard-dataset');
 var _ = require('underscore');
 var Clear = require('../clear');
 var ErrorHandling = require('../error-handling');
@@ -57,12 +58,12 @@ var Chart = (function () {
         });
     };
     Chart.prototype._loadData = function (results, metadata) {
-        var _this = this;
-        var options = this._options, selectLabelFormatter = function (select) { return options.fieldOptions[select].label || select; }, groupValueFormatter = function (groupByName, groupValue) { return _this._formatGroupValue(groupByName, groupValue); }, dataset = new Dataset(results, metadata, selectLabelFormatter, groupValueFormatter), keys = dataset.getKeys(), uniqueKeys = _.unique(keys), colors = _.extend(_.object(uniqueKeys, Palette.defaultSwatch), options.colors);
+        var options = this._options, dataset = this._buildDataset(results, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = _.extend(_.object(uniqueKeys, Palette.defaultSwatch), options.colors);
         this._currentDataset = dataset;
         this._loader.hide();
+        console.log(dataset.getData());
         this._chart.load({
-            json: dataset.data,
+            json: dataset.getData(),
             keys: {
                 x: '_x',
                 value: keys
@@ -75,13 +76,21 @@ var Chart = (function () {
         this._rendered = false;
         Clear.removeAllChildren(this.targetElementId);
     };
+    Chart.prototype._buildDataset = function (results, metadata) {
+        var _this = this;
+        var options = this._options, formatters = {
+            selectLabelFormatter: function (select) { return options.fieldOptions[select].label || select; },
+            groupValueFormatter: function (groupByName, groupValue) { return _this._formatGroupValue(groupByName, groupValue); }
+        }, isGroupedInterval = metadata.interval && metadata.groups.length;
+        return isGroupedInterval ? new GroupedIntervalDataset(results, metadata, formatters) : new StandardDataset(results, metadata, formatters);
+    };
     Chart.prototype._showTitle = function () {
         var options = this._options, titleText = options.title ? options.title.toString() : '', showTitle = titleText.length > 0;
         this._titleElement.textContent = titleText;
         this._titleElement.style.display = !showTitle ? 'none' : '';
     };
-    Chart.prototype._formatValueForKey = function (key, value) {
-        var dataset = this._currentDataset, fieldName = this._currentDataset.getFieldNameForKey(key), options = this._options, fieldOption = options.fieldOptions[fieldName], valueFormatter = fieldOption.valueFormatter;
+    Chart.prototype._formatValueForLabel = function (label, value) {
+        var dataset = this._currentDataset, select = this._currentDataset.getSelect(label), options = this._options, fieldOption = options.fieldOptions[select], valueFormatter = fieldOption.valueFormatter;
         if (valueFormatter) {
             return valueFormatter(value);
         }
@@ -98,7 +107,7 @@ var Chart = (function () {
         var _this = this;
         if (this._rendered)
             return;
-        var options = this._options, connectChartContainer = document.createElement('div'), c3Element = document.createElement('div'), rootElement = document.querySelector(this.targetElementId), titleElement = document.createElement('span'), timezone = options.timezone || metadata.timezone, dateFormat = null, standardDateformatter = function (value) { return Formatters.formatDate(value, timezone, dateFormat); }, customDateFormatter = options.intervalOptions.valueFormatter, tooltipValueFormatter = function (value, ratio, id, index) { return _this._formatValueForKey(id, value); }, config = {
+        var options = this._options, connectChartContainer = document.createElement('div'), c3Element = document.createElement('div'), rootElement = document.querySelector(this.targetElementId), titleElement = document.createElement('span'), timezone = options.timezone || metadata.timezone, dateFormat = null, standardDateformatter = function (value) { return Formatters.formatDate(value, timezone, dateFormat); }, customDateFormatter = options.intervalOptions.valueFormatter, tooltipValueFormatter = function (value, ratio, id, index) { return _this._formatValueForLabel(id, value); }, config = {
             bindto: c3Element,
             size: {
                 height: options.height
@@ -155,83 +164,136 @@ var Chart = (function () {
 })();
 module.exports = Chart;
 
-},{"../clear":4,"../config":5,"../error-handling":7,"../formatters":8,"../loader":10,"../palette":11,"./dataset":3,"underscore":22}],3:[function(require,module,exports){
+},{"../clear":6,"../config":7,"../error-handling":9,"../formatters":10,"../loader":12,"../palette":13,"./grouped-interval-dataset":4,"./standard-dataset":5,"underscore":24}],3:[function(require,module,exports){
 var _ = require('underscore');
-var Dataset = (function () {
-    function Dataset(results, metadata, selectLabelFormatter, groupValueFormatter) {
-        this.keys = [];
-        this.data = [];
-        this._metadata = metadata;
-        this._selectLabelFormatter = selectLabelFormatter;
-        this._groupValueFormatter = groupValueFormatter;
-        this.keys = this._mapKeys(results);
-        this.data = this._mapData(results);
+var Dataset;
+(function (Dataset) {
+    function getLabels(labels) {
+        return _.pluck(labels, 'label');
     }
-    Dataset.prototype.getKeys = function () {
-        return _.pluck(this.keys, 'derivedKey');
-    };
-    Dataset.prototype.getFieldNameForKey = function (key) {
-        return _.find(this.keys, function (keyMap) { return keyMap.derivedKey === key; }).originalFieldName;
-    };
-    Dataset.prototype._mapKeys = function (results) {
-        var _this = this;
-        if (this._metadata.interval && this._metadata.groups.length > 0) {
-            return _.chain(results).map(function (result) { return result['results']; }).flatten().map(function (intervalResult) {
-                var groupPath = _this._getGroupPath(intervalResult);
-                return _.map(_this._metadata.selects, function (select) { return {
-                    originalFieldName: select,
-                    derivedKey: groupPath + ' - ' + _this._selectLabelFormatter(select)
-                }; });
-            }).flatten().value();
-        }
-        return _.map(this._metadata.selects, function (select) { return {
-            originalFieldName: select,
-            derivedKey: _this._selectLabelFormatter(select)
-        }; });
-    };
-    Dataset.prototype._mapData = function (results) {
-        var _this = this;
-        return _.chain(results).map(function (result) { return _.clone(result); }).map(function (result) {
-            var isGrouped = _this._metadata.groups.length > 0, interval = result['interval'];
-            if (_this._metadata.interval) {
-                result = _this._mapIntervalResult(result);
-                result['_x'] = interval['start'];
-            }
-            else {
-                result = _this._mapStandardResult(result);
-                result['_x'] = isGrouped ? _this._getGroupPath(result) : ' ';
-            }
-            return result;
-        }).value();
-    };
-    Dataset.prototype._mapStandardResult = function (result) {
-        var _this = this;
-        _.each(this._metadata.selects, function (select) { return result[_this._selectLabelFormatter(select)] = result[select]; });
-        return result;
-    };
-    Dataset.prototype._mapIntervalResult = function (result) {
-        var _this = this;
-        if (this._metadata.groups.length === 0) {
-            var result = _.clone(result.results[0]) || {};
-            return this._mapStandardResult(result);
-        }
-        return _.reduce(result.results, function (result, intervalResult) {
-            var groupPath = _this._getGroupPath(intervalResult);
-            _.each(_this._metadata.selects, function (select) {
-                result[groupPath + ' - ' + _this._selectLabelFormatter(select)] = intervalResult[select];
-            });
-            return result;
-        }, {});
-    };
-    Dataset.prototype._getGroupPath = function (result) {
-        var _this = this;
-        return this._metadata.groups.map(function (group) { return _this._groupValueFormatter(group, result[group]); }).join(' / ');
-    };
-    return Dataset;
-})();
+    Dataset.getLabels = getLabels;
+    function getSelect(selectLabels, label) {
+        return _.find(selectLabels, function (selectLabel) { return selectLabel.label === label; }).select;
+    }
+    Dataset.getSelect = getSelect;
+    function getGroupPath(result, groups, formatter) {
+        return groups.map(function (group) { return formatter(group, result[group]); }).join(' / ');
+    }
+    Dataset.getGroupPath = getGroupPath;
+})(Dataset || (Dataset = {}));
 module.exports = Dataset;
 
-},{"underscore":22}],4:[function(require,module,exports){
+},{"underscore":24}],4:[function(require,module,exports){
+var Dataset = require('./dataset');
+var _ = require('underscore');
+var GroupedIntervalDataset = (function () {
+    function GroupedIntervalDataset(results, metadata, formatters) {
+        this._selectLabels = [];
+        this._data = [];
+        this._metadata = metadata;
+        this._selectLabelFormatter = formatters.selectLabelFormatter;
+        this._groupValueFormatter = formatters.groupValueFormatter;
+        this._selectLabels = this._mapLabels(results);
+        this._data = this._mapData(results);
+    }
+    GroupedIntervalDataset.prototype.getLabels = function () {
+        return Dataset.getLabels(this._selectLabels);
+    };
+    GroupedIntervalDataset.prototype.getSelect = function (label) {
+        return Dataset.getSelect(this._selectLabels, label);
+    };
+    GroupedIntervalDataset.prototype.getData = function () {
+        return this._data;
+    };
+    GroupedIntervalDataset.prototype._mapLabels = function (results) {
+        var _this = this;
+        return _.chain(results).map(function (result) { return result['results']; }).flatten().map(function (result) {
+            var groupPath = Dataset.getGroupPath(result, _this._metadata.groups, _this._groupValueFormatter);
+            return _.map(_this._metadata.selects, function (select) { return {
+                select: select,
+                label: _this._generateLabelForResult(result, select, groupPath)
+            }; });
+        }).flatten().value();
+    };
+    GroupedIntervalDataset.prototype._mapData = function (results) {
+        var _this = this;
+        return _.chain(results).map(function (result) {
+            var start = result.interval.start, mappedResult = _this._mapResult(result);
+            mappedResult['_x'] = start;
+            return mappedResult;
+        }).value();
+    };
+    GroupedIntervalDataset.prototype._mapResult = function (result) {
+        var _this = this;
+        return _.reduce(result.results, function (mappedResult, intervalResult) {
+            var groupPath = Dataset.getGroupPath(intervalResult, _this._metadata.groups, _this._groupValueFormatter);
+            _.each(_this._metadata.selects, function (select) {
+                var label = _this._generateLabelForResult(mappedResult, select, groupPath);
+                mappedResult[label] = intervalResult[select];
+            });
+            return mappedResult;
+        }, {});
+    };
+    GroupedIntervalDataset.prototype._generateLabelForResult = function (result, select, groupPath) {
+        return this._metadata.selects.length > 1 ? groupPath + ' - ' + this._selectLabelFormatter(select) : groupPath;
+    };
+    return GroupedIntervalDataset;
+})();
+module.exports = GroupedIntervalDataset;
+
+},{"./dataset":3,"underscore":24}],5:[function(require,module,exports){
+var Dataset = require('./dataset');
+var _ = require('underscore');
+var StandardDataset = (function () {
+    function StandardDataset(results, metadata, formatters) {
+        this._selectLabels = [];
+        this._data = [];
+        this._metadata = metadata;
+        this._selectLabelFormatter = formatters.selectLabelFormatter;
+        this._groupValueFormatter = formatters.groupValueFormatter;
+        this._selectLabels = this._mapLabels(results);
+        this._data = this._mapData(results);
+    }
+    StandardDataset.prototype.getLabels = function () {
+        return Dataset.getLabels(this._selectLabels);
+    };
+    StandardDataset.prototype.getSelect = function (label) {
+        return Dataset.getSelect(this._selectLabels, label);
+    };
+    StandardDataset.prototype.getData = function () {
+        return this._data;
+    };
+    StandardDataset.prototype._mapLabels = function (results) {
+        var _this = this;
+        return _.map(this._metadata.selects, function (select) { return {
+            select: select,
+            label: _this._selectLabelFormatter(select)
+        }; });
+    };
+    StandardDataset.prototype._mapData = function (results) {
+        var _this = this;
+        return _.map(results, function (result) {
+            var isGrouped = _this._metadata.groups.length > 0, interval = result['interval'], mappedResult = _this._mapResult(result), groupPath = Dataset.getGroupPath(result, _this._metadata.groups, _this._groupValueFormatter);
+            if (interval) {
+                mappedResult['_x'] = interval['start'];
+            }
+            else {
+                mappedResult['_x'] = isGrouped ? groupPath : ' ';
+            }
+            return mappedResult;
+        });
+    };
+    StandardDataset.prototype._mapResult = function (result) {
+        var _this = this;
+        var mappedResult = {}, origResult = this._metadata.interval ? result.results[0] : result;
+        _.each(this._metadata.selects, function (select) { return mappedResult[_this._selectLabelFormatter(select)] = origResult[select]; });
+        return mappedResult;
+    };
+    return StandardDataset;
+})();
+module.exports = StandardDataset;
+
+},{"./dataset":3,"underscore":24}],6:[function(require,module,exports){
 function removeAllChildren(selector) {
     var elementToClear = document.querySelector(selector);
     if (!elementToClear)
@@ -241,7 +303,7 @@ function removeAllChildren(selector) {
 }
 exports.removeAllChildren = removeAllChildren;
 
-},{}],5:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 var Config;
 (function (Config) {
     Config.defaultTimeSeriesFormats = {
@@ -271,7 +333,7 @@ var Config;
 })(Config || (Config = {}));
 module.exports = Config;
 
-},{}],6:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 var ErrorHandling = require('./error-handling');
 var DataVisualization = (function () {
     function DataVisualization(query, visualization) {
@@ -301,7 +363,7 @@ var DataVisualization = (function () {
 })();
 module.exports = DataVisualization;
 
-},{"./error-handling":7}],7:[function(require,module,exports){
+},{"./error-handling":9}],9:[function(require,module,exports){
 var ErrorHandling;
 (function (ErrorHandling) {
     var errorTypes = {
@@ -372,7 +434,7 @@ var ErrorHandling;
 })(ErrorHandling || (ErrorHandling = {}));
 module.exports = ErrorHandling;
 
-},{}],8:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 var moment = require('moment-timezone');
 var _ = require('underscore');
 function formatDate(dateToFormat, timezone, format) {
@@ -387,7 +449,7 @@ function formatDate(dateToFormat, timezone, format) {
 }
 exports.formatDate = formatDate;
 
-},{"moment-timezone":19,"underscore":22}],9:[function(require,module,exports){
+},{"moment-timezone":21,"underscore":24}],11:[function(require,module,exports){
 (function (global){
 var Viz = require('./viz');
 var applyMixins = require('./apply-mixins');
@@ -420,7 +482,7 @@ else if (typeof global !== 'undefined') {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./apply-mixins":1,"./viz":16,"tipi-connect":17}],10:[function(require,module,exports){
+},{"./apply-mixins":1,"./viz":18,"tipi-connect":19}],12:[function(require,module,exports){
 var Loader = (function () {
     function Loader(targetElementId) {
         var elementForLoader = document.querySelector(targetElementId), bar1 = document.createElement('div'), bar2 = document.createElement('div'), bar3 = document.createElement('div'), bar4 = document.createElement('div'), bar5 = document.createElement('div'), loaderContainer = document.createElement('div');
@@ -452,14 +514,14 @@ var Loader = (function () {
 })();
 module.exports = Loader;
 
-},{}],11:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 var Palette;
 (function (Palette) {
     Palette.defaultSwatch = ['#1abc9c', '#3498db', '#9b59b6', '#34495e', '#1abc9c', '#bdc3c7', '#95a5a6', '#e74c3c', '#e67e22', '#f1c40f'];
 })(Palette || (Palette = {}));
 module.exports = Palette;
 
-},{}],12:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 var _ = require('underscore');
 var Formatters = require('../formatters');
 var TableDataset = (function () {
@@ -560,7 +622,7 @@ var TableDataset = (function () {
 })();
 exports.TableDataset = TableDataset;
 
-},{"../formatters":8,"underscore":22}],13:[function(require,module,exports){
+},{"../formatters":10,"underscore":24}],15:[function(require,module,exports){
 var _ = require('underscore');
 function renderDataset(dataset) {
     return template()({
@@ -606,7 +668,7 @@ function template() {
 	');
 }
 
-},{"underscore":22}],14:[function(require,module,exports){
+},{"underscore":24}],16:[function(require,module,exports){
 var _ = require('underscore');
 var Config = require('../config');
 var Dataset = require('./dataset');
@@ -679,7 +741,7 @@ var Table = (function () {
 })();
 module.exports = Table;
 
-},{"../clear":4,"../config":5,"../error-handling":7,"../loader":10,"./dataset":12,"./renderer":13,"underscore":22}],15:[function(require,module,exports){
+},{"../clear":6,"../config":7,"../error-handling":9,"../loader":12,"./dataset":14,"./renderer":15,"underscore":24}],17:[function(require,module,exports){
 var ErrorHandling = require('./error-handling');
 var _ = require('underscore');
 var Clear = require('./clear');
@@ -750,7 +812,7 @@ var Text = (function () {
 })();
 module.exports = Text;
 
-},{"./clear":4,"./error-handling":7,"./loader":10,"underscore":22}],16:[function(require,module,exports){
+},{"./clear":6,"./error-handling":9,"./loader":12,"underscore":24}],18:[function(require,module,exports){
 var Viz;
 (function (Viz) {
     Viz.DataVisualization = require('./data-visualization');
@@ -778,9 +840,9 @@ var Viz;
 })(Viz || (Viz = {}));
 module.exports = Viz;
 
-},{"./chart/chart":2,"./data-visualization":6,"./table/table":14,"./text":15}],17:[function(require,module,exports){
+},{"./chart/chart":2,"./data-visualization":8,"./table/table":16,"./text":17}],19:[function(require,module,exports){
 
-},{}],18:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 module.exports={
 	"version": "2015a",
 	"zones": [
@@ -1370,11 +1432,11 @@ module.exports={
 		"Pacific/Pohnpei|Pacific/Ponape"
 	]
 }
-},{}],19:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 var moment = module.exports = require("./moment-timezone");
 moment.tz.load(require('./data/packed/latest.json'));
 
-},{"./data/packed/latest.json":18,"./moment-timezone":20}],20:[function(require,module,exports){
+},{"./data/packed/latest.json":20,"./moment-timezone":22}],22:[function(require,module,exports){
 //! moment-timezone.js
 //! version : 0.3.1
 //! author : Tim Wood
@@ -1794,7 +1856,7 @@ moment.tz.load(require('./data/packed/latest.json'));
 	return moment;
 }));
 
-},{"moment":21}],21:[function(require,module,exports){
+},{"moment":23}],23:[function(require,module,exports){
 (function (global){
 //! moment.js
 //! version : 2.9.0
@@ -4841,7 +4903,7 @@ moment.tz.load(require('./data/packed/latest.json'));
 }).call(this);
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],22:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 //     Underscore.js 1.8.2
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -6379,4 +6441,4 @@ moment.tz.load(require('./data/packed/latest.json'));
   }
 }.call(this));
 
-},{}]},{},[9]);
+},{}]},{},[11]);
