@@ -264,7 +264,7 @@ var Config;
             label: {
                 format: function (value) { return d3.format('.1f')(value) + '%'; }
             },
-            expand: false
+            expand: true
         },
         bar: {}
     };
