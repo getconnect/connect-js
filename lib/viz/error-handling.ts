@@ -51,7 +51,9 @@ module ErrorHandling {
             errorContainer = <HTMLElement>elementForError.querySelector('.connect-error'),
             viz = <HTMLElement>elementForError.querySelector('.connect-viz');
             
-            viz.classList.remove('connect-viz-in-error');
+            if (viz){
+                viz.classList.remove('connect-viz-in-error');
+            }
 
             if (errorContainer){
                 elementForError.removeChild(errorContainer);
