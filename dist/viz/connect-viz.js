@@ -21,8 +21,6 @@ var Chart = (function () {
     function Chart(targetElementId, chartOptions) {
         this._options = this._parseOptions(chartOptions);
         this.targetElementId = targetElementId;
-        this._loader = new Loader(this.targetElementId);
-        this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
     }
     Chart.prototype._parseOptions = function (chartOptions) {
         var defaultOptions = {
@@ -158,6 +156,8 @@ var Chart = (function () {
         this._rendered = true;
         this._titleElement = titleElement;
         this._showTitle();
+        this._loader = new Loader(this.targetElementId, connectChartContainer);
+        this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
         this._chart = c3.generate(config);
     };
     return Chart;
@@ -355,7 +355,6 @@ var DataVisualization = (function () {
     };
     DataVisualization.prototype._renderError = function (error) {
         var targetElementId = this._visualization.targetElementId;
-        this._visualization.clear();
         ErrorHandling.logError(error);
         ErrorHandling.displayFriendlyError(targetElementId);
     };
@@ -484,8 +483,8 @@ else if (typeof global !== 'undefined') {
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"./apply-mixins":1,"./viz":18,"tipi-connect":19}],12:[function(require,module,exports){
 var Loader = (function () {
-    function Loader(targetElementId) {
-        var elementForLoader = document.querySelector(targetElementId), bar1 = document.createElement('div'), bar2 = document.createElement('div'), bar3 = document.createElement('div'), bar4 = document.createElement('div'), bar5 = document.createElement('div'), loaderContainer = document.createElement('div');
+    function Loader(targetElementId, containerElement) {
+        var bar1 = document.createElement('div'), bar2 = document.createElement('div'), bar3 = document.createElement('div'), bar4 = document.createElement('div'), bar5 = document.createElement('div'), loaderContainer = document.createElement('div');
         bar1.className = 'connect-loader-bar1';
         bar2.className = 'connect-loader-bar2';
         bar3.className = 'connect-loader-bar3';
@@ -497,18 +496,17 @@ var Loader = (function () {
         loaderContainer.appendChild(bar3);
         loaderContainer.appendChild(bar4);
         loaderContainer.appendChild(bar5);
-        this._elementForLoader = elementForLoader;
+        this._elementForLoader = containerElement;
         this._loaderContainer = loaderContainer;
+        this._vizContainer = document.querySelector(targetElementId + ' .connect-viz');
     }
     Loader.prototype.show = function () {
-        var elementLoading = this._elementForLoader.firstChild, firstChild = elementLoading.firstChild;
-        elementLoading.className += ' connect-viz-loading';
-        elementLoading.insertBefore(this._loaderContainer, firstChild);
+        this._vizContainer.className += ' connect-viz-loading';
+        this._elementForLoader.appendChild(this._loaderContainer);
     };
     Loader.prototype.hide = function () {
-        var elementLoading = this._elementForLoader.firstChild;
-        elementLoading.className = elementLoading.className.replace(' connect-viz-loading', '');
-        elementLoading.removeChild(this._loaderContainer);
+        this._vizContainer.className = this._vizContainer.className.replace(' connect-viz-loading', '');
+        this._elementForLoader.removeChild(this._loaderContainer);
     };
     return Loader;
 })();
@@ -687,8 +685,6 @@ var Table = (function () {
         this.targetElementId = targetElementId;
         this._options = _.extend(defaultTableOptions, suppliedOptions);
         this._options.intervalOptions = _.extend(this._options.intervalOptions, defaultIntervalOptions);
-        this._loader = new Loader(this.targetElementId);
-        this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
     }
     Table.prototype.displayData = function (resultsPromise, metadata) {
         var _this = this;
@@ -736,6 +732,8 @@ var Table = (function () {
         this._tableWrapper = tableWrapper;
         this._titleElement = titleElement;
         this._showTitle();
+        this._loader = new Loader(this.targetElementId, tableContainer);
+        this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
     };
     return Table;
 })();
@@ -752,8 +750,6 @@ var Text = (function () {
             valueFormatter: function (value) { return value; }
         }, textOptions);
         this.targetElementId = targetElementId;
-        this._loader = new Loader(this.targetElementId);
-        this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
     }
     Text.prototype.displayData = function (resultsPromise, metadata) {
         var _this = this;
@@ -789,18 +785,21 @@ var Text = (function () {
     Text.prototype._renderText = function (metadata) {
         if (this._rendered)
             return;
-        var container = document.createElement('div'), label = document.createElement('span'), elementForWidget = document.querySelector(this.targetElementId), valueElement = document.createElement('span');
+        var container = document.createElement('div'), label = document.createElement('span'), elementForWidget = document.querySelector(this.targetElementId), valueTextElement = document.createElement('span'), valueElement = document.createElement('div');
         container.className = 'connect-viz connect-text';
         label.className = 'connect-viz-title';
         valueElement.className = 'connect-text-value';
         this.clear();
+        valueElement.appendChild(valueTextElement);
         container.appendChild(label);
         container.appendChild(valueElement);
         elementForWidget.appendChild(container);
-        this._valueElement = valueElement;
-        this._valueElement.textContent = '...';
+        this._valueElement = valueTextElement;
+        this._valueElement.textContent = ' ';
         this._titleElement = label;
         this._showTitle(metadata);
+        this._loader = new Loader(this.targetElementId, valueElement);
+        this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
         this._rendered = true;
     };
     Text.prototype._renderQueryNotApplicable = function () {
