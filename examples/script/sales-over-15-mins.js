@@ -32,6 +32,20 @@ var spline = new Connect.Viz.Chart('#sales-over-15-mins-spline', {
     yAxisValueFormatter: d3.format('$,.2f')
 });
 
+var areaLine = new Connect.Viz.Chart('#sales-over-15-mins-area-line', {
+    title: 'Sales Over 15 Minutes',
+    type: 'area',
+    fieldOptions: fieldOptions,
+    yAxisValueFormatter: d3.format('$,.2f')
+});
+
+var areaSpline = new Connect.Viz.Chart('#sales-over-15-mins-area-spline', {
+    title: 'Sales Over 15 Minutes',
+    type: 'area-spline',
+    fieldOptions: fieldOptions,
+    yAxisValueFormatter: d3.format('$,.2f')
+});
+
 var table = new Connect.Viz.Table('#sales-over-15-mins-table', {
     title: 'Sales Over 15 Minutes',
     fieldOptions: fieldOptions,
@@ -52,8 +66,10 @@ var timezone = new Connect.Viz.Chart('#sales-over-15-mins-timezone', {
 bar.displayData(queryResults.results, queryResults.metadata);
 line.displayData(queryResults.results, queryResults.metadata);
 spline.displayData(queryResults.results, queryResults.metadata);
+areaLine.displayData(queryResults.results, queryResults.metadata);
+areaSpline.displayData(queryResults.results, queryResults.metadata);
 timezone.displayData(queryResults.results, queryResults.metadata);
-table.displayData(queryResults.results, queryResults.metadata)
+table.displayData(queryResults.results, queryResults.metadata);
 
 module.exports = {
     bar: bar,
