@@ -24,8 +24,6 @@ class Chart implements Common.Visualization {
     constructor(targetElementId: string, chartOptions: Config.ChartOptions) {     
         this._options = this._parseOptions(chartOptions);
         this.targetElementId = targetElementId;
-        this._loader = new Loader(this.targetElementId);
-        this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
     }
 
     private _parseOptions(chartOptions: Config.ChartOptions): Config.ChartOptions{
@@ -220,7 +218,9 @@ class Chart implements Common.Visualization {
         }
         this._rendered = true;
         this._titleElement = titleElement;
-        this._showTitle();
+        this._showTitle();        
+        this._loader = new Loader(this.targetElementId, connectChartContainer);
+        this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
         this._chart = c3.generate(config);
     }
 }

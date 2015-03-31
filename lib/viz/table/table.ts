@@ -28,8 +28,6 @@ class Table implements Common.Visualization {
         this.targetElementId = targetElementId;
 	    this._options = _.extend(defaultTableOptions, suppliedOptions);
         this._options.intervalOptions = _.extend(this._options.intervalOptions, defaultIntervalOptions);
-	    this._loader = new Loader(this.targetElementId);
-        this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
 	}
 
 	public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata) {
@@ -96,7 +94,9 @@ class Table implements Common.Visualization {
 
         this._tableWrapper = tableWrapper;
         this._titleElement = titleElement;
-        this._showTitle();
+        this._showTitle();        
+        this._loader = new Loader(this.targetElementId, tableContainer);
+        this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
     }
 }
 

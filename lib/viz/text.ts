@@ -21,8 +21,6 @@ class Text implements Common.Visualization {
         }, textOptions);
 
         this.targetElementId = targetElementId;
-        this._loader = new Loader(this.targetElementId);
-        this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
     }
 
     public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata): void {        
@@ -80,21 +78,25 @@ class Text implements Common.Visualization {
         var container = document.createElement('div'),
             label = document.createElement('span'),
             elementForWidget = document.querySelector(this.targetElementId),
-            valueElement = document.createElement('span');
+            valueTextElement = document.createElement('span'),
+            valueElement = document.createElement('div');
 
         container.className = 'connect-viz connect-text';
         label.className = 'connect-viz-title';
         valueElement.className = 'connect-text-value';
 
         this.clear();
+        valueElement.appendChild(valueTextElement);
         container.appendChild(label);
         container.appendChild(valueElement);
         elementForWidget.appendChild(container);
 
-        this._valueElement = valueElement;
-        this._valueElement.textContent = '...'
+        this._valueElement = valueTextElement;
+        this._valueElement.textContent = ' '
         this._titleElement = label;
-        this._showTitle(metadata);
+        this._showTitle(metadata);        
+        this._loader = new Loader(this.targetElementId, valueElement);
+        this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
         this._rendered = true;
     }
 

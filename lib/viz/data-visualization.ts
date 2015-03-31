@@ -35,8 +35,6 @@ class DataVisualization{
 
     private _renderError(error: Error): void{
         var targetElementId = this._visualization.targetElementId;
-        
-        this._visualization.clear();
         ErrorHandling.logError(error);
         ErrorHandling.displayFriendlyError(targetElementId);
     }

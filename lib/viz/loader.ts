@@ -3,10 +3,10 @@ import Config = require('./config');
 class Loader {
     private _loaderContainer;
     private _elementForLoader;
+    private _vizContainer;
 
-    constructor(targetElementId: string){
-        var elementForLoader = document.querySelector(targetElementId),
-            bar1 = document.createElement('div'),
+    constructor(targetElementId: string, containerElement: HTMLElement){
+        var bar1 = document.createElement('div'),
             bar2 = document.createElement('div'),
             bar3 = document.createElement('div'),
             bar4 = document.createElement('div'),
@@ -26,23 +26,20 @@ class Loader {
         loaderContainer.appendChild(bar4);
         loaderContainer.appendChild(bar5);
 
-        this._elementForLoader = elementForLoader;
+        this._elementForLoader = containerElement;
         this._loaderContainer = loaderContainer;
+        this._vizContainer = document.querySelector(targetElementId + ' .connect-viz');
     }
 
-    show(){
-        var elementLoading = this._elementForLoader.firstChild,
-            firstChild = elementLoading.firstChild;
-        
-        elementLoading.className += ' connect-viz-loading';
-        elementLoading.insertBefore(this._loaderContainer, firstChild);
+    show(){               
+        this._vizContainer.className += ' connect-viz-loading';
+        this._elementForLoader.appendChild(this._loaderContainer);
+
     }
 
     hide(){
-        var elementLoading = this._elementForLoader.firstChild
-
-        elementLoading.className = elementLoading.className.replace(' connect-viz-loading', '');
-        elementLoading.removeChild(this._loaderContainer);
+        this._vizContainer.className = this._vizContainer.className.replace(' connect-viz-loading', '');
+        this._elementForLoader.removeChild(this._loaderContainer);
     }
 }
 

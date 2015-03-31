@@ -8,6 +8,7 @@
     .middle();
 
     .connect-text-value{
+        position: relative;
         display: block;
         text-align: center;
         font: @text-value-size @text-value-font-family;
@@ -26,5 +27,9 @@
         .connect-viz-title{
             visibility: hidden;
         }
+    }
+
+    &.connect-viz-loading .connect-text-value{
+        min-height: @text-value-size * @text-value-line-height;
     }
 }
