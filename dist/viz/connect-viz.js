@@ -403,7 +403,9 @@ var ErrorHandling;
     ErrorHandling.makeSafe = makeSafe;
     function clearError(selector) {
         var elementForError = document.querySelector(selector), errorContainer = elementForError.querySelector('.connect-error'), viz = elementForError.querySelector('.connect-viz');
-        viz.classList.remove('connect-viz-in-error');
+        if (viz) {
+            viz.classList.remove('connect-viz-in-error');
+        }
         if (errorContainer) {
             elementForError.removeChild(errorContainer);
         }
