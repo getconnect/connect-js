@@ -27,6 +27,7 @@ var Chart = (function () {
             type: 'bar',
             intervalOptions: {},
             fieldOptions: {},
+            showLegend: true,
             yAxisValueFormatter: function (value) { return value; }
         }, defaultIntervalOptions = {
             formats: Config.defaultTimeSeriesFormats
@@ -59,7 +60,6 @@ var Chart = (function () {
         var options = this._options, dataset = this._buildDataset(results, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = _.extend(_.object(uniqueKeys, Palette.defaultSwatch), options.colors);
         this._currentDataset = dataset;
         this._loader.hide();
-        console.log(dataset.getData());
         this._chart.load({
             json: dataset.getData(),
             keys: {
@@ -137,6 +137,9 @@ var Chart = (function () {
                 format: {
                     value: tooltipValueFormatter
                 }
+            },
+            legend: {
+                show: options.showLegend
             }
         };
         this.clear();
