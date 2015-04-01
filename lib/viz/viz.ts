@@ -8,18 +8,18 @@ module Viz {
     export var Table = require('./table/table');
 
     export class Visualizations{
-        public chart(query: Queries.ConnectQuery, targetElementId: string, chartOptions: Config.ChartOptions){
-            var chart = new Chart(targetElementId, chartOptions);
+        public chart(query: Queries.ConnectQuery, targetElement: string|HTMLElement, chartOptions: Config.ChartOptions){
+            var chart = new Chart(targetElement, chartOptions);
             return new DataVisualization(query, chart);
         }
     
-        public text(query: Queries.ConnectQuery, targetElementId: string, textOptions: Config.TextOptions){
-            var text = new Text(targetElementId, textOptions);
+        public text(query: Queries.ConnectQuery, targetElement: string|HTMLElement, textOptions: Config.TextOptions){
+            var text = new Text(targetElement, textOptions);
             return new DataVisualization(query, text);
         }
 
-        public table(query: Queries.ConnectQuery, targetElementId: string, tableOptions: Config.TableOptions){
-            var table = new Table(targetElementId, tableOptions);
+        public table(query: Queries.ConnectQuery, targetElement: string|HTMLElement, tableOptions: Config.TableOptions){
+            var table = new Table(targetElement, tableOptions);
             return new DataVisualization(query, table);
         }
     }

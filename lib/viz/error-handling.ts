@@ -29,25 +29,25 @@ module ErrorHandling {
     export type LoadDataFunction = (results: Api.QueryResults, metadata: Queries.Metadata) => void;
     export function makeSafe(functionToWrap: LoadDataFunction, visualization: Common.Visualization, loader: Loader): LoadDataFunction{
         return (results: Api.QueryResults, metadata: Queries.Metadata) => {
-            var targetElementId = visualization.targetElementId;
+            var targetElement = visualization.targetElement;
             try{
                 
                 if (results == null || !results.length){
                     loader.hide();
-                    displayFriendlyError(targetElementId, 'noResults');
+                    displayFriendlyError(targetElement, 'noResults');
                     return;
                 }
 
                 return functionToWrap.call(visualization, results, metadata);
             }catch(error){                
                 logError(error);
-                displayFriendlyError(targetElementId);
+                displayFriendlyError(targetElement);
             }
         };
     }
 
-    export function clearError(selector: string){
-        var elementForError = document.querySelector(selector),
+    export function clearError(targetElement: HTMLElement){
+        var elementForError = targetElement,
             errorContainer = <HTMLElement>elementForError.querySelector('.connect-error'),
             viz = <HTMLElement>elementForError.querySelector('.connect-viz');
             
@@ -60,11 +60,11 @@ module ErrorHandling {
             }
     }
 
-    export function displayFriendlyError(selector: string, type?: string, message?: string){
+    export function displayFriendlyError(targetElement: HTMLElement, type?: string, message?: string){
         var errorType = type || 'other',
             errorIcon = errorTypes[type].icon,
             errorMessage = message || errorTypes[type].defaultMessage,
-            elementForError = document.querySelector(selector),
+            elementForError = targetElement,
             errorIconElement = document.createElement('span'),
             errorMessageElement = document.createElement('span'),
             errorElement = document.createElement('div'),

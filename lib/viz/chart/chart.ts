@@ -11,9 +11,10 @@ import ErrorHandling = require('../error-handling');
 import Palette = require('../palette');
 import Loader = require('../loader');
 import Formatters = require('../formatters');
+import Dom = require('../dom');
 
 class Chart implements Common.Visualization {
-    public targetElementId: string;
+    public targetElement: HTMLElement;
     private _options: Config.ChartOptions;
     private _chart: C3.Chart;
     private _rendered: boolean;
@@ -21,9 +22,9 @@ class Chart implements Common.Visualization {
     private _loader: Loader;
     private _currentDataset: Dataset.ChartDataset;
     
-    constructor(targetElementId: string, chartOptions: Config.ChartOptions) {     
+    constructor(targetElement: string|HTMLElement, chartOptions: Config.ChartOptions) {     
         this._options = this._parseOptions(chartOptions);
-        this.targetElementId = targetElementId;
+        this.targetElement = Dom.getElement(targetElement);
     }
 
     private _parseOptions(chartOptions: Config.ChartOptions): Config.ChartOptions{
@@ -102,7 +103,7 @@ class Chart implements Common.Visualization {
 
     public clear(): void{        
         this._rendered = false;
-        Clear.removeAllChildren(this.targetElementId)
+        Clear.removeAllChildren(this.targetElement)
     }
 
     private _buildDataset(results: Api.QueryResults, metadata: Queries.Metadata): Dataset.ChartDataset{
@@ -159,7 +160,7 @@ class Chart implements Common.Visualization {
         var options = this._options,
             connectChartContainer: HTMLElement = document.createElement('div'),
             c3Element: HTMLElement = document.createElement('div'),
-            rootElement = document.querySelector(this.targetElementId),
+            rootElement = this.targetElement,
             titleElement = document.createElement('span'),
             timezone = options.timezone || metadata.timezone,
             dateFormat = null,
@@ -222,7 +223,7 @@ class Chart implements Common.Visualization {
         this._rendered = true;
         this._titleElement = titleElement;
         this._showTitle();        
-        this._loader = new Loader(this.targetElementId, connectChartContainer);
+        this._loader = new Loader(this.targetElement, connectChartContainer);
         this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
         this._chart = c3.generate(config);
     }
