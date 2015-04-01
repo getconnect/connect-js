@@ -86,7 +86,7 @@ class Chart implements Common.Visualization {
             dataset = this._buildDataset(results, metadata),
             keys = dataset.getLabels(),
             uniqueKeys = _.unique(keys),
-            colors = _.extend(_.object(uniqueKeys, Palette.defaultSwatch), options.colors);
+            colors = Palette.getSwatch(uniqueKeys, options.colors);
 
         this._currentDataset = dataset;
         this._loader.hide();    
