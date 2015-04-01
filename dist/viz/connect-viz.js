@@ -764,7 +764,7 @@ var Dom = require('./dom');
 var Text = (function () {
     function Text(targetElement, textOptions) {
         this._options = _.extend({
-            valueFormatter: function (value) { return value; }
+            fieldOptions: {}
         }, textOptions);
         this.targetElement = Dom.getElement(targetElement);
     }
@@ -781,7 +781,7 @@ var Text = (function () {
         });
     };
     Text.prototype._loadData = function (results, metadata) {
-        var options = this._options, onlyResult = results[0], aliasOfSelect = metadata.selects[0], valueText = options.fieldOptions[aliasOfSelect].valueFormatter(onlyResult[aliasOfSelect]);
+        var options = this._options, onlyResult = results[0], aliasOfSelect = metadata.selects[0], defaultFieldOption = { valueFormatter: function (value) { return value; } }, fieldOption = options.fieldOptions[aliasOfSelect] || defaultFieldOption, valueFormatter = fieldOption.valueFormatter, value = onlyResult[aliasOfSelect], valueText = valueFormatter(value);
         this._loader.hide();
         this._valueElement.textContent = valueText;
         this._showTitle(metadata);
