@@ -40,7 +40,7 @@ module Config {
     export interface ChartOptions extends VisualizationOptions {
         type: string;
         height?: number;
-        colors?: ChartColors;
+        colors?: ChartColors|string[];
         padding?: {
             top?: number;
             right?: number;
