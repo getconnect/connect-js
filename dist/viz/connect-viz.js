@@ -58,7 +58,7 @@ var Chart = (function () {
         });
     };
     Chart.prototype._loadData = function (results, metadata) {
-        var options = this._options, dataset = this._buildDataset(results, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = _.extend(_.object(uniqueKeys, Palette.defaultSwatch), options.colors);
+        var options = this._options, dataset = this._buildDataset(results, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = Palette.getSwatch(uniqueKeys, options.colors);
         this._currentDataset = dataset;
         this._loader.hide();
         this._chart.load({
@@ -529,13 +529,21 @@ var Loader = (function () {
 module.exports = Loader;
 
 },{}],14:[function(require,module,exports){
+var _ = require('underscore');
 var Palette;
 (function (Palette) {
     Palette.defaultSwatch = ['#1abc9c', '#3498db', '#9b59b6', '#34495e', '#1abc9c', '#bdc3c7', '#95a5a6', '#e74c3c', '#e67e22', '#f1c40f'];
+    function getSwatch(keys, colors) {
+        if (_.isArray(colors))
+            return _.object(keys, colors);
+        return _.extend(_.object(keys, Palette.defaultSwatch), colors);
+    }
+    Palette.getSwatch = getSwatch;
+    ;
 })(Palette || (Palette = {}));
 module.exports = Palette;
 
-},{}],15:[function(require,module,exports){
+},{"underscore":25}],15:[function(require,module,exports){
 var _ = require('underscore');
 var Formatters = require('../formatters');
 var TableDataset = (function () {
