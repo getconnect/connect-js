@@ -5,7 +5,7 @@ class Loader {
     private _elementForLoader;
     private _vizContainer;
 
-    constructor(targetElementId: string, containerElement: HTMLElement){
+    constructor(targetElement: HTMLElement, containerElement: HTMLElement){
         var bar1 = document.createElement('div'),
             bar2 = document.createElement('div'),
             bar3 = document.createElement('div'),
@@ -28,7 +28,7 @@ class Loader {
 
         this._elementForLoader = containerElement;
         this._loaderContainer = loaderContainer;
-        this._vizContainer = document.querySelector(targetElementId + ' .connect-viz');
+        this._vizContainer = targetElement.querySelector('.connect-viz');
     }
 
     show(){               

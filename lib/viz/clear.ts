@@ -1,5 +1,5 @@
-export function removeAllChildren(selector: string){
-    var elementToClear = document.querySelector(selector);
+export function removeAllChildren(targetElement: HTMLElement){
+    var elementToClear = targetElement;
 
     if (!elementToClear)
         return;
