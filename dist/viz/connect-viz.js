@@ -328,7 +328,8 @@ var Config;
         },
         gauge: {
             label: {
-                format: function (value) { return d3.format('.1f')(value) + '%'; }
+                format: function (value) { return d3.format('.0f')(value) + '%'; },
+                formatall: true
             },
             expand: true
         },
