@@ -1,22 +1,6 @@
 @import "variables";
 @import "mixins";
 
-@viz-title-height: 24px;
-
-@cell-vertical-padding-default: 6px;
-@cell-horizontal-padding-default: 10px;
-@cell-vertical-padding-large: @cell-vertical-padding-default * 1.5;
-@cell-horizontal-padding-large: @cell-horizontal-padding-default * 1.5;
-
-@table-text-color: #333;
-@table-border-color: #DEDEDE;
-@table-header-bg: #ECF3FC;
-@table-row-bg-hover: #DBE9F9;
-@table-row-bg: #FFFFFF;
-@table-row-bg-alternate: #F6F9FD;
-
-@table-fixed-header-height: 46px;
-
 .connect-table {
     font-family: @text-value-font-family;
     color: @table-text-color;
@@ -26,6 +10,12 @@
 
     .connect-error{    
         .middle();
+    }
+
+    &.connect-viz-loading{
+        .connect-table-wrapper {
+            opacity: @viz-opacity-while-loading;
+        }
     }
 
     .connect-table-wrapper {
@@ -47,6 +37,7 @@
 
         border-top: 1px solid @table-border-color;
         border-bottom: 1px solid @table-border-color;
+
     }
 
     table {
