@@ -18,7 +18,7 @@ class Text implements Common.Visualization {
 
     constructor(targetElement: string|HTMLElement, textOptions: Config.TextOptions) {
         this._options = _.extend({ 
-            valueFormatter: (value) => value 
+            fieldOptions: {} 
         }, textOptions);
 
         this.targetElement = Dom.getElement(targetElement);
@@ -42,7 +42,12 @@ class Text implements Common.Visualization {
         var options = this._options,
             onlyResult = results[0],
             aliasOfSelect = metadata.selects[0],
-            valueText = options.fieldOptions[aliasOfSelect].valueFormatter(onlyResult[aliasOfSelect]);
+            defaultFieldOption = { valueFormatter: (value) => value },
+            fieldOption = options.fieldOptions[aliasOfSelect] || defaultFieldOption,
+            valueFormatter = fieldOption.valueFormatter,
+            value = onlyResult[aliasOfSelect],
+            valueText = valueFormatter(value);
+
         this._loader.hide();
         this._valueElement.textContent = valueText;
         this._showTitle(metadata);  
