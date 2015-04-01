@@ -31,6 +31,7 @@ class Chart implements Common.Visualization {
                 type: 'bar',
                 intervalOptions: {},
                 fieldOptions: {},
+                showLegend: true,
                 yAxisValueFormatter: (value) => value
             },
             defaultIntervalOptions = {
@@ -88,7 +89,6 @@ class Chart implements Common.Visualization {
 
         this._currentDataset = dataset;
         this._loader.hide();    
-        console.log(dataset.getData());
         this._chart.load({
             json: dataset.getData(),
             keys: {
@@ -198,6 +198,9 @@ class Chart implements Common.Visualization {
                     format: {
                         value: tooltipValueFormatter
                     }                   
+                },
+                legend: {
+                    show: options.showLegend
                 }
             };
 

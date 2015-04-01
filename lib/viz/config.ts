@@ -51,6 +51,7 @@ module Config {
             min?: number;
             max?: number;
         };
+        showLegend?: boolean; 
         yAxisValueFormatter?: (value: any) => any;
     }
 
