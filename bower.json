@@ -25,7 +25,7 @@
     "license": "MIT",
     "homepage": "http://getconnect.io/",
     "dependencies": {
-        "c3": "https://github.com/masayuki0812/c3",
-        "d3": "https://github.com/mbostock/d3"
+        "d3": "~3.5.0",
+        "c3": "~0.4.10"
     }
 }
