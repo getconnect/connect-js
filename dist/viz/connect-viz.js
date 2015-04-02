@@ -48,11 +48,13 @@ var Chart = (function () {
             options[type].label.format = fieldOptions[firstSelect].valueFormatter;
         }
     };
-    Chart.prototype.displayData = function (resultsPromise, metadata) {
+    Chart.prototype.displayData = function (resultsPromise, metadata, showLoader) {
         var _this = this;
+        if (showLoader === void 0) { showLoader = true; }
         this._initializeFieldOptions(metadata);
         this._renderChart(metadata);
-        this._loader.show();
+        if (showLoader)
+            this._loader.show();
         resultsPromise.then(function (results) {
             _this._loadData(results, metadata);
         });
@@ -519,10 +521,14 @@ var Loader = (function () {
     Loader.prototype.show = function () {
         this._vizContainer.className += ' connect-viz-loading';
         this._elementForLoader.appendChild(this._loaderContainer);
+        this._visible = true;
     };
     Loader.prototype.hide = function () {
+        if (!this._visible)
+            return;
         this._vizContainer.className = this._vizContainer.className.replace(' connect-viz-loading', '');
         this._elementForLoader.removeChild(this._loaderContainer);
+        this._visible = false;
     };
     return Loader;
 })();
@@ -711,10 +717,12 @@ var Table = (function () {
         this._options = _.extend(defaultTableOptions, suppliedOptions);
         this._options.intervalOptions = _.extend(this._options.intervalOptions, defaultIntervalOptions);
     }
-    Table.prototype.displayData = function (resultsPromise, metadata) {
+    Table.prototype.displayData = function (resultsPromise, metadata, showLoader) {
         var _this = this;
+        if (showLoader === void 0) { showLoader = true; }
         this._renderTable(metadata);
-        this._startLoading();
+        if (showLoader)
+            this._startLoading();
         resultsPromise.then(function (results) {
             _this._loadData(results, metadata);
             _this._finishLoading();
@@ -777,14 +785,16 @@ var Text = (function () {
         }, textOptions);
         this.targetElement = Dom.getElement(targetElement);
     }
-    Text.prototype.displayData = function (resultsPromise, metadata) {
+    Text.prototype.displayData = function (resultsPromise, metadata, showLoader) {
         var _this = this;
+        if (showLoader === void 0) { showLoader = true; }
         if (!this._checkMetaDataIsApplicable(metadata)) {
             this._renderQueryNotApplicable();
             return;
         }
         this._renderText(metadata);
-        this._loader.show();
+        if (showLoader)
+            this._loader.show();
         resultsPromise.then(function (results) {
             _this._loadData(results, metadata);
         });
