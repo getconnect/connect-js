@@ -59,3 +59,6 @@ build/*
 dist/*
 examples/build/*
 examples/dist/*
+
+# TypeScript config
+tsconfig.json

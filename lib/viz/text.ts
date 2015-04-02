@@ -24,14 +24,15 @@ class Text implements Common.Visualization {
         this.targetElement = Dom.getElement(targetElement);
     }
 
-    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata): void {        
+    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata, showLoader: boolean = true): void {        
         if (!this._checkMetaDataIsApplicable(metadata)){
             this._renderQueryNotApplicable();
             return;
         }
 
         this._renderText(metadata);
-        this._loader.show();
+        if (showLoader)
+            this._loader.show();
 
         resultsPromise.then(results => {
             this._loadData(results, metadata)
