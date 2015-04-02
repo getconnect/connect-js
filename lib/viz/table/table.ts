@@ -8,16 +8,17 @@ import Api = require('../../core/api');
 import Loader = require('../loader');
 import Clear = require('../clear');
 import ErrorHandling = require('../error-handling');
+import Dom = require('../dom');
 
 class Table implements Common.Visualization {
-    public targetElementId: string;
+    public targetElement: HTMLElement;
 	private _options: Config.TableOptions;
 	private _rendered: boolean;
     private _titleElement: HTMLElement;
     private _tableWrapper: HTMLElement;
 	private _loader: Loader;
 
-	constructor(targetElementId: string, suppliedOptions: Config.TableOptions) {
+	constructor(targetElement: string|HTMLElement, suppliedOptions: Config.TableOptions) {
 	    var defaultTableOptions: Config.TableOptions = { 
                 fieldOptions: {},
                 intervalOptions: {}
@@ -25,7 +26,7 @@ class Table implements Common.Visualization {
             defaultIntervalOptions = {
                 formats: Config.defaultTimeSeriesFormats
             };
-        this.targetElementId = targetElementId;
+        this.targetElement = Dom.getElement(targetElement);
 	    this._options = _.extend(defaultTableOptions, suppliedOptions);
         this._options.intervalOptions = _.extend(this._options.intervalOptions, defaultIntervalOptions);
 	}
@@ -58,7 +59,7 @@ class Table implements Common.Visualization {
 
     public clear() {        
     	this._rendered = false;
-        Clear.removeAllChildren(this.targetElementId)
+        Clear.removeAllChildren(this.targetElement)
     }
 
     private _showTitle(){
@@ -77,7 +78,7 @@ class Table implements Common.Visualization {
         var options = this._options,
             tableContainer: HTMLElement = document.createElement('div'),
             tableWrapper = document.createElement('div'),
-            rootElement = document.querySelector(this.targetElementId),
+            rootElement = this.targetElement,
             titleElement = document.createElement('span')
 
         this.clear();
@@ -96,7 +97,7 @@ class Table implements Common.Visualization {
         this._tableWrapper = tableWrapper;
         this._titleElement = titleElement;
         this._showTitle();        
-        this._loader = new Loader(this.targetElementId, tableContainer);
+        this._loader = new Loader(this.targetElement, tableContainer);
         this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
     }
 }

@@ -6,21 +6,22 @@ import _ = require('underscore');
 import Common = require('./visualization');
 import Clear = require('./clear');
 import Loader = require('./loader');
+import Dom = require('./dom');
 
 class Text implements Common.Visualization {
-    public targetElementId: string;
+    public targetElement: HTMLElement;
     private _options: Config.TextOptions;
     private _rendered: boolean;
     private _valueElement: HTMLElement;
     private _titleElement: HTMLElement;
     private _loader: Loader;
 
-    constructor(targetElementId: string, textOptions: Config.TextOptions) {
+    constructor(targetElement: string|HTMLElement, textOptions: Config.TextOptions) {
         this._options = _.extend({ 
-            valueFormatter: (value) => value 
+            fieldOptions: {} 
         }, textOptions);
 
-        this.targetElementId = targetElementId;
+        this.targetElement = Dom.getElement(targetElement);
     }
 
     public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata): void {        
@@ -41,7 +42,12 @@ class Text implements Common.Visualization {
         var options = this._options,
             onlyResult = results[0],
             aliasOfSelect = metadata.selects[0],
-            valueText = options.fieldOptions[aliasOfSelect].valueFormatter(onlyResult[aliasOfSelect]);
+            defaultFieldOption = { valueFormatter: (value) => value },
+            fieldOption = options.fieldOptions[aliasOfSelect] || defaultFieldOption,
+            valueFormatter = fieldOption.valueFormatter,
+            value = onlyResult[aliasOfSelect],
+            valueText = valueFormatter(value);
+
         this._loader.hide();
         this._valueElement.textContent = valueText;
         this._showTitle(metadata);  
@@ -49,7 +55,7 @@ class Text implements Common.Visualization {
 
     public clear(): void{        
         this._rendered = false;
-        Clear.removeAllChildren(this.targetElementId);
+        Clear.removeAllChildren(this.targetElement);
     }
 
     private _checkMetaDataIsApplicable(metadata: Queries.Metadata): boolean {
@@ -77,7 +83,7 @@ class Text implements Common.Visualization {
 
         var container = document.createElement('div'),
             label = document.createElement('span'),
-            elementForWidget = document.querySelector(this.targetElementId),
+            elementForWidget = this.targetElement,
             valueTextElement = document.createElement('span'),
             valueElement = document.createElement('div');
 
@@ -92,10 +98,10 @@ class Text implements Common.Visualization {
         elementForWidget.appendChild(container);
 
         this._valueElement = valueTextElement;
-        this._valueElement.textContent = ' '
+        this._valueElement.innerHTML = '&nbsp;'
         this._titleElement = label;
         this._showTitle(metadata);        
-        this._loader = new Loader(this.targetElementId, valueElement);
+        this._loader = new Loader(this.targetElement, valueElement);
         this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
         this._rendered = true;
     }
@@ -104,7 +110,7 @@ class Text implements Common.Visualization {
         var errorMsg = 'To display in a text widget a query must contain 1 select, 0 groupBys, and no interval';
 
         this._rendered = false;
-        ErrorHandling.displayFriendlyError(this.targetElementId, errorMsg);
+        ErrorHandling.displayFriendlyError(this.targetElement, errorMsg);
     }
 }
 

@@ -7,7 +7,7 @@ function applyMixins(targetClass, mixinClass) {
 }
 module.exports = applyMixins;
 
-},{"underscore":24}],2:[function(require,module,exports){
+},{"underscore":25}],2:[function(require,module,exports){
 var Config = require('../config');
 var GroupedIntervalDataset = require('./grouped-interval-dataset');
 var StandardDataset = require('./standard-dataset');
@@ -17,10 +17,11 @@ var ErrorHandling = require('../error-handling');
 var Palette = require('../palette');
 var Loader = require('../loader');
 var Formatters = require('../formatters');
+var Dom = require('../dom');
 var Chart = (function () {
-    function Chart(targetElementId, chartOptions) {
+    function Chart(targetElement, chartOptions) {
         this._options = this._parseOptions(chartOptions);
-        this.targetElementId = targetElementId;
+        this.targetElement = Dom.getElement(targetElement);
     }
     Chart.prototype._parseOptions = function (chartOptions) {
         var defaultOptions = {
@@ -57,7 +58,7 @@ var Chart = (function () {
         });
     };
     Chart.prototype._loadData = function (results, metadata) {
-        var options = this._options, dataset = this._buildDataset(results, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = _.extend(_.object(uniqueKeys, Palette.defaultSwatch), options.colors);
+        var options = this._options, dataset = this._buildDataset(results, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = Palette.getSwatch(uniqueKeys, options.colors);
         this._currentDataset = dataset;
         this._loader.hide();
         this._chart.load({
@@ -72,7 +73,7 @@ var Chart = (function () {
     };
     Chart.prototype.clear = function () {
         this._rendered = false;
-        Clear.removeAllChildren(this.targetElementId);
+        Clear.removeAllChildren(this.targetElement);
     };
     Chart.prototype._buildDataset = function (results, metadata) {
         var _this = this;
@@ -105,7 +106,7 @@ var Chart = (function () {
         var _this = this;
         if (this._rendered)
             return;
-        var options = this._options, connectChartContainer = document.createElement('div'), c3Element = document.createElement('div'), rootElement = document.querySelector(this.targetElementId), titleElement = document.createElement('span'), timezone = options.timezone || metadata.timezone, dateFormat = null, standardDateformatter = function (value) { return Formatters.formatDate(value, timezone, dateFormat); }, customDateFormatter = options.intervalOptions.valueFormatter, tooltipValueFormatter = function (value, ratio, id, index) { return _this._formatValueForLabel(id, value); }, config = {
+        var options = this._options, connectChartContainer = document.createElement('div'), c3Element = document.createElement('div'), rootElement = this.targetElement, titleElement = document.createElement('span'), timezone = options.timezone || metadata.timezone, dateFormat = null, standardDateformatter = function (value) { return Formatters.formatDate(value, timezone, dateFormat); }, customDateFormatter = options.intervalOptions.valueFormatter, tooltipValueFormatter = function (value, ratio, id, index) { return _this._formatValueForLabel(id, value); }, config = {
             bindto: c3Element,
             size: {
                 height: options.height
@@ -159,7 +160,7 @@ var Chart = (function () {
         this._rendered = true;
         this._titleElement = titleElement;
         this._showTitle();
-        this._loader = new Loader(this.targetElementId, connectChartContainer);
+        this._loader = new Loader(this.targetElement, connectChartContainer);
         this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
         this._chart = c3.generate(config);
     };
@@ -167,7 +168,7 @@ var Chart = (function () {
 })();
 module.exports = Chart;
 
-},{"../clear":6,"../config":7,"../error-handling":9,"../formatters":10,"../loader":12,"../palette":13,"./grouped-interval-dataset":4,"./standard-dataset":5,"underscore":24}],3:[function(require,module,exports){
+},{"../clear":6,"../config":7,"../dom":9,"../error-handling":10,"../formatters":11,"../loader":13,"../palette":14,"./grouped-interval-dataset":4,"./standard-dataset":5,"underscore":25}],3:[function(require,module,exports){
 var _ = require('underscore');
 var Dataset;
 (function (Dataset) {
@@ -186,7 +187,7 @@ var Dataset;
 })(Dataset || (Dataset = {}));
 module.exports = Dataset;
 
-},{"underscore":24}],4:[function(require,module,exports){
+},{"underscore":25}],4:[function(require,module,exports){
 var Dataset = require('./dataset');
 var _ = require('underscore');
 var GroupedIntervalDataset = (function () {
@@ -244,7 +245,7 @@ var GroupedIntervalDataset = (function () {
 })();
 module.exports = GroupedIntervalDataset;
 
-},{"./dataset":3,"underscore":24}],5:[function(require,module,exports){
+},{"./dataset":3,"underscore":25}],5:[function(require,module,exports){
 var Dataset = require('./dataset');
 var _ = require('underscore');
 var StandardDataset = (function () {
@@ -296,9 +297,9 @@ var StandardDataset = (function () {
 })();
 module.exports = StandardDataset;
 
-},{"./dataset":3,"underscore":24}],6:[function(require,module,exports){
-function removeAllChildren(selector) {
-    var elementToClear = document.querySelector(selector);
+},{"./dataset":3,"underscore":25}],6:[function(require,module,exports){
+function removeAllChildren(targetElement) {
+    var elementToClear = targetElement;
     if (!elementToClear)
         return;
     while (elementToClear.firstChild)
@@ -327,7 +328,8 @@ var Config;
         },
         gauge: {
             label: {
-                format: function (value) { return d3.format('.1f')(value) + '%'; }
+                format: function (value) { return d3.format('.0f')(value) + '%'; },
+                formatall: true
             },
             expand: true
         },
@@ -350,22 +352,31 @@ var DataVisualization = (function () {
         if (this._isLoading)
             return;
         this._isLoading = true;
-        var targetElementId = this._visualization.targetElementId, qryPromise = this._query.execute(), loadingTracker = qryPromise.then(function (data) {
+        var targetElement = this._visualization.targetElement, qryPromise = this._query.execute(), loadingTracker = qryPromise.then(function (data) {
             _this._isLoading = false;
         }, function (error) { return _this._renderError(error); });
-        ErrorHandling.clearError(targetElementId);
+        ErrorHandling.clearError(targetElement);
         this._visualization.displayData(qryPromise, this._query.metadata());
     };
     DataVisualization.prototype._renderError = function (error) {
-        var targetElementId = this._visualization.targetElementId;
+        var targetElement = this._visualization.targetElement;
         ErrorHandling.logError(error);
-        ErrorHandling.displayFriendlyError(targetElementId);
+        ErrorHandling.displayFriendlyError(targetElement);
     };
     return DataVisualization;
 })();
 module.exports = DataVisualization;
 
-},{"./error-handling":9}],9:[function(require,module,exports){
+},{"./error-handling":10}],9:[function(require,module,exports){
+var _ = require('underscore');
+function getElement(selector) {
+    if (_.isString(selector))
+        return document.querySelector(selector);
+    return selector;
+}
+exports.getElement = getElement;
+
+},{"underscore":25}],10:[function(require,module,exports){
 var ErrorHandling;
 (function (ErrorHandling) {
     var errorTypes = {
@@ -388,24 +399,24 @@ var ErrorHandling;
     };
     function makeSafe(functionToWrap, visualization, loader) {
         return function (results, metadata) {
-            var targetElementId = visualization.targetElementId;
+            var targetElement = visualization.targetElement;
             try {
                 if (results == null || !results.length) {
                     loader.hide();
-                    displayFriendlyError(targetElementId, 'noResults');
+                    displayFriendlyError(targetElement, 'noResults');
                     return;
                 }
                 return functionToWrap.call(visualization, results, metadata);
             }
             catch (error) {
                 logError(error);
-                displayFriendlyError(targetElementId);
+                displayFriendlyError(targetElement);
             }
         };
     }
     ErrorHandling.makeSafe = makeSafe;
-    function clearError(selector) {
-        var elementForError = document.querySelector(selector), errorContainer = elementForError.querySelector('.connect-error'), viz = elementForError.querySelector('.connect-viz');
+    function clearError(targetElement) {
+        var elementForError = targetElement, errorContainer = elementForError.querySelector('.connect-error'), viz = elementForError.querySelector('.connect-viz');
         if (viz) {
             viz.classList.remove('connect-viz-in-error');
         }
@@ -414,8 +425,8 @@ var ErrorHandling;
         }
     }
     ErrorHandling.clearError = clearError;
-    function displayFriendlyError(selector, type, message) {
-        var errorType = type || 'other', errorIcon = errorTypes[type].icon, errorMessage = message || errorTypes[type].defaultMessage, elementForError = document.querySelector(selector), errorIconElement = document.createElement('span'), errorMessageElement = document.createElement('span'), errorElement = document.createElement('div'), errorClassName = 'connect-error', viz = elementForError.querySelector('.connect-viz');
+    function displayFriendlyError(targetElement, type, message) {
+        var errorType = type || 'other', errorIcon = errorTypes[type].icon, errorMessage = message || errorTypes[type].defaultMessage, elementForError = targetElement, errorIconElement = document.createElement('span'), errorMessageElement = document.createElement('span'), errorElement = document.createElement('div'), errorClassName = 'connect-error', viz = elementForError.querySelector('.connect-viz');
         if (!elementForError)
             return;
         errorMessageElement.textContent = errorMessage;
@@ -438,7 +449,7 @@ var ErrorHandling;
 })(ErrorHandling || (ErrorHandling = {}));
 module.exports = ErrorHandling;
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 var moment = require('moment-timezone');
 var _ = require('underscore');
 function formatDate(dateToFormat, timezone, format) {
@@ -453,7 +464,7 @@ function formatDate(dateToFormat, timezone, format) {
 }
 exports.formatDate = formatDate;
 
-},{"moment-timezone":21,"underscore":24}],11:[function(require,module,exports){
+},{"moment-timezone":22,"underscore":25}],12:[function(require,module,exports){
 (function (global){
 var Viz = require('./viz');
 var applyMixins = require('./apply-mixins');
@@ -486,9 +497,9 @@ else if (typeof global !== 'undefined') {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./apply-mixins":1,"./viz":18,"tipi-connect":19}],12:[function(require,module,exports){
+},{"./apply-mixins":1,"./viz":19,"tipi-connect":20}],13:[function(require,module,exports){
 var Loader = (function () {
-    function Loader(targetElementId, containerElement) {
+    function Loader(targetElement, containerElement) {
         var bar1 = document.createElement('div'), bar2 = document.createElement('div'), bar3 = document.createElement('div'), bar4 = document.createElement('div'), bar5 = document.createElement('div'), loaderContainer = document.createElement('div');
         bar1.className = 'connect-loader-bar1';
         bar2.className = 'connect-loader-bar2';
@@ -503,7 +514,7 @@ var Loader = (function () {
         loaderContainer.appendChild(bar5);
         this._elementForLoader = containerElement;
         this._loaderContainer = loaderContainer;
-        this._vizContainer = document.querySelector(targetElementId + ' .connect-viz');
+        this._vizContainer = targetElement.querySelector('.connect-viz');
     }
     Loader.prototype.show = function () {
         this._vizContainer.className += ' connect-viz-loading';
@@ -517,14 +528,22 @@ var Loader = (function () {
 })();
 module.exports = Loader;
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
+var _ = require('underscore');
 var Palette;
 (function (Palette) {
     Palette.defaultSwatch = ['#1abc9c', '#3498db', '#9b59b6', '#34495e', '#1abc9c', '#bdc3c7', '#95a5a6', '#e74c3c', '#e67e22', '#f1c40f'];
+    function getSwatch(keys, colors) {
+        if (_.isArray(colors))
+            return _.object(keys, colors);
+        return _.extend(_.object(keys, Palette.defaultSwatch), colors);
+    }
+    Palette.getSwatch = getSwatch;
+    ;
 })(Palette || (Palette = {}));
 module.exports = Palette;
 
-},{}],14:[function(require,module,exports){
+},{"underscore":25}],15:[function(require,module,exports){
 var _ = require('underscore');
 var Formatters = require('../formatters');
 var TableDataset = (function () {
@@ -625,7 +644,7 @@ var TableDataset = (function () {
 })();
 exports.TableDataset = TableDataset;
 
-},{"../formatters":10,"underscore":24}],15:[function(require,module,exports){
+},{"../formatters":11,"underscore":25}],16:[function(require,module,exports){
 var _ = require('underscore');
 function renderDataset(dataset) {
     return template()({
@@ -671,7 +690,7 @@ function template() {
 	');
 }
 
-},{"underscore":24}],16:[function(require,module,exports){
+},{"underscore":25}],17:[function(require,module,exports){
 var _ = require('underscore');
 var Config = require('../config');
 var Dataset = require('./dataset');
@@ -679,15 +698,16 @@ var TableRenderer = require('./renderer');
 var Loader = require('../loader');
 var Clear = require('../clear');
 var ErrorHandling = require('../error-handling');
+var Dom = require('../dom');
 var Table = (function () {
-    function Table(targetElementId, suppliedOptions) {
+    function Table(targetElement, suppliedOptions) {
         var defaultTableOptions = {
             fieldOptions: {},
             intervalOptions: {}
         }, defaultIntervalOptions = {
             formats: Config.defaultTimeSeriesFormats
         };
-        this.targetElementId = targetElementId;
+        this.targetElement = Dom.getElement(targetElement);
         this._options = _.extend(defaultTableOptions, suppliedOptions);
         this._options.intervalOptions = _.extend(this._options.intervalOptions, defaultIntervalOptions);
     }
@@ -715,7 +735,7 @@ var Table = (function () {
     };
     Table.prototype.clear = function () {
         this._rendered = false;
-        Clear.removeAllChildren(this.targetElementId);
+        Clear.removeAllChildren(this.targetElement);
     };
     Table.prototype._showTitle = function () {
         var options = this._options, titleText = options.title ? options.title.toString() : '', showTitle = titleText.length > 0;
@@ -725,7 +745,7 @@ var Table = (function () {
     Table.prototype._renderTable = function (metadata) {
         if (this._rendered)
             return;
-        var options = this._options, tableContainer = document.createElement('div'), tableWrapper = document.createElement('div'), rootElement = document.querySelector(this.targetElementId), titleElement = document.createElement('span');
+        var options = this._options, tableContainer = document.createElement('div'), tableWrapper = document.createElement('div'), rootElement = this.targetElement, titleElement = document.createElement('span');
         this.clear();
         tableContainer.className = 'connect-viz connect-table';
         titleElement.className = 'connect-viz-title';
@@ -737,24 +757,25 @@ var Table = (function () {
         this._tableWrapper = tableWrapper;
         this._titleElement = titleElement;
         this._showTitle();
-        this._loader = new Loader(this.targetElementId, tableContainer);
+        this._loader = new Loader(this.targetElement, tableContainer);
         this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
     };
     return Table;
 })();
 module.exports = Table;
 
-},{"../clear":6,"../config":7,"../error-handling":9,"../loader":12,"./dataset":14,"./renderer":15,"underscore":24}],17:[function(require,module,exports){
+},{"../clear":6,"../config":7,"../dom":9,"../error-handling":10,"../loader":13,"./dataset":15,"./renderer":16,"underscore":25}],18:[function(require,module,exports){
 var ErrorHandling = require('./error-handling');
 var _ = require('underscore');
 var Clear = require('./clear');
 var Loader = require('./loader');
+var Dom = require('./dom');
 var Text = (function () {
-    function Text(targetElementId, textOptions) {
+    function Text(targetElement, textOptions) {
         this._options = _.extend({
-            valueFormatter: function (value) { return value; }
+            fieldOptions: {}
         }, textOptions);
-        this.targetElementId = targetElementId;
+        this.targetElement = Dom.getElement(targetElement);
     }
     Text.prototype.displayData = function (resultsPromise, metadata) {
         var _this = this;
@@ -769,14 +790,14 @@ var Text = (function () {
         });
     };
     Text.prototype._loadData = function (results, metadata) {
-        var options = this._options, onlyResult = results[0], aliasOfSelect = metadata.selects[0], valueText = options.fieldOptions[aliasOfSelect].valueFormatter(onlyResult[aliasOfSelect]);
+        var options = this._options, onlyResult = results[0], aliasOfSelect = metadata.selects[0], defaultFieldOption = { valueFormatter: function (value) { return value; } }, fieldOption = options.fieldOptions[aliasOfSelect] || defaultFieldOption, valueFormatter = fieldOption.valueFormatter, value = onlyResult[aliasOfSelect], valueText = valueFormatter(value);
         this._loader.hide();
         this._valueElement.textContent = valueText;
         this._showTitle(metadata);
     };
     Text.prototype.clear = function () {
         this._rendered = false;
-        Clear.removeAllChildren(this.targetElementId);
+        Clear.removeAllChildren(this.targetElement);
     };
     Text.prototype._checkMetaDataIsApplicable = function (metadata) {
         var exactlyOneSelect = metadata.selects.length === 1, noGroupBys = metadata.groups.length === 0, noInterval = metadata.interval == null;
@@ -790,7 +811,7 @@ var Text = (function () {
     Text.prototype._renderText = function (metadata) {
         if (this._rendered)
             return;
-        var container = document.createElement('div'), label = document.createElement('span'), elementForWidget = document.querySelector(this.targetElementId), valueTextElement = document.createElement('span'), valueElement = document.createElement('div');
+        var container = document.createElement('div'), label = document.createElement('span'), elementForWidget = this.targetElement, valueTextElement = document.createElement('span'), valueElement = document.createElement('div');
         container.className = 'connect-viz connect-text';
         label.className = 'connect-viz-title';
         valueElement.className = 'connect-text-value';
@@ -800,23 +821,23 @@ var Text = (function () {
         container.appendChild(valueElement);
         elementForWidget.appendChild(container);
         this._valueElement = valueTextElement;
-        this._valueElement.textContent = ' ';
+        this._valueElement.innerHTML = '&nbsp;';
         this._titleElement = label;
         this._showTitle(metadata);
-        this._loader = new Loader(this.targetElementId, valueElement);
+        this._loader = new Loader(this.targetElement, valueElement);
         this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
         this._rendered = true;
     };
     Text.prototype._renderQueryNotApplicable = function () {
         var errorMsg = 'To display in a text widget a query must contain 1 select, 0 groupBys, and no interval';
         this._rendered = false;
-        ErrorHandling.displayFriendlyError(this.targetElementId, errorMsg);
+        ErrorHandling.displayFriendlyError(this.targetElement, errorMsg);
     };
     return Text;
 })();
 module.exports = Text;
 
-},{"./clear":6,"./error-handling":9,"./loader":12,"underscore":24}],18:[function(require,module,exports){
+},{"./clear":6,"./dom":9,"./error-handling":10,"./loader":13,"underscore":25}],19:[function(require,module,exports){
 var Viz;
 (function (Viz) {
     Viz.DataVisualization = require('./data-visualization');
@@ -826,16 +847,16 @@ var Viz;
     var Visualizations = (function () {
         function Visualizations() {
         }
-        Visualizations.prototype.chart = function (query, targetElementId, chartOptions) {
-            var chart = new Viz.Chart(targetElementId, chartOptions);
+        Visualizations.prototype.chart = function (query, targetElement, chartOptions) {
+            var chart = new Viz.Chart(targetElement, chartOptions);
             return new Viz.DataVisualization(query, chart);
         };
-        Visualizations.prototype.text = function (query, targetElementId, textOptions) {
-            var text = new Viz.Text(targetElementId, textOptions);
+        Visualizations.prototype.text = function (query, targetElement, textOptions) {
+            var text = new Viz.Text(targetElement, textOptions);
             return new Viz.DataVisualization(query, text);
         };
-        Visualizations.prototype.table = function (query, targetElementId, tableOptions) {
-            var table = new Viz.Table(targetElementId, tableOptions);
+        Visualizations.prototype.table = function (query, targetElement, tableOptions) {
+            var table = new Viz.Table(targetElement, tableOptions);
             return new Viz.DataVisualization(query, table);
         };
         return Visualizations;
@@ -844,9 +865,9 @@ var Viz;
 })(Viz || (Viz = {}));
 module.exports = Viz;
 
-},{"./chart/chart":2,"./data-visualization":8,"./table/table":16,"./text":17}],19:[function(require,module,exports){
+},{"./chart/chart":2,"./data-visualization":8,"./table/table":17,"./text":18}],20:[function(require,module,exports){
 
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 module.exports={
 	"version": "2015a",
 	"zones": [
@@ -1436,11 +1457,11 @@ module.exports={
 		"Pacific/Pohnpei|Pacific/Ponape"
 	]
 }
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 var moment = module.exports = require("./moment-timezone");
 moment.tz.load(require('./data/packed/latest.json'));
 
-},{"./data/packed/latest.json":20,"./moment-timezone":22}],22:[function(require,module,exports){
+},{"./data/packed/latest.json":21,"./moment-timezone":23}],23:[function(require,module,exports){
 //! moment-timezone.js
 //! version : 0.3.1
 //! author : Tim Wood
@@ -1860,7 +1881,7 @@ moment.tz.load(require('./data/packed/latest.json'));
 	return moment;
 }));
 
-},{"moment":23}],23:[function(require,module,exports){
+},{"moment":24}],24:[function(require,module,exports){
 (function (global){
 //! moment.js
 //! version : 2.9.0
@@ -4907,7 +4928,7 @@ moment.tz.load(require('./data/packed/latest.json'));
 }).call(this);
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 //     Underscore.js 1.8.2
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -6445,4 +6466,4 @@ moment.tz.load(require('./data/packed/latest.json'));
   }
 }.call(this));
 
-},{}]},{},[11]);
+},{}]},{},[12]);

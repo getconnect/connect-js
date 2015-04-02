@@ -3,7 +3,7 @@ import Queries = require('../core/queries/queries');
 import Config = require('./config');
 
 export interface Visualization{
-    targetElementId: string;
+    targetElement: HTMLElement;
     displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata, showLoader?: boolean): void; 
     clear(): void;   
 }

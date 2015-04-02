@@ -40,7 +40,7 @@ module Config {
     export interface ChartOptions extends VisualizationOptions {
         type: string;
         height?: number;
-        colors?: ChartColors;
+        colors?: ChartColors|string[];
         padding?: {
             top?: number;
             right?: number;
@@ -82,7 +82,8 @@ module Config {
         },
         gauge: {
             label: {
-                format: (value) => d3.format('.1f')(value) + '%'
+                format: (value) => d3.format('.0f')(value) + '%',
+                formatall: true
             },
             expand: true
         },
