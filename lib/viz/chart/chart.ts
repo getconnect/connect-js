@@ -58,10 +58,6 @@ class Chart implements Common.Visualization {
             options[type] = _.extend(options[type] || {}, defaultC3Options[type]);
         }
 
-        if (defaultC3Options[type] && defaultC3Options[type].label && defaultC3Options[type].label.format){
-            console.log(defaultC3Options[type].label.format);
-        }
-
         return options;
 
     }
