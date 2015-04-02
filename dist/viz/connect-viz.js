@@ -32,10 +32,18 @@ var Chart = (function () {
             yAxisValueFormatter: function (value) { return value; }
         }, defaultIntervalOptions = {
             formats: Config.defaultTimeSeriesFormats
-        }, defaultC3Options = Config.defaultC3Options, type = chartOptions.type, options = null;
+        }, defaultC3Options = Config.defaultC3Options, type = chartOptions.type, options = null, loadsMinMaxFromResult = null, minMaxFromResultsOptions = _.extend(Config.defaultC3Options.minMaxFromResults, defaultC3Options[type]);
         options = _.extend(defaultOptions, chartOptions);
         options.intervalOptions = _.extend(options.intervalOptions, defaultIntervalOptions);
-        options[type] = _.extend(options[type] || {}, defaultC3Options[type]);
+        loadsMinMaxFromResult = options[options.type] && _.isString(options[options.type].min + options[options.type].max);
+        if (loadsMinMaxFromResult) {
+            this._minSelectName = _.isString(options[options.type].min) ? options[options.type].min : null;
+            this._maxSelectName = _.isString(options[options.type].max) ? options[options.type].max : null;
+            options[type] = _.extend(options[type] || {}, minMaxFromResultsOptions);
+        }
+        else {
+            options[type] = _.extend(options[type] || {}, defaultC3Options[type]);
+        }
         return options;
     };
     Chart.prototype._initializeFieldOptions = function (metadata) {
@@ -44,6 +52,7 @@ var Chart = (function () {
             fieldOptions[fieldName] = fieldOptions[fieldName] || {};
         });
         if (isSingleArc) {
+            options[type].label = _.clone(options[type].label);
             fieldOptions[firstSelect].valueFormatter = fieldOptions[firstSelect].valueFormatter || options[type].label.format;
             options[type].label.format = fieldOptions[firstSelect].valueFormatter;
         }
@@ -51,16 +60,30 @@ var Chart = (function () {
     Chart.prototype.displayData = function (resultsPromise, metadata, showLoader) {
         var _this = this;
         if (showLoader === void 0) { showLoader = true; }
-        this._initializeFieldOptions(metadata);
-        this._renderChart(metadata);
+        var parsedMetaData = this._parseMetaData(metadata);
+        this._initializeFieldOptions(parsedMetaData);
+        this._renderChart(parsedMetaData);
         if (showLoader)
             this._loader.show();
         resultsPromise.then(function (results) {
-            _this._loadData(results, metadata);
+            _this._loadData(results, parsedMetaData);
         });
     };
+    Chart.prototype._parseMetaData = function (metadata) {
+        var options = this._options, type = options.type, typeOptions = options[type], parsedMetaData = _.clone(metadata), filteredSelected = _.without(metadata.selects, this._minSelectName, this._maxSelectName);
+        parsedMetaData.selects = filteredSelected;
+        return parsedMetaData;
+    };
     Chart.prototype._loadData = function (results, metadata) {
-        var options = this._options, dataset = this._buildDataset(results, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = Palette.getSwatch(uniqueKeys, options.colors);
+        var options = this._options, type = options.type, typeOptions = options[type], dataset = this._buildDataset(results, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = Palette.getSwatch(uniqueKeys, options.colors), setMinProperty = this._minSelectName && results.length, setMaxProperty = this._maxSelectName && results.length, minConfigProperty = type + '_min', maxConfigProperty = type + '_max', showLabelConfigProperty = type + '_label_show', internalChartConfig = this._chart.internal.config;
+        if (setMinProperty) {
+            internalChartConfig[minConfigProperty] = results[0][this._minSelectName];
+            internalChartConfig[showLabelConfigProperty] = true;
+        }
+        if (setMaxProperty) {
+            internalChartConfig[maxConfigProperty] = results[0][this._maxSelectName];
+            internalChartConfig[showLabelConfigProperty] = true;
+        }
         this._currentDataset = dataset;
         this._loader.hide();
         this._chart.load({
@@ -334,6 +357,13 @@ var Config;
                 formatall: true
             },
             expand: true
+        },
+        minMaxFromResults: {
+            label: {
+                show: false
+            },
+            min: 0,
+            max: 100
         },
         bar: {}
     };
