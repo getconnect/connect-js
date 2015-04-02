@@ -1,0 +1,38 @@
+@import "variables";
+@import "mixins";
+
+.connect-text{
+    box-sizing: @box-sizing;
+    position: relative;
+
+    .middle();
+
+    .connect-text-value{
+        position: relative;
+        display: block;
+        text-align: center;
+        font: @text-value-size @text-value-font-family;
+        color: @label-color;
+        line-height: @text-value-line-height;
+    }
+
+    .connect-error{    
+        .middle();
+    }
+
+    &.connect-viz-in-error{
+        .connect-text-value{
+            visibility: hidden;
+        }
+        .connect-viz-title{
+            visibility: hidden;
+        }
+    }
+
+    &.connect-viz-loading .connect-text-value{
+        min-height: @text-value-size * @text-value-line-height;
+        span{
+            opacity: @viz-opacity-while-loading;
+        }                    
+    }
+}
