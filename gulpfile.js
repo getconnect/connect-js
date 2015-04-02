@@ -197,13 +197,13 @@ gulp.task('combineCss', ['build'], function() {
 });
 
 gulp.task('uglify', ['browserify'], function() {
-    var core = gulp.src(dest.dist + 'core/connect.js')
+     var core = gulp.src(dest.dist + '/core/connect.js')
         .pipe(uglify())
         .pipe(rename('connect.min.js'))
         .pipe(gulp.dest(dest.dist + '/core'))
         .on('error', handleError);
 
-    var viz = gulp.src(dest.dist + 'viz/connect-viz.js')
+    var viz = gulp.src(dest.dist + '/viz/connect-viz.js')
         .pipe(uglify())
         .pipe(rename('connect-viz.min.js'))
         .pipe(gulp.dest(dest.dist + '/viz'))
