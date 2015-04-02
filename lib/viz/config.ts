@@ -48,8 +48,8 @@ module Config {
             left?: number;
         };
         gauge?:{
-            min?: number;
-            max?: number;
+            min?: number|string;
+            max?: number|string;
         };
         showLegend?: boolean; 
         yAxisValueFormatter?: (value: any) => any;
@@ -86,6 +86,13 @@ module Config {
                 formatall: true
             },
             expand: true
+        },
+        minMaxFromResults: {
+            label: {
+                show: false
+            },
+            min: 0,
+            max: 100          
         },
         bar: {}
     }
