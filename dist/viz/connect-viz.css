@@ -45,6 +45,9 @@
 .connect-chart.connect-chart-gauge.connect-viz-loading .c3-chart-arcs-background {
   opacity: 0.5;
 }
+.connect-chart.connect-viz-loading .c3 {
+  opacity: 0.35;
+}
 .c3-legend-item {
   font: 12px 'Roboto', sans-serif;
   color: #34495e;
@@ -132,6 +135,7 @@
   height: 30px;
   text-align: center;
   font-size: 10px;
+  opacity: 0.35;
   left: 50%;
   top: 50%;
   -webkit-transform: translate(-50%, -50%);
@@ -163,7 +167,7 @@
   -webkit-animation: connect-loader-stretchdelay 1.2s infinite ease-in-out;
           animation: connect-loader-stretchdelay 1.2s infinite ease-in-out;
 }
-.connect-viz-loading {
+.connect-viz-loading .connect-viz-title {
   opacity: 0.35;
 }
 @-webkit-keyframes connect-loader-stretchdelay {
@@ -205,6 +209,9 @@
   -webkit-transform: translate(-50%, -50%);
       -ms-transform: translate(-50%, -50%);
           transform: translate(-50%, -50%);
+}
+.connect-table.connect-viz-loading .connect-table-wrapper {
+  opacity: 0.35;
 }
 .connect-table .connect-table-wrapper {
   position: absolute;
@@ -375,5 +382,11 @@
 }
 .connect-text.connect-viz-in-error .connect-viz-title {
   visibility: hidden;
+}
+.connect-text.connect-viz-loading .connect-text-value {
+  min-height: 46.2px;
+}
+.connect-text.connect-viz-loading .connect-text-value span {
+  opacity: 0.35;
 }
 
