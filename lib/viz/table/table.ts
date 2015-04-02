@@ -31,9 +31,9 @@ class Table implements Common.Visualization {
         this._options.intervalOptions = _.extend(this._options.intervalOptions, defaultIntervalOptions);
 	}
 
-	public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata, showLoader?: boolean) {
+	public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata, showLoader: boolean = true) {
 		this._renderTable(metadata);
-        if (typeof(showLoader) === "undefined" || showLoader)
+        if (showLoader)
             this._startLoading();
         resultsPromise.then(results => {
             this._loadData(results, metadata);

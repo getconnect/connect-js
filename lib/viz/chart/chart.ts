@@ -70,11 +70,11 @@ class Chart implements Common.Visualization {
         }
     }
 
-    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata, showLoader?: boolean): void {        
+    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata, showLoader: boolean = true): void {        
 
         this._initializeFieldOptions(metadata);
         this._renderChart(metadata);
-        if (typeof(showLoader) === "undefined" || showLoader)
+        if (showLoader)
             this._loader.show();
 
         resultsPromise.then(results => {
