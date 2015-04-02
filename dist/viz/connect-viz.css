@@ -376,7 +376,4 @@
 .connect-text.connect-viz-in-error .connect-viz-title {
   visibility: hidden;
 }
-.connect-text.connect-viz-loading .connect-text-value {
-  min-height: 46.2px;
-}
 

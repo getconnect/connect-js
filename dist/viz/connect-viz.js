@@ -821,7 +821,7 @@ var Text = (function () {
         container.appendChild(valueElement);
         elementForWidget.appendChild(container);
         this._valueElement = valueTextElement;
-        this._valueElement.textContent = ' ';
+        this._valueElement.innerHTML = '&nbsp;';
         this._titleElement = label;
         this._showTitle(metadata);
         this._loader = new Loader(this.targetElement, valueElement);
