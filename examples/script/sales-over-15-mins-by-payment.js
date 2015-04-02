@@ -16,6 +16,7 @@ var bar = new Connect.Viz.Chart('#sales-over-15-mins-by-payment-bar', {
     title: 'Sales Over 15 Minutes by Payment Type',
     type: 'bar',
     fieldOptions: fieldOptions,
+    colors: ['#9b59b6', '#34495e', '#1abc9c', '#bdc3c7', '#95a5a6', '#e74c3c', '#e67e22', '#f1c40f', '#1abc9c', '#3498db'],
     yAxisValueFormatter: d3.format('$,.2f')
 });
 

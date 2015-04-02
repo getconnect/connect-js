@@ -70,11 +70,12 @@ class Chart implements Common.Visualization {
         }
     }
 
-    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata): void {        
+    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata, showLoader: boolean = true): void {        
 
         this._initializeFieldOptions(metadata);
         this._renderChart(metadata);
-        this._loader.show();
+        if (showLoader)
+            this._loader.show();
 
         resultsPromise.then(results => {
             this._loadData(results, metadata);
@@ -86,7 +87,7 @@ class Chart implements Common.Visualization {
             dataset = this._buildDataset(results, metadata),
             keys = dataset.getLabels(),
             uniqueKeys = _.unique(keys),
-            colors = _.extend(_.object(uniqueKeys, Palette.defaultSwatch), options.colors);
+            colors = Palette.getSwatch(uniqueKeys, options.colors);
 
         this._currentDataset = dataset;
         this._loader.hide();    

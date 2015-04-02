@@ -48,17 +48,19 @@ var Chart = (function () {
             options[type].label.format = fieldOptions[firstSelect].valueFormatter;
         }
     };
-    Chart.prototype.displayData = function (resultsPromise, metadata) {
+    Chart.prototype.displayData = function (resultsPromise, metadata, showLoader) {
         var _this = this;
+        if (showLoader === void 0) { showLoader = true; }
         this._initializeFieldOptions(metadata);
         this._renderChart(metadata);
-        this._loader.show();
+        if (showLoader)
+            this._loader.show();
         resultsPromise.then(function (results) {
             _this._loadData(results, metadata);
         });
     };
     Chart.prototype._loadData = function (results, metadata) {
-        var options = this._options, dataset = this._buildDataset(results, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = _.extend(_.object(uniqueKeys, Palette.defaultSwatch), options.colors);
+        var options = this._options, dataset = this._buildDataset(results, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = Palette.getSwatch(uniqueKeys, options.colors);
         this._currentDataset = dataset;
         this._loader.hide();
         this._chart.load({
@@ -328,7 +330,8 @@ var Config;
         },
         gauge: {
             label: {
-                format: function (value) { return d3.format('.1f')(value) + '%'; }
+                format: function (value) { return d3.format('.0f')(value) + '%'; },
+                formatall: true
             },
             expand: true
         },
@@ -518,23 +521,35 @@ var Loader = (function () {
     Loader.prototype.show = function () {
         this._vizContainer.className += ' connect-viz-loading';
         this._elementForLoader.appendChild(this._loaderContainer);
+        this._visible = true;
     };
     Loader.prototype.hide = function () {
+        if (!this._visible)
+            return;
         this._vizContainer.className = this._vizContainer.className.replace(' connect-viz-loading', '');
         this._elementForLoader.removeChild(this._loaderContainer);
+        this._visible = false;
     };
     return Loader;
 })();
 module.exports = Loader;
 
 },{}],14:[function(require,module,exports){
+var _ = require('underscore');
 var Palette;
 (function (Palette) {
     Palette.defaultSwatch = ['#1abc9c', '#3498db', '#9b59b6', '#34495e', '#1abc9c', '#bdc3c7', '#95a5a6', '#e74c3c', '#e67e22', '#f1c40f'];
+    function getSwatch(keys, colors) {
+        if (_.isArray(colors))
+            return _.object(keys, colors);
+        return _.extend(_.object(keys, Palette.defaultSwatch), colors);
+    }
+    Palette.getSwatch = getSwatch;
+    ;
 })(Palette || (Palette = {}));
 module.exports = Palette;
 
-},{}],15:[function(require,module,exports){
+},{"underscore":25}],15:[function(require,module,exports){
 var _ = require('underscore');
 var Formatters = require('../formatters');
 var TableDataset = (function () {
@@ -702,10 +717,12 @@ var Table = (function () {
         this._options = _.extend(defaultTableOptions, suppliedOptions);
         this._options.intervalOptions = _.extend(this._options.intervalOptions, defaultIntervalOptions);
     }
-    Table.prototype.displayData = function (resultsPromise, metadata) {
+    Table.prototype.displayData = function (resultsPromise, metadata, showLoader) {
         var _this = this;
+        if (showLoader === void 0) { showLoader = true; }
         this._renderTable(metadata);
-        this._startLoading();
+        if (showLoader)
+            this._startLoading();
         resultsPromise.then(function (results) {
             _this._loadData(results, metadata);
             _this._finishLoading();
@@ -768,14 +785,16 @@ var Text = (function () {
         }, textOptions);
         this.targetElement = Dom.getElement(targetElement);
     }
-    Text.prototype.displayData = function (resultsPromise, metadata) {
+    Text.prototype.displayData = function (resultsPromise, metadata, showLoader) {
         var _this = this;
+        if (showLoader === void 0) { showLoader = true; }
         if (!this._checkMetaDataIsApplicable(metadata)) {
             this._renderQueryNotApplicable();
             return;
         }
         this._renderText(metadata);
-        this._loader.show();
+        if (showLoader)
+            this._loader.show();
         resultsPromise.then(function (results) {
             _this._loadData(results, metadata);
         });
@@ -812,7 +831,7 @@ var Text = (function () {
         container.appendChild(valueElement);
         elementForWidget.appendChild(container);
         this._valueElement = valueTextElement;
-        this._valueElement.textContent = ' ';
+        this._valueElement.innerHTML = '&nbsp;';
         this._titleElement = label;
         this._showTitle(metadata);
         this._loader = new Loader(this.targetElement, valueElement);
