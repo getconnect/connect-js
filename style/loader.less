@@ -1,3 +1,4 @@
+@import "variables";
 @import "mixins";
 
 //Big thanks to @tobiasahlin for the loader https://github.com/tobiasahlin/SpinKit
@@ -7,6 +8,7 @@
     height: 30px;
     text-align: center;
     font-size: 10px;
+    opacity: @loader-opacity;
     
     .middle();
 
@@ -37,9 +39,10 @@
 }
 
 .connect-viz-loading{
-    opacity: 0.35;
+    .connect-viz-title{
+        opacity: @viz-opacity-while-loading;
+    }
 }
-
 
 @keyframes connect-loader-stretchdelay {
     0%, 40%, 100% { 
