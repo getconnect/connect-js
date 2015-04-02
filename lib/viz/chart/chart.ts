@@ -16,6 +16,8 @@ import Dom = require('../dom');
 class Chart implements Common.Visualization {
     public targetElement: HTMLElement;
     private _options: Config.ChartOptions;
+    private _minSelectName: string;
+    private _maxSelectName: string;
     private _chart: C3.Chart;
     private _rendered: boolean;
     private _titleElement: HTMLElement;
@@ -40,11 +42,21 @@ class Chart implements Common.Visualization {
             },
             defaultC3Options = Config.defaultC3Options,
             type = chartOptions.type,
-            options = null;
+            options = null,
+            loadsMinMaxFromResult = null,
+            minMaxFromResultsOptions = _.extend(Config.defaultC3Options.minMaxFromResults, defaultC3Options[type]);
 
         options = _.extend(defaultOptions, chartOptions);
         options.intervalOptions = _.extend(options.intervalOptions, defaultIntervalOptions);
-        options[type] = _.extend(options[type] || {}, defaultC3Options[type]);
+        loadsMinMaxFromResult = options[options.type] && _.isString(options[options.type].min + options[options.type].max);
+
+        if (loadsMinMaxFromResult){
+            this._minSelectName = _.isString(options[options.type].min) ? options[options.type].min : null;
+            this._maxSelectName = _.isString(options[options.type].max) ? options[options.type].max : null;
+            options[type] = _.extend(options[type] || {}, minMaxFromResultsOptions);
+        }else{
+            options[type] = _.extend(options[type] || {}, defaultC3Options[type]);
+        }
 
         return options;
 
@@ -65,29 +77,62 @@ class Chart implements Common.Visualization {
         });
 
         if (isSingleArc){
+            options[type].label = _.clone(options[type].label);
             fieldOptions[firstSelect].valueFormatter = fieldOptions[firstSelect].valueFormatter || options[type].label.format;
             options[type].label.format = fieldOptions[firstSelect].valueFormatter;
         }
     }
 
     public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata, showLoader: boolean = true): void {        
+        var parsedMetaData = this._parseMetaData(metadata);
 
-        this._initializeFieldOptions(metadata);
-        this._renderChart(metadata);
+        this._initializeFieldOptions(parsedMetaData);
+        this._renderChart(parsedMetaData);
         if (showLoader)
             this._loader.show();
 
         resultsPromise.then(results => {
-            this._loadData(results, metadata);
+            this._loadData(results, parsedMetaData);
         });
+    }
+
+    private _parseMetaData(metadata: Queries.Metadata){
+        var options = this._options,
+            type = options.type,
+            typeOptions = options[type],
+            parsedMetaData = _.clone(metadata),
+            filteredSelected = _.without(metadata.selects, this._minSelectName, this._maxSelectName);
+
+        parsedMetaData.selects = filteredSelected;
+
+        return parsedMetaData;
     }
 
     private _loadData(results: Api.QueryResults, metadata: Queries.Metadata): void {
         var options = this._options,
+            type = options.type,
+            typeOptions = options[type],
             dataset = this._buildDataset(results, metadata),
             keys = dataset.getLabels(),
             uniqueKeys = _.unique(keys),
-            colors = Palette.getSwatch(uniqueKeys, options.colors);
+            colors = Palette.getSwatch(uniqueKeys, options.colors),
+            setMinProperty = this._minSelectName && results.length,
+            setMaxProperty = this._maxSelectName && results.length,
+            minConfigProperty = type + '_min',
+            maxConfigProperty = type + '_max',
+            showLabelConfigProperty = type + '_label_show',
+            internalChartConfig = (<any>this._chart).internal.config;
+
+
+        if (setMinProperty){
+            internalChartConfig[minConfigProperty] = results[0][this._minSelectName];
+            internalChartConfig[showLabelConfigProperty] = true;
+        }
+
+        if (setMaxProperty){
+            internalChartConfig[maxConfigProperty] = results[0][this._maxSelectName];
+            internalChartConfig[showLabelConfigProperty] = true;
+        }
 
         this._currentDataset = dataset;
         this._loader.hide();    
@@ -212,8 +257,8 @@ class Chart implements Common.Visualization {
         connectChartContainer.appendChild(titleElement);
         connectChartContainer.appendChild(c3Element);
         rootElement.appendChild(connectChartContainer);
-
         config[options.type] = options[options.type];
+
         if(metadata.interval) {
             dateFormat = options.intervalOptions.formats[metadata.interval];
             config.data['xFormat'] = '%Y-%m-%dT%H:%M:%SZ';

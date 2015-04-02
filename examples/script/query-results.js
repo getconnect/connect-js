@@ -38,9 +38,9 @@ function marketSharePercent(){
 
 function marketShareDollars(){
     var resultsPromise = q.fcall(function(){
-        return [{share: 22.2345, _count: 1}]
+        return [{share: 22.2345, totalMarketValue: 27, _count: 1}]
     });
-    var metadata = {"selects":["share"],"groups":[],"interval":null,"timezone":"UTC"}
+    var metadata = {"selects":["share", 'totalMarketValue'],"groups":[],"interval":null,"timezone":"UTC"}
 
     return {
         results: resultsPromise,

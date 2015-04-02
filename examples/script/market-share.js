@@ -30,7 +30,7 @@ var dollarsGauge = new Connect.Viz.Chart('#market-share-dollars-gauge', {
     fieldOptions: dollarsFieldOptions,
     gauge:{
     	min: 0,
-    	max: 27
+    	max: 'totalMarketValue'
     }
 });
 dollarsGauge.displayData(dollarsResults.results, dollarsResults.metadata);
