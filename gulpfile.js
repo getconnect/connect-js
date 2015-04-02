@@ -212,6 +212,12 @@ gulp.task('uglify', ['browserify'], function() {
     return es.merge(core, viz);
 });
 
+gulp.task('copy-less', function() {
+    return gulp.src(sources.style)
+        .pipe(gulp.dest(dest.dist + '/viz/less'))
+        .on('error', handleError);
+});
+
 gulp.task('clean:lib', function() {
     return del(dest.lib);
 });
@@ -321,6 +327,6 @@ gulp.task('watch', ['dist'], function() {
 gulp.task('build', ['compile:lib', 'compile:style', 'compile:config', 'readme']);
 gulp.task('examples:build', ['examples:compile:lib', 'examples:compile:style']);
 gulp.task('test', ['compile:tests', 'test:karma', 'test:mocha']);
-gulp.task('dist', ['build', 'combineCss', 'browserify', 'uglify']);
+gulp.task('dist', ['build', 'combineCss', 'browserify', 'uglify', 'copy-less']);
 gulp.task('examples', ['examples:combineCss', 'examples:browserify', 'examples:copyHtml']);
 gulp.task('default', ['build']);
