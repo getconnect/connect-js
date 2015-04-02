@@ -4,6 +4,6 @@ import Config = require('./config');
 
 export interface Visualization{
     targetElementId: string;
-    displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata): void; 
+    displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata, showLoader?: boolean): void; 
     clear(): void;   
 }

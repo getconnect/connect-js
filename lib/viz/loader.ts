@@ -4,6 +4,7 @@ class Loader {
     private _loaderContainer;
     private _elementForLoader;
     private _vizContainer;
+    private _visible;
 
     constructor(targetElementId: string, containerElement: HTMLElement){
         var bar1 = document.createElement('div'),
@@ -34,12 +35,16 @@ class Loader {
     show(){               
         this._vizContainer.className += ' connect-viz-loading';
         this._elementForLoader.appendChild(this._loaderContainer);
+        this._visible = true;
 
     }
 
     hide(){
+        if (!this._visible)
+            return;
         this._vizContainer.className = this._vizContainer.className.replace(' connect-viz-loading', '');
         this._elementForLoader.removeChild(this._loaderContainer);
+        this._visible = false;
     }
 }
 
