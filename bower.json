@@ -9,7 +9,7 @@
         "type": "git",
         "url": "https://github.com/getconnect/connect-js.git"
     },
-    "main": ["dist/core/connect.js", "dist/viz/connect-viz.js"],
+    "main": ["dist/core/connect.js", "dist/viz/connect-viz.js", "dist/viz/connect-viz.css"],
     "ignore": [
         "*",
         "!dist/",
