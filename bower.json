@@ -13,7 +13,13 @@
     "ignore": [
         "*",
         "!dist/",
-        "!dist/*"
+        "!dist/*",
+        "!dist/core/",
+        "!dist/core/*",
+        "!dist/viz/",
+        "!dist/viz/*",
+        "!dist/viz/less",
+        "!dist/viz/less/*"
     ],
     "keywords": [    
         "Connect",
