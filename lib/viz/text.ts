@@ -22,6 +22,7 @@ class Text implements Common.Visualization {
         }, textOptions);
 
         this.targetElement = Dom.getElement(targetElement);
+        this.loader = new Loader(this.targetElement);
     }
 
     public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata, showLoader: boolean = true): void {        
@@ -97,7 +98,6 @@ class Text implements Common.Visualization {
         this._valueTextElement.innerHTML = '&nbsp;'
         this._titleElement = label;
         this._showTitle(metadata);        
-        this.loader = new Loader(this.targetElement, valueElement);
         this._rendered = true;
     }
 
