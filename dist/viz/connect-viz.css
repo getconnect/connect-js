@@ -310,17 +310,17 @@
 .connect-table-hover .connect-table table > tbody > tr:hover {
   background-color: #dbe9f9;
 }
-.connect-table-solid-header .connect-table .connect-table-wrapper {
+.connect-table-solid-header .connect-table.connect-viz-loading .connect-table-wrapper {
   background-color: #ecf3fc;
 }
-.connect-table-solid-header .connect-table .connect-table-wrapper.isLoading {
+.connect-table-solid-header .connect-table.connect-viz-loading .connect-table-wrapper.isLoading {
   background-color: transparent;
+}
+.connect-table-fixed-header .connect-table:not(.connect-viz-loading) .connect-table-wrapper {
+  border-top: none;
 }
 .connect-table-fixed-header .connect-table .connect-table-wrapper {
   padding-top: 46px;
-}
-.connect-table-fixed-header .connect-table .connect-table-wrapper:not(.isLoading) {
-  border-top: none;
 }
 .connect-table-fixed-header .connect-table .connect-table-wrapper .connect-table-scrolling-inner {
   border-top: 1px solid #dedede;
