@@ -12,7 +12,8 @@ module ErrorHandling {
         },
         network: {
             icon: 'ion-ios-bolt',
-            defaultMessage: 'Network Error'
+            defaultMessage: 'Network Error',
+            retry: true,
         },
         setup: {
             icon: 'ion-sad-outline',
@@ -25,7 +26,8 @@ module ErrorHandling {
     }
 
     var statusErrorTypes = {
-        status404: 'noResults'
+        status404: 'noResults',
+        statusNetworkFailure: 'network'
     }
 
     export function handleError(targetElement: HTMLElement, error: any){
@@ -51,6 +53,7 @@ module ErrorHandling {
 
     export function displayFriendlyError(targetElement: HTMLElement, type: string = 'other', message: string = ''){
         var errorIcon = errorTypes[type].icon,
+            retry = errorTypes[type].retry,
             errorMessage = message || errorTypes[type].defaultMessage,
             elementForError = targetElement,
             errorIconElement = document.createElement('span'),
@@ -69,6 +72,12 @@ module ErrorHandling {
 
         errorElement.appendChild(errorIconElement);
         errorElement.appendChild(errorMessageElement);
+
+        if(retry) {
+            var retryElement = document.createElement('span');
+            retryElement.textContent = "Retry";
+            errorElement.appendChild(retryElement);
+        }
 
         if (viz){
             viz.appendChild(errorElement);

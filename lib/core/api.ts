@@ -86,6 +86,9 @@ module Api {
                 .set('X-API-Key', this._apiKey)
                 .end((err: any, res: request.Response) => {
                     if(err) {
+                        if(!err.status) {
+                            err.status = 'NetworkFailure';
+                        }
                         deferred.reject(err);
                         return;
                     } 
