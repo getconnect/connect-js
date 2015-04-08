@@ -4,17 +4,17 @@ import Queries = require('../core/queries/queries');
 import Api = require('../core/api');
 import _ = require('underscore');
 import Common = require('./visualization');
-import Clear = require('./clear');
 import Loader = require('./loader');
+import ResultHandling = require('./result-handling');
 import Dom = require('./dom');
 
 class Text implements Common.Visualization {
     public targetElement: HTMLElement;
+    public loader: Loader;
     private _options: Config.TextOptions;
     private _rendered: boolean;
     private _valueElement: HTMLElement;
     private _titleElement: HTMLElement;
-    private _loader: Loader;
 
     constructor(targetElement: string|HTMLElement, textOptions: Config.TextOptions) {
         this._options = _.extend({ 
@@ -31,15 +31,10 @@ class Text implements Common.Visualization {
         }
 
         this._renderText(metadata);
-        if (showLoader)
-            this._loader.show();
-
-        resultsPromise.then(results => {
-            this._loadData(results, metadata)
-        });
+        ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
     }
 
-    public _loadData(results: Api.QueryResults, metadata: Queries.Metadata): void {        
+    private _loadData(results: Api.QueryResults, metadata: Queries.Metadata): void {        
         var options = this._options,
             onlyResult = results[0],
             aliasOfSelect = metadata.selects[0],
@@ -49,14 +44,13 @@ class Text implements Common.Visualization {
             value = onlyResult[aliasOfSelect],
             valueText = valueFormatter(value);
 
-        this._loader.hide();
         this._valueElement.textContent = valueText;
         this._showTitle(metadata);  
     }
 
     public clear(): void{        
         this._rendered = false;
-        Clear.removeAllChildren(this.targetElement);
+        Dom.removeAllChildren(this.targetElement);
     }
 
     private _checkMetaDataIsApplicable(metadata: Queries.Metadata): boolean {
@@ -102,8 +96,7 @@ class Text implements Common.Visualization {
         this._valueElement.innerHTML = '&nbsp;'
         this._titleElement = label;
         this._showTitle(metadata);        
-        this._loader = new Loader(this.targetElement, valueElement);
-        this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
+        this.loader = new Loader(this.targetElement, valueElement);
         this._rendered = true;
     }
 

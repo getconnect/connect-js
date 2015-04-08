@@ -6,3 +6,13 @@ export function getElement(selector: string|HTMLElement) : HTMLElement {
 
 	return <HTMLElement>selector;
 }
+
+export function removeAllChildren(targetElement: HTMLElement){
+    var elementToClear = targetElement;
+
+    if (!elementToClear)
+        return;
+
+    while (elementToClear.firstChild) 
+        elementToClear.removeChild(elementToClear.firstChild);
+}
