@@ -70,7 +70,7 @@ class Table implements Common.Visualization {
 
         tableContainer.className = 'connect-viz connect-table';
         titleElement.className = 'connect-viz-title';
-        tableWrapper.className = 'connect-table-wrapper';
+        tableWrapper.className = 'connect-viz-result connect-table-wrapper';
 
         tableContainer.appendChild(titleElement);
         tableContainer.appendChild(tableWrapper);

@@ -247,6 +247,7 @@ class Chart implements Common.Visualization {
 
         this.clear();
         titleElement.className = 'connect-viz-title';
+        c3Element.className = 'connect-viz-result'
         connectChartContainer.className = 'connect-viz connect-chart connect-chart-' + options.type;
         connectChartContainer.appendChild(titleElement);
         connectChartContainer.appendChild(c3Element);
