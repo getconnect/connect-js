@@ -16,7 +16,7 @@ import ResultHandling = require('../result-handling');
 class Chart implements Common.Visualization {
     public targetElement: HTMLElement;
     public loader: Loader;
-    private _options: Config.ChartOptions;
+    private _options: Config.VisualizationOptions;
     private _minSelectName: string;
     private _maxSelectName: string;
     private _chart: C3.Chart;
@@ -24,24 +24,28 @@ class Chart implements Common.Visualization {
     private _titleElement: HTMLElement;
     private _currentDataset: Dataset.ChartDataset;
     
-    constructor(targetElement: string|HTMLElement, chartOptions: Config.ChartOptions) {     
+    constructor(targetElement: string|HTMLElement, chartOptions: Config.VisualizationOptions) {     
         this._options = this._parseOptions(chartOptions);
         this.targetElement = Dom.getElement(targetElement);
     }
 
-    private _parseOptions(chartOptions: Config.ChartOptions): Config.ChartOptions{
-        var defaultOptions: Config.ChartOptions = {
-                type: 'bar',
-                intervalOptions: {},
-                fieldOptions: {},
-                showLegend: true,
-                yAxisValueFormatter: (value) => value
+    private _parseOptions(chartOptions: Config.VisualizationOptions): Config.VisualizationOptions{
+
+
+        var defaultOptions: Config.VisualizationOptions = {
+                intervals: {},
+                fields: {},
+                chart: {
+                    type: 'bar',
+                    showLegend: true,
+                    yAxisValueFormatter: (value) => value
+                },
             },
             defaultIntervalOptions = {
                 formats: Config.defaultTimeSeriesFormats
             },
             defaultC3Options = Config.defaultC3Options,
-            type = chartOptions.type,
+            type = chartOptions.chart.type,
             options = null,
             loadsMinMaxFromResult = null,
             minMaxFromResultsOptions = _.extend(Config.defaultC3Options.minMaxFromResults, defaultC3Options[type]);
@@ -66,8 +70,8 @@ class Chart implements Common.Visualization {
         var fields = metadata.selects.concat(metadata.groups),
             firstSelect = metadata.selects[0],
             options = this._options,
-            fieldOptions = options.fieldOptions,
-            type = options.type,
+            fieldOptions = options.fields,
+            type = options.chart.type,
             isSingleArc = fields.length == 1 &&
                           options[type].label &&
                           options[type].label.format;
@@ -93,7 +97,7 @@ class Chart implements Common.Visualization {
 
     private _parseMetaData(metadata: Queries.Metadata){
         var options = this._options,
-            type = options.type,
+            type = options.chart.type,
             typeOptions = options[type],
             parsedMetaData = _.clone(metadata),
             filteredSelected = _.without(metadata.selects, this._minSelectName, this._maxSelectName);
@@ -105,12 +109,12 @@ class Chart implements Common.Visualization {
 
     private _loadData(results: Api.QueryResults, metadata: Queries.Metadata): void {
         var options = this._options,
-            type = options.type,
+            type = options.chart.type,
             typeOptions = options[type],
             dataset = this._buildDataset(results, metadata),
             keys = dataset.getLabels(),
             uniqueKeys = _.unique(keys),
-            colors = Palette.getSwatch(uniqueKeys, options.colors),
+            colors = Palette.getSwatch(uniqueKeys, options.chart.colors),
             setMinProperty = this._minSelectName && results.length,
             setMaxProperty = this._maxSelectName && results.length,
             minConfigProperty = type + '_min',
@@ -149,7 +153,7 @@ class Chart implements Common.Visualization {
     private _buildDataset(results: Api.QueryResults, metadata: Queries.Metadata): Dataset.ChartDataset{
         var options = this._options,
             formatters = {        
-                selectLabelFormatter: select => options.fieldOptions[select] && options.fieldOptions[select].label ? options.fieldOptions[select].label : select,
+                selectLabelFormatter: select => options.fields[select] && options.fields[select].label ? options.fields[select].label : select,
                 groupValueFormatter: (groupByName, groupValue) => this._formatGroupValue(groupByName, groupValue)
             },
             isGroupedInterval = metadata.interval && metadata.groups.length;
@@ -172,7 +176,7 @@ class Chart implements Common.Visualization {
         var dataset = this._currentDataset,
             select = this._currentDataset.getSelect(label),
             options = this._options,
-            fieldOption = options.fieldOptions[select],
+            fieldOption = options.fields[select],
             valueFormatter = fieldOption.valueFormatter;
 
         if (valueFormatter){
@@ -183,7 +187,7 @@ class Chart implements Common.Visualization {
     }
 
     private _formatGroupValue(groupByName: string, groupValue: any){
-        var fieldOption = this._options.fieldOptions[groupByName],
+        var fieldOption = this._options.fields[groupByName],
             valueFormatter = fieldOption.valueFormatter;
 
         if (valueFormatter){
@@ -205,17 +209,17 @@ class Chart implements Common.Visualization {
             timezone = options.timezone || metadata.timezone,
             dateFormat = null,
             standardDateformatter = (value) => Formatters.formatDate(value, timezone, dateFormat),
-            customDateFormatter = options.intervalOptions.valueFormatter,
+            customDateFormatter = options.intervals.valueFormatter,
             tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
             config = {
                 bindto: c3Element,
                 size: {
-                    height: options.height
+                    height: options.chart.height
                 },
-                padding: options.padding,
+                padding: options.chart.padding,
                 data: {
                     json: [],
-                    type: options.type
+                    type: options.chart.type
                 },
                 axis: {
                     x: {   
@@ -228,7 +232,7 @@ class Chart implements Common.Visualization {
                     y:{
                         tick: {
                             outer: false,
-                            format: options.yAxisValueFormatter
+                            format: options.chart.yAxisValueFormatter
                         }
                     }
                 },
@@ -241,20 +245,20 @@ class Chart implements Common.Visualization {
                     }                   
                 },
                 legend: {
-                    show: options.showLegend
+                    show: options.chart.showLegend
                 }
             };
 
         this.clear();
         titleElement.className = 'connect-viz-title';
-        connectChartContainer.className = 'connect-viz connect-chart connect-chart-' + options.type;
+        connectChartContainer.className = 'connect-viz connect-chart connect-chart-' + options.chart.type;
         connectChartContainer.appendChild(titleElement);
         connectChartContainer.appendChild(c3Element);
         rootElement.appendChild(connectChartContainer);
-        config[options.type] = options[options.type];
+        config[options.chart.type] = options[options.chart.type];
 
         if(metadata.interval) {
-            dateFormat = options.intervalOptions.formats[metadata.interval];
+            dateFormat = options.intervals.formats[metadata.interval];
             config.data['xFormat'] = '%Y-%m-%dT%H:%M:%SZ';
             config.data['xLocaltime'] = false;
             config.axis.x.type = 'timeseries';

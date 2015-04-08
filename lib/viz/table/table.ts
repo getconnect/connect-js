@@ -13,22 +13,22 @@ import ResultHandling = require('../result-handling');
 class Table implements Common.Visualization {
     public targetElement: HTMLElement;
     public loader: Loader;
-	private _options: Config.TableOptions;
+	private _options: Config.VisualizationOptions;
 	private _rendered: boolean;
     private _titleElement: HTMLElement;
     private _tableWrapper: HTMLElement;
 
-	constructor(targetElement: string|HTMLElement, suppliedOptions: Config.TableOptions) {
-	    var defaultTableOptions: Config.TableOptions = { 
-                fieldOptions: {},
-                intervalOptions: {}
+	constructor(targetElement: string|HTMLElement, suppliedOptions: Config.VisualizationOptions) {
+	    var defaultTableOptions: Config.VisualizationOptions = { 
+                fields: {},
+                intervals: {}
             },
             defaultIntervalOptions = {
                 formats: Config.defaultTimeSeriesFormats
             };
         this.targetElement = Dom.getElement(targetElement);
 	    this._options = _.extend(defaultTableOptions, suppliedOptions);
-        this._options.intervalOptions = _.extend(this._options.intervalOptions, defaultIntervalOptions);
+        this._options.intervals = _.extend(this._options.intervals, defaultIntervalOptions);
 	}
 
 	public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata, showLoader: boolean = true) {

@@ -11,12 +11,12 @@ import Dom = require('./dom');
 class Text implements Common.Visualization {
     public targetElement: HTMLElement;
     public loader: Loader;
-    private _options: Config.TextOptions;
+    private _options: Config.VisualizationOptions;
     private _rendered: boolean;
     private _valueElement: HTMLElement;
     private _titleElement: HTMLElement;
 
-    constructor(targetElement: string|HTMLElement, textOptions: Config.TextOptions) {
+    constructor(targetElement: string|HTMLElement, textOptions: Config.VisualizationOptions) {
         this._options = _.extend({ 
             fieldOptions: {} 
         }, textOptions);
@@ -39,7 +39,7 @@ class Text implements Common.Visualization {
             onlyResult = results[0],
             aliasOfSelect = metadata.selects[0],
             defaultFieldOption = { valueFormatter: (value) => value },
-            fieldOption = options.fieldOptions[aliasOfSelect] || defaultFieldOption,
+            fieldOption = options.fields[aliasOfSelect] || defaultFieldOption,
             valueFormatter = fieldOption.valueFormatter,
             value = onlyResult[aliasOfSelect],
             valueText = valueFormatter(value);

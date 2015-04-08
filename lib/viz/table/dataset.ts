@@ -26,12 +26,12 @@ export class TableDataset {
 	public headerRow: HeaderRow;
 	public contentRows: ContentRow[];
 
-	constructor(metadata: Queries.Metadata, options: Config.TableOptions, results?: Api.QueryResults) {
+	constructor(metadata: Queries.Metadata, options: Config.VisualizationOptions, results?: Api.QueryResults) {
 		this.headerRow = this._buildHeaderRow(metadata, options, results);
 		this.contentRows = this._buildContentRows(metadata, options, results);
 	}
 
-	private _buildHeaderRow(metadata: Queries.Metadata, options: Config.TableOptions, results?: Api.QueryResults) {
+	private _buildHeaderRow(metadata: Queries.Metadata, options: Config.VisualizationOptions, results?: Api.QueryResults) {
 		var isColoumnNumeric = (key: string): boolean => {
 			if (metadata.interval) {
 				var firstIntervalWithDesiredCol = _(results).find((interval) => { 
@@ -45,7 +45,7 @@ export class TableDataset {
 		};
 
 		var createHeaderCell = (isGrouped: boolean, key: string): HeaderCell => {
-			var optionsForField = options.fieldOptions[key];
+			var optionsForField = options.fields[key];
 			return {
 				isGrouped: isGrouped,
 				title: optionsForField && optionsForField.label ? optionsForField.label : key,
@@ -62,7 +62,7 @@ export class TableDataset {
 		if (metadata.interval) {
 			var intervalHeader: HeaderCell = {
 				isGrouped: false,
-				title: options.intervalOptions && options.intervalOptions.label ? options.intervalOptions.label : '',
+				title: options.intervals && options.intervals.label ? options.intervals.label : '',
 				isNumeric: false,
 				isInterval: true
 			}
@@ -72,9 +72,9 @@ export class TableDataset {
 		return _.union(groupHeaderCells, selectHeaderCells);
 	}
 
-	private _buildContentRows(metadata: Queries.Metadata, options: Config.TableOptions, results?: Api.QueryResults) {
+	private _buildContentRows(metadata: Queries.Metadata, options: Config.VisualizationOptions, results?: Api.QueryResults) {
 		var createContentCell = (isGrouped: boolean, result: Api.QueryResultItem, key: string): ContentCell => {
-			var optionsForField: Config.FieldOption = options.fieldOptions[key];
+			var optionsForField: Config.FieldOption = options.fields[key];
 			var rawValue = result[key];
 			var isNumeric = _.isNumber(rawValue);
 			var defaultFormatter: Config.FormatValueFunction = isNumeric ? d3.format(',.2f') : value => value;
@@ -93,14 +93,14 @@ export class TableDataset {
 			var endDate = serverTimeFormat.parse(result.interval.end);
 
 			var defaultFormat = (start: Date, end: Date): String => {
-				var timeFormat = options.intervalOptions.formats[metadata.interval];
+				var timeFormat = options.intervals.formats[metadata.interval];
 				var timezone = options.timezone || metadata.timezone;
 				var startDate = Formatters.formatDate(start, timezone, timeFormat);
 				var endDate = Formatters.formatDate(end, timezone, timeFormat)
 				return startDate + ' - ' + endDate;
 			};
 
-			var intervalFormatter = options.intervalOptions.valueFormatter ? options.intervalOptions.valueFormatter : defaultFormat;
+			var intervalFormatter = options.intervals.valueFormatter ? options.intervals.valueFormatter : defaultFormat;
 
 			return {
 				isGrouped: false,
