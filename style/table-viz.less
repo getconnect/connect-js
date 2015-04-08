@@ -131,11 +131,13 @@
 // Solid background
 .connect-table-solid-header {
     .connect-table {
-        .connect-table-wrapper {
-            background-color: @table-header-bg;
-        }
-        .connect-table-wrapper.isLoading {
-            background-color: transparent;
+        &.connect-viz-loading {
+            .connect-table-wrapper {
+                background-color: @table-header-bg;
+            }
+            .connect-table-wrapper.isLoading {
+                background-color: transparent;
+            }            
         }
     }
 }
@@ -144,11 +146,14 @@
 
 .connect-table-fixed-header {
     .connect-table {
-        .connect-table-wrapper {
-            padding-top: @table-fixed-header-height;
-            &:not(.isLoading) {
+        &:not(.connect-viz-loading) {
+            .connect-table-wrapper {
                 border-top: none;
             }
+        }
+
+        .connect-table-wrapper {
+            padding-top: @table-fixed-header-height;
 
             .connect-table-scrolling-inner {
                 border-top: 1px solid @table-border-color;

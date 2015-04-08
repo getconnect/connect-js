@@ -6,17 +6,17 @@ import TableRenderer = require('./renderer');
 import Queries = require('../../core/queries/queries');
 import Api = require('../../core/api');
 import Loader = require('../loader');
-import Clear = require('../clear');
 import ErrorHandling = require('../error-handling');
 import Dom = require('../dom');
+import ResultHandling = require('../result-handling');
 
 class Table implements Common.Visualization {
     public targetElement: HTMLElement;
+    public loader: Loader;
 	private _options: Config.TableOptions;
 	private _rendered: boolean;
     private _titleElement: HTMLElement;
     private _tableWrapper: HTMLElement;
-	private _loader: Loader;
 
 	constructor(targetElement: string|HTMLElement, suppliedOptions: Config.TableOptions) {
 	    var defaultTableOptions: Config.TableOptions = { 
@@ -33,22 +33,7 @@ class Table implements Common.Visualization {
 
 	public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata, showLoader: boolean = true) {
 		this._renderTable(metadata);
-        if (showLoader)
-            this._startLoading();
-        resultsPromise.then(results => {
-            this._loadData(results, metadata);
-            this._finishLoading();
-        });
-    }
-
-    private _startLoading() {
-        this._loader.show();
-        this._tableWrapper.className += ' isLoading';
-    }
-
-    private _finishLoading() {
-        this._loader.hide();
-        this._tableWrapper.className = this._tableWrapper.className.replace(/(?:^|\s)isLoading(?!\S)/, '');
+        ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
     }
 
 	private _loadData(results: Api.QueryResults, metadata: Queries.Metadata) {
@@ -59,7 +44,7 @@ class Table implements Common.Visualization {
 
     public clear() {        
     	this._rendered = false;
-        Clear.removeAllChildren(this.targetElement)
+        Dom.removeAllChildren(this.targetElement)
     }
 
     private _showTitle(){
@@ -97,8 +82,7 @@ class Table implements Common.Visualization {
         this._tableWrapper = tableWrapper;
         this._titleElement = titleElement;
         this._showTitle();        
-        this._loader = new Loader(this.targetElement, tableContainer);
-        this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
+        this.loader = new Loader(this.targetElement, tableContainer);
     }
 }
 

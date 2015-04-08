@@ -1,4 +1,3 @@
-import Clear = require('./clear');
 import Common = require('./visualization');
 import Queries = require('../core/queries/queries');
 import Api = require('../core/api');
@@ -13,7 +12,7 @@ module ErrorHandling {
         },
         network: {
             icon: 'ion-ios-bolt',
-            defaultMessage: 'No Results'
+            defaultMessage: 'Network Error'
         },
         setup: {
             icon: 'ion-sad-outline',
@@ -21,48 +20,37 @@ module ErrorHandling {
         },
         other: {
             icon: 'ion-bug',
-            defaultMessage: 'Oops, something went wrong displaying the visualization'
+            defaultMessage: 'Error'
         }
     }
 
+    var statusErrorTypes = {
+        status404: 'noResults'
+    }
 
-    export type LoadDataFunction = (results: Api.QueryResults, metadata: Queries.Metadata) => void;
-    export function makeSafe(functionToWrap: LoadDataFunction, visualization: Common.Visualization, loader: Loader): LoadDataFunction{
-        return (results: Api.QueryResults, metadata: Queries.Metadata) => {
-            var targetElement = visualization.targetElement;
-            try{
-                
-                if (results == null || !results.length){
-                    loader.hide();
-                    displayFriendlyError(targetElement, 'noResults');
-                    return;
-                }
+    export function handleError(targetElement: HTMLElement, error: any){
+        var status = 'status' + error.status,
+            errorType = statusErrorTypes[status] || 'other';
 
-                return functionToWrap.call(visualization, results, metadata);
-            }catch(error){                
-                logError(error);
-                displayFriendlyError(targetElement);
-            }
-        };
+        displayFriendlyError(targetElement, errorType);
     }
 
     export function clearError(targetElement: HTMLElement){
         var elementForError = targetElement,
             errorContainer = <HTMLElement>elementForError.querySelector('.connect-error'),
             viz = <HTMLElement>elementForError.querySelector('.connect-viz');
+
+            if (errorContainer){
+                errorContainer.parentNode.removeChild(errorContainer);
+            }
             
             if (viz){
                 viz.classList.remove('connect-viz-in-error');
             }
-
-            if (errorContainer){
-                elementForError.removeChild(errorContainer);
-            }
     }
 
-    export function displayFriendlyError(targetElement: HTMLElement, type?: string, message?: string){
-        var errorType = type || 'other',
-            errorIcon = errorTypes[type].icon,
+    export function displayFriendlyError(targetElement: HTMLElement, type: string = 'other', message: string = ''){
+        var errorIcon = errorTypes[type].icon,
             errorMessage = message || errorTypes[type].defaultMessage,
             elementForError = targetElement,
             errorIconElement = document.createElement('span'),
@@ -71,8 +59,9 @@ module ErrorHandling {
             errorClassName = 'connect-error',
             viz = <HTMLElement>elementForError.querySelector('.connect-viz');
 
-        if (!elementForError)
+        if (!elementForError){
             return;
+        }
 
         errorMessageElement.textContent = errorMessage;
         errorIconElement.className += errorIcon + ' connect-error-icon';        
@@ -89,7 +78,7 @@ module ErrorHandling {
 
     export function logError(error: Error){
         if (console && console.log){
-            console.log(error);
+            console.log(error.toString());
         }
     }
 }

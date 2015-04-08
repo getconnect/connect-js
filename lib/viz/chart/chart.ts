@@ -6,22 +6,22 @@ import Queries = require('../../core/queries/queries');
 import Api = require('../../core/api');
 import _ = require('underscore');
 import Common = require('../visualization');
-import Clear = require('../clear');
 import ErrorHandling = require('../error-handling');
 import Palette = require('../palette');
 import Loader = require('../loader');
 import Formatters = require('../formatters');
 import Dom = require('../dom');
+import ResultHandling = require('../result-handling');
 
 class Chart implements Common.Visualization {
     public targetElement: HTMLElement;
+    public loader: Loader;
     private _options: Config.ChartOptions;
     private _minSelectName: string;
     private _maxSelectName: string;
     private _chart: C3.Chart;
     private _rendered: boolean;
     private _titleElement: HTMLElement;
-    private _loader: Loader;
     private _currentDataset: Dataset.ChartDataset;
     
     constructor(targetElement: string|HTMLElement, chartOptions: Config.ChartOptions) {     
@@ -88,12 +88,7 @@ class Chart implements Common.Visualization {
 
         this._initializeFieldOptions(parsedMetaData);
         this._renderChart(parsedMetaData);
-        if (showLoader)
-            this._loader.show();
-
-        resultsPromise.then(results => {
-            this._loadData(results, parsedMetaData);
-        });
+        ResultHandling.handleResult(resultsPromise, parsedMetaData, this, this._loadData, showLoader);
     }
 
     private _parseMetaData(metadata: Queries.Metadata){
@@ -135,7 +130,6 @@ class Chart implements Common.Visualization {
         }
 
         this._currentDataset = dataset;
-        this._loader.hide();    
         this._chart.load({
             json: dataset.getData(),
             keys: {
@@ -149,13 +143,13 @@ class Chart implements Common.Visualization {
 
     public clear(): void{        
         this._rendered = false;
-        Clear.removeAllChildren(this.targetElement)
+        Dom.removeAllChildren(this.targetElement)
     }
 
     private _buildDataset(results: Api.QueryResults, metadata: Queries.Metadata): Dataset.ChartDataset{
         var options = this._options,
             formatters = {        
-                selectLabelFormatter:  (select) => options.fieldOptions[select].label || select,
+                selectLabelFormatter: select => options.fieldOptions[select] && options.fieldOptions[select].label ? options.fieldOptions[select].label : select,
                 groupValueFormatter: (groupByName, groupValue) => this._formatGroupValue(groupByName, groupValue)
             },
             isGroupedInterval = metadata.interval && metadata.groups.length;
@@ -269,8 +263,7 @@ class Chart implements Common.Visualization {
         this._rendered = true;
         this._titleElement = titleElement;
         this._showTitle();        
-        this._loader = new Loader(this.targetElement, connectChartContainer);
-        this._loadData = ErrorHandling.makeSafe(this._loadData, this, this._loader);
+        this.loader = new Loader(this.targetElement, connectChartContainer);
         this._chart = c3.generate(config);
     }
 }
