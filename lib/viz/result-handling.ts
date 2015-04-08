@@ -16,7 +16,6 @@ module ResultHandling{
                 }
             }
 
-        console.log('clearing error');
         ErrorHandling.clearError(targetElement);
 
         if (showLoader){
