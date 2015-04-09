@@ -2,11 +2,13 @@ import Config = require('./config');
 
 class Loader {
     private _loaderContainer;
-    private _elementForLoader;
-    private _vizContainer;
     private _visible;
+    private _targetElement;
+    private _vizSelector = '.connect-viz';
+    private _parentOfLoaderSelector = '.connect-viz-result';
+    private _loaderClass = 'connect-viz-loading';
 
-    constructor(targetElement: HTMLElement, containerElement: HTMLElement){
+    constructor(targetElement: HTMLElement){
         var bar1 = document.createElement('div'),
             bar2 = document.createElement('div'),
             bar3 = document.createElement('div'),
@@ -27,23 +29,36 @@ class Loader {
         loaderContainer.appendChild(bar4);
         loaderContainer.appendChild(bar5);
 
-        this._elementForLoader = containerElement;
+        this._targetElement = targetElement;
         this._loaderContainer = loaderContainer;
-        this._vizContainer = targetElement.querySelector('.connect-viz');
     }
 
     show(){               
-        this._vizContainer.className += ' connect-viz-loading';
-        this._elementForLoader.appendChild(this._loaderContainer);
+        var vizContainer = this._targetElement.querySelector(this._vizSelector),
+            parentOfLoader = this._targetElement.querySelector(this._parentOfLoaderSelector);
+
+        if (!vizContainer || !parentOfLoader)    
+            return; 
+        
+        vizContainer.classList.add(this._loaderClass);
+        parentOfLoader.appendChild(this._loaderContainer);
         this._visible = true;
 
     }
 
     hide(){
+        var vizContainer = this._targetElement.querySelector(this._vizSelector),
+            parentOfLoader = this._targetElement.querySelector(this._parentOfLoaderSelector);
+
         if (!this._visible)
             return;
-        this._vizContainer.className = this._vizContainer.className.replace(' connect-viz-loading', '');
-        this._elementForLoader.removeChild(this._loaderContainer);
+        
+        if (vizContainer)
+            vizContainer.classList.remove(this._loaderClass);
+
+        if (parentOfLoader)
+            parentOfLoader.removeChild(this._loaderContainer);
+
         this._visible = false;
     }
 }

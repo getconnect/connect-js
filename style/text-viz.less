@@ -16,23 +16,13 @@
         line-height: @text-value-line-height;
     }
 
+    &.connect-viz-loading, &.connect-viz-in-error{
+        .connect-text-value span{
+            visibility: hidden;
+        }
+    }    
+
     .connect-error{    
         .middle();
-    }
-
-    &.connect-viz-in-error{
-        .connect-text-value{
-            visibility: hidden;
-        }
-        .connect-viz-title{
-            visibility: hidden;
-        }
-    }
-
-    &.connect-viz-loading .connect-text-value{
-        min-height: @text-value-size * @text-value-line-height;
-        span{
-            opacity: @viz-opacity-while-loading;
-        }                    
     }
 }
