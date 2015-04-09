@@ -19,8 +19,20 @@
             .c3 text{
                 display: none;
             }
+            
+            .c3-axis-x .tick{
+                display: none;
+            }
+
+            .c3-legend-item{
+                display: none;
+            }
+
+            .c3-chart{
+                visibility: hidden;
+            }
         }
-    }   
+    }
 
     &.connect-chart-gauge{
         .connect-error{    
@@ -32,6 +44,10 @@
         &.connect-viz-loading{
             .c3-chart-arcs-background{
                 opacity: 0.5;
+            }
+            
+            .c3-gauge-value{
+                visibility: hidden;
             }
         }
     }

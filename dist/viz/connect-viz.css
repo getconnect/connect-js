@@ -35,6 +35,30 @@
 .connect-chart.connect-chart-bar.connect-viz-in-error .c3 text {
   display: none;
 }
+.connect-chart.connect-chart-line.connect-viz-loading .c3-axis-x .tick,
+.connect-chart.connect-chart-spline.connect-viz-loading .c3-axis-x .tick,
+.connect-chart.connect-chart-bar.connect-viz-loading .c3-axis-x .tick,
+.connect-chart.connect-chart-line.connect-viz-in-error .c3-axis-x .tick,
+.connect-chart.connect-chart-spline.connect-viz-in-error .c3-axis-x .tick,
+.connect-chart.connect-chart-bar.connect-viz-in-error .c3-axis-x .tick {
+  display: none;
+}
+.connect-chart.connect-chart-line.connect-viz-loading .c3-legend-item,
+.connect-chart.connect-chart-spline.connect-viz-loading .c3-legend-item,
+.connect-chart.connect-chart-bar.connect-viz-loading .c3-legend-item,
+.connect-chart.connect-chart-line.connect-viz-in-error .c3-legend-item,
+.connect-chart.connect-chart-spline.connect-viz-in-error .c3-legend-item,
+.connect-chart.connect-chart-bar.connect-viz-in-error .c3-legend-item {
+  display: none;
+}
+.connect-chart.connect-chart-line.connect-viz-loading .c3-chart,
+.connect-chart.connect-chart-spline.connect-viz-loading .c3-chart,
+.connect-chart.connect-chart-bar.connect-viz-loading .c3-chart,
+.connect-chart.connect-chart-line.connect-viz-in-error .c3-chart,
+.connect-chart.connect-chart-spline.connect-viz-in-error .c3-chart,
+.connect-chart.connect-chart-bar.connect-viz-in-error .c3-chart {
+  visibility: hidden;
+}
 .connect-chart.connect-chart-gauge .connect-error {
   bottom: 10px;
   left: 0;
@@ -42,6 +66,9 @@
 }
 .connect-chart.connect-chart-gauge.connect-viz-loading .c3-chart-arcs-background {
   opacity: 0.5;
+}
+.connect-chart.connect-chart-gauge.connect-viz-loading .c3-gauge-value {
+  visibility: hidden;
 }
 .c3-legend-item {
   font: 12px 'Roboto', sans-serif;
@@ -380,6 +407,10 @@
   font: 42px 'Open Sans', sans-serif;
   color: #34495e;
   line-height: 1.1;
+}
+.connect-text.connect-viz-loading .connect-text-value span,
+.connect-text.connect-viz-in-error .connect-text-value span {
+  visibility: hidden;
 }
 .connect-text .connect-error {
   left: 50%;

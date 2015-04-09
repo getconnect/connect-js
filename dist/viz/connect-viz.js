@@ -89,6 +89,7 @@ var Chart = (function () {
             colors: colors
         });
         this._showTitle();
+        internalChartConfig.transition_duration = 300;
     };
     Chart.prototype.clear = function () {
         this._rendered = false;
@@ -578,13 +579,14 @@ var ResultHandling;
                 loader.hide();
             }
         };
-        ErrorHandling.clearError(targetElement);
         if (showLoader) {
+            ErrorHandling.clearError(targetElement);
             loader.show();
         }
         resultsPromise.then(function (results) {
             hideLoader();
             try {
+                ErrorHandling.clearError(targetElement);
                 if (results == null || !results.length) {
                     ErrorHandling.displayFriendlyError(targetElement, 'noResults');
                     return;
@@ -597,6 +599,7 @@ var ResultHandling;
             }
         }, function (error) {
             hideLoader();
+            ErrorHandling.clearError(targetElement);
             ErrorHandling.handleError(targetElement, error);
         });
     }
