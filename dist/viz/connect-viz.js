@@ -63,7 +63,6 @@ var Chart = (function () {
             colors: colors
         });
         this._showTitle();
-        internalChartConfig.transition_duration = 300;
     };
     Chart.prototype.clear = function () {
         this._rendered = false;
