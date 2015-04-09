@@ -7,20 +7,21 @@
     position: relative;
     height: 100%;
     overflow-y: hidden;
+    display: flex;
+    flex-direction: column;
 
     .connect-error{    
         .middle();
     }
 
-    &.connect-viz-loading{
-        .connect-table-wrapper {
-            opacity: @viz-opacity-while-loading;
-        }
+    .connect-viz-result {
+        flex-grow: 1;
+        position: relative;
     }
 
     .connect-table-wrapper {
         position: absolute;
-        top: @viz-title-height;
+        top: 0;
         left: 0;
         right: 0;
         bottom: 0;

@@ -14,9 +14,9 @@ module ErrorHandling {
             icon: 'ion-ios-bolt',
             defaultMessage: 'Network Error'
         },
-        setup: {
-            icon: 'ion-sad-outline',
-            defaultMessage: 'Invalid Query'
+        unsupportedQuery: {
+            icon: 'ion-wrench',
+            defaultMessage: 'Unsupported Query'
         },
         other: {
             icon: 'ion-bug',
@@ -49,15 +49,16 @@ module ErrorHandling {
             }
     }
 
-    export function displayFriendlyError(targetElement: HTMLElement, type: string = 'other', message: string = ''){
+    export function displayFriendlyError(targetElement: HTMLElement, type: string = 'other'){
         var errorIcon = errorTypes[type].icon,
-            errorMessage = message || errorTypes[type].defaultMessage,
+            errorMessage = errorTypes[type].defaultMessage,
             elementForError = targetElement,
             errorIconElement = document.createElement('span'),
             errorMessageElement = document.createElement('span'),
             errorElement = document.createElement('div'),
             errorClassName = 'connect-error',
-            viz = <HTMLElement>elementForError.querySelector('.connect-viz');
+            viz = <HTMLElement>elementForError.querySelector('.connect-viz'),
+            result = <HTMLElement>elementForError.querySelector('.connect-viz-result') || viz;
 
         if (!elementForError){
             return;
@@ -70,15 +71,20 @@ module ErrorHandling {
         errorElement.appendChild(errorIconElement);
         errorElement.appendChild(errorMessageElement);
 
-        if (viz){
-            viz.appendChild(errorElement);
+        if (viz && result){
+            result.appendChild(errorElement);
             viz.className += ' connect-viz-in-error'
         }
     }
 
     export function logError(error: Error){
+        var printable: any = error;
+
         if (console && console.log){
-            console.log(error.toString());
+            console.log(error.message);
+
+            if (printable.stack)
+                console.log(printable.stack)
         }
     }
 }

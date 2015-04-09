@@ -27,6 +27,7 @@ class Chart implements Common.Visualization {
     constructor(targetElement: string|HTMLElement, chartOptions: Config.ChartOptions) {     
         this._options = this._parseOptions(chartOptions);
         this.targetElement = Dom.getElement(targetElement);
+        this.loader = new Loader(this.targetElement);
     }
 
     private _parseOptions(chartOptions: Config.ChartOptions): Config.ChartOptions{
@@ -247,6 +248,7 @@ class Chart implements Common.Visualization {
 
         this.clear();
         titleElement.className = 'connect-viz-title';
+        c3Element.className = 'connect-viz-result'
         connectChartContainer.className = 'connect-viz connect-chart connect-chart-' + options.type;
         connectChartContainer.appendChild(titleElement);
         connectChartContainer.appendChild(c3Element);
@@ -263,7 +265,6 @@ class Chart implements Common.Visualization {
         this._rendered = true;
         this._titleElement = titleElement;
         this._showTitle();        
-        this.loader = new Loader(this.targetElement, connectChartContainer);
         this._chart = c3.generate(config);
     }
 }
