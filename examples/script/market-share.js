@@ -17,17 +17,15 @@ var dollarsFieldOptions = {
     }
 }
 
-var percentGauge = new Connect.Viz.Chart('#market-share-percent-gauge', {
+var percentGauge = new Connect.Viz.Gauge('#market-share-percent-gauge', {
     title: 'Acme Market Share (%)',
-    type: 'gauge',
-    fieldOptions: percentFieldOptions
+    fields: percentFieldOptions
 });
 percentGauge.displayData(percentResults.results, percentResults.metadata);
 
-var dollarsGauge = new Connect.Viz.Chart('#market-share-dollars-gauge', {
+var dollarsGauge = new Connect.Viz.Gauge('#market-share-dollars-gauge', {
     title: 'Acme Market Share ($)',
-    type: 'gauge',
-    fieldOptions: dollarsFieldOptions,
+    fields: dollarsFieldOptions,
     gauge:{
     	min: 0,
     	max: 'totalMarketValue'

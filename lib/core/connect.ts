@@ -51,9 +51,10 @@ class Connect implements Viz.Visualizations {
     }
 
     //mixins
-    chart: (query: Queries.ConnectQuery, targetElementId: string, chartOptions: VizConfig.ChartOptions) => DataVisualization;
-    text: (query: Queries.ConnectQuery, targetElementId: string, textOptions: VizConfig.TextOptions) => DataVisualization;
-    table: (query: Queries.ConnectQuery, targetElementId: string, tableOptions: VizConfig.TableOptions) => DataVisualization;
+    chart: (query: Queries.ConnectQuery, targetElementId: string, chartOptions: VizConfig.VisualizationOptions) => DataVisualization;
+    text: (query: Queries.ConnectQuery, targetElementId: string, textOptions: VizConfig.VisualizationOptions) => DataVisualization;
+    table: (query: Queries.ConnectQuery, targetElementId: string, tableOptions: VizConfig.VisualizationOptions) => DataVisualization;    
+    gauge: (query: Queries.ConnectQuery, targetElementId: string, tableOptions: VizConfig.VisualizationOptions) => DataVisualization;
 }
 
 export = Connect;

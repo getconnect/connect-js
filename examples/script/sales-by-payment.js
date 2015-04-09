@@ -16,30 +16,35 @@ var fieldOptions = {
 
 var bar = new Connect.Viz.Chart('#sales-by-payment-bar', {
     title: 'Sales by Payment Type',
-    type: 'bar',
-    fieldOptions: fieldOptions,
-    yAxisValueFormatter: d3.format('$,.2f')
+    chart: {
+        type: 'bar',        
+        yAxisValueFormatter: d3.format('$,.2f')
+    },
+    fields: fieldOptions,
 });
 
 var barNoLegend = new Connect.Viz.Chart('#sales-by-payment-bar-no-legend', {
     title: 'Sales by Payment Type (No Legend)',
-    type: 'bar',
-    fieldOptions: fieldOptions,
+    chart: {
+        type: 'bar',
+        yAxisValueFormatter: d3.format('$,.2f')
+    },
+    fields: fieldOptions,
     showLegend: false,
-    yAxisValueFormatter: d3.format('$,.2f')
 });
 
 var line = new Connect.Viz.Chart('#sales-by-payment-line', {
     title: 'Sales by Payment Type',
-    type: 'line',
-    fieldOptions: fieldOptions,
-    yAxisValueFormatter: d3.format('$,.2f')
+    chart: {
+        type: 'line',
+        yAxisValueFormatter: d3.format('$,.2f')
+    },
+    fields: fieldOptions,
 });
 
 var table = new Connect.Viz.Table('#sales-by-payment-table', {
     title: 'Sales by Payment Type',
-    fieldOptions: fieldOptions,
-    yAxisValueFormatter: d3.format('$,.2f')
+    fields: fieldOptions,
 });
 
 bar.displayData(queryResults.results, queryResults.metadata);

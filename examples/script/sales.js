@@ -14,21 +14,25 @@ var fieldOptions = {
 
 var bar = new Connect.Viz.Chart('#sales-bar', {
     title: 'Sales',
-    type: 'bar',
-    fieldOptions: fieldOptions,
-    yAxisValueFormatter: d3.format('$,.2f')
+    chart: {
+        type: 'bar',        
+        yAxisValueFormatter: d3.format('$,.2f'),
+    }, 
+    fields: fieldOptions,
 });
 
 var line = new Connect.Viz.Chart('#sales-line', {
     title: 'Sales',
-    type: 'line',
-    fieldOptions: fieldOptions,
-    yAxisValueFormatter: d3.format('$,.2f')
+    chart: {
+        type: 'line',        
+        yAxisValueFormatter: d3.format('$,.2f'),
+    },
+    fields: fieldOptions,
 });
 
 var text = new Connect.Viz.Text('#sales-text', {
     title: 'Sales',
-    fieldOptions: fieldOptions
+    fields: fieldOptions
 });
 
 bar.displayData(queryResults.results, queryResults.metadata);

@@ -32,35 +32,46 @@ module Config {
 
     export interface VisualizationOptions {
         title?: string | boolean;
-        fieldOptions?: FieldOptions;   
-        intervalOptions?: IntervalOptions;   
+        fields?: FieldOptions;   
+        intervals?: IntervalOptions;   
         timezone?: string|number;
+        text?: TextOptions;
+        table?: TableOptions;
+        gauge?: GaugeOptions;
+        chart?: ChartOptions;
     }
 
-    export interface ChartOptions extends VisualizationOptions {
+    export interface ChartOptions {
         type: string;
         height?: number;
         colors?: ChartColors|string[];
-        padding?: {
-            top?: number;
-            right?: number;
-            bottom?: number;
-            left?: number;
-        };
-        gauge?:{
-            min?: number|string;
-            max?: number|string;
-        };
+        padding?: PaddingOptions;
         showLegend?: boolean; 
         yAxisValueFormatter?: (value: any) => any;
     }
 
-	export interface TextOptions extends VisualizationOptions {
-        fieldOptions?: FieldOptions;
+    export interface GaugeOptions { 
+        label?: {
+            format?: (value: any) => any;
+        };
+        min?: number|string;
+        max?: number|string;
+        color?: string;
+        padding?: PaddingOptions;
+    }
+
+	export interface TextOptions {        
 	}
 
-    export interface TableOptions extends VisualizationOptions {
+    export interface TableOptions {
         
+    }
+
+    export interface PaddingOptions {
+        top?: number;
+        right?: number;
+        bottom?: number;
+        left?: number;
     }
 
     export var defaultTimeSeriesFormats: IntervalFormats = {
