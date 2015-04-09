@@ -13,75 +13,107 @@ import Formatters = require('../formatters');
 import Dom = require('../dom');
 import ResultHandling = require('../result-handling');
 
-class Chart implements Common.Visualization {
+class Gauge implements Common.Visualization {
     public targetElement: HTMLElement;
     public loader: Loader;
     private _options: Config.VisualizationOptions;
-    private _chart: C3.Chart;
+    private _minSelectName: string;
+    private _maxSelectName: string;
+    private _gauge: C3.Chart;
     private _rendered: boolean;
     private _titleElement: HTMLElement;
     private _currentDataset: Dataset.ChartDataset;
     
-    constructor(targetElement: string|HTMLElement, chartOptions: Config.VisualizationOptions) {     
-        this._options = this._parseOptions(chartOptions);
+    constructor(targetElement: string|HTMLElement, gaugeOptions: Config.VisualizationOptions) {     
+        this._options = this._parseOptions(gaugeOptions);
         this.targetElement = Dom.getElement(targetElement);
     }
 
-    private _parseOptions(chartOptions: Config.VisualizationOptions): Config.VisualizationOptions{
+    private _parseOptions(gaugeOptions: Config.VisualizationOptions): Config.VisualizationOptions{
 
         var defaultOptions: Config.VisualizationOptions = {
-                intervals: {},
-                fields: {},
-                chart: {
-                    type: 'bar',
-                    showLegend: true,
-                    yAxisValueFormatter: (value) => value
-                },
+                fields: {},                
+                gauge: {},
             },
-            defaultIntervalOptions = {
-                formats: Config.defaultTimeSeriesFormats
-            },
-            defaultC3Options = Config.defaultC3Options,
+            defaultC3Options = Config.defaultC3Options,            
             options = null,
-            options = _.extend(defaultOptions, chartOptions),
-            type = options.chart.type;
-        options.intervals = _.extend(options.intervals, defaultIntervalOptions);
+            loadsMinMaxFromResult = null,
+            minMaxFromResultsOptions = _.extend(Config.defaultC3Options.minMaxFromResults, defaultC3Options.gauge);
 
-        options[type] = _.extend(options[type] || {}, defaultC3Options[type]);
+        options = _.extend(defaultOptions, gaugeOptions);
+        loadsMinMaxFromResult = _.isString(options.gauge.min + options.gauge.max);
+
+        if (loadsMinMaxFromResult){
+            this._minSelectName = _.isString(options.gauge.min) ? options.gauge.min : null;
+            this._maxSelectName = _.isString(options.gauge.max) ? options.gauge.max : null;
+            options.gauge = _.extend(options.gauge || {}, minMaxFromResultsOptions);
+        }else{
+            options.gauge = _.extend(options.gauge || {}, defaultC3Options.gauge);
+        }
 
         return options;
-
     }
 
     private _initializeFieldOptions(metadata: Queries.Metadata): void{
         var fields = metadata.selects.concat(metadata.groups),
+            firstSelect = metadata.selects[0],
             options = this._options,
-            fieldOptions = options.fields,
-            type = options.chart.type;
+            fieldOptions = options.fields;         
 
         _.each(fields, (fieldName) => {
             fieldOptions[fieldName] = fieldOptions[fieldName] || {}
-        });       
+        });
+        
+        options.gauge.label = _.clone(options.gauge.label);
+        fieldOptions[firstSelect].valueFormatter = fieldOptions[firstSelect].valueFormatter || options.gauge.label.format;
+        options.gauge.label.format = fieldOptions[firstSelect].valueFormatter;
     }
 
     public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata, showLoader: boolean = true): void {        
-        this._initializeFieldOptions(metadata);
-        this._renderChart(metadata);
-        ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
+        var parsedMetaData = this._parseMetaData(metadata);
+
+        this._initializeFieldOptions(parsedMetaData);
+        this._renderGauge(parsedMetaData);
+        ResultHandling.handleResult(resultsPromise, parsedMetaData, this, this._loadData, showLoader);
+    }
+
+    private _parseMetaData(metadata: Queries.Metadata){
+        var options = this._options,
+            typeOptions = options.gauge,
+            parsedMetaData = _.clone(metadata),
+            filteredSelected = _.without(metadata.selects, this._minSelectName, this._maxSelectName);
+
+        parsedMetaData.selects = filteredSelected;
+
+        return parsedMetaData;
     }
 
     private _loadData(results: Api.QueryResults, metadata: Queries.Metadata): void {
         var options = this._options,
-            type = options.chart.type,
-            typeOptions = options[type],
+            typeOptions = options.gauge,
             dataset = this._buildDataset(results, metadata),
             keys = dataset.getLabels(),
             uniqueKeys = _.unique(keys),
-            colors = Palette.getSwatch(uniqueKeys, options.chart.colors),
-            internalChartConfig = (<any>this._chart).internal.config;
-     
+            colors = Palette.getSwatch(uniqueKeys, options.gauge.color ? [options.gauge.color] : null),
+            setMinProperty = this._minSelectName && results.length,
+            setMaxProperty = this._maxSelectName && results.length,
+            minConfigProperty = 'gauge_min',
+            maxConfigProperty = 'gauge_max',
+            showLabelConfigProperty = 'gauge_label_show',
+            internalGaugeConfig = (<any>this._gauge).internal.config;                    
+
+        if (setMinProperty){
+            internalGaugeConfig[minConfigProperty] = results[0][this._minSelectName];
+            internalGaugeConfig[showLabelConfigProperty] = true;
+        }
+
+        if (setMaxProperty){
+            internalGaugeConfig[maxConfigProperty] = results[0][this._maxSelectName];
+            internalGaugeConfig[showLabelConfigProperty] = true;
+        }
+
         this._currentDataset = dataset;
-        this._chart.load({
+        this._gauge.load({
             json: dataset.getData(),
             keys: {
                 x: '_x',
@@ -102,12 +134,9 @@ class Chart implements Common.Visualization {
             formatters = {        
                 selectLabelFormatter: select => options.fields[select] && options.fields[select].label ? options.fields[select].label : select,
                 groupValueFormatter: (groupByName, groupValue) => this._formatGroupValue(groupByName, groupValue)
-            },
-            isGroupedInterval = metadata.interval && metadata.groups.length;
+            };
 
-            return isGroupedInterval ? new GroupedIntervalDataset(results, metadata, formatters)
-                                     : new StandardDataset(results, metadata, formatters);
-
+        return new StandardDataset(results, metadata, formatters); 
     }
 
     private _showTitle(){
@@ -144,44 +173,24 @@ class Chart implements Common.Visualization {
         return groupValue;
     }
 
-    private _renderChart(metadata: Queries.Metadata) {
+    private _renderGauge(metadata: Queries.Metadata) {
         if(this._rendered)
             return;
             
         var options = this._options,
-            connectChartContainer: HTMLElement = document.createElement('div'),
+            connectGaugeContainer: HTMLElement = document.createElement('div'),
             c3Element: HTMLElement = document.createElement('div'),
             rootElement = this.targetElement,
             titleElement = document.createElement('span'),
             timezone = options.timezone || metadata.timezone,
             dateFormat = null,
-            standardDateformatter = (value) => Formatters.formatDate(value, timezone, dateFormat),
-            customDateFormatter = options.intervals.valueFormatter,
             tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
             config = {
                 bindto: c3Element,
-                size: {
-                    height: options.chart.height
-                },
-                padding: options.chart.padding,
+                padding: options.gauge.padding,
                 data: {
                     json: [],
-                    type: options.chart.type
-                },
-                axis: {
-                    x: {   
-                        type: 'category',
-                        tick: {
-                            outer: false,
-                            format: undefined
-                        }
-                    },
-                    y:{
-                        tick: {
-                            outer: false,
-                            format: options.chart.yAxisValueFormatter
-                        }
-                    }
+                    type: 'gauge'
                 },
                 transition: {
                     duration: null
@@ -190,33 +199,23 @@ class Chart implements Common.Visualization {
                     format: {
                         value: tooltipValueFormatter
                     }                   
-                },
-                legend: {
-                    show: options.chart.showLegend
                 }
             };
 
         this.clear();
         titleElement.className = 'connect-viz-title';
-        connectChartContainer.className = 'connect-viz connect-chart connect-chart-' + options.chart.type;
-        connectChartContainer.appendChild(titleElement);
-        connectChartContainer.appendChild(c3Element);
-        rootElement.appendChild(connectChartContainer);
-        config[options.chart.type] = options[options.chart.type];
+        connectGaugeContainer.className = 'connect-viz connect-chart connect-chart-gauge';
+        connectGaugeContainer.appendChild(titleElement);
+        connectGaugeContainer.appendChild(c3Element);
+        rootElement.appendChild(connectGaugeContainer);
+        config['gauge'] = options['gauge'];
 
-        if(metadata.interval) {
-            dateFormat = options.intervals.formats[metadata.interval];
-            config.data['xFormat'] = '%Y-%m-%dT%H:%M:%SZ';
-            config.data['xLocaltime'] = false;
-            config.axis.x.type = 'timeseries';
-            config.axis.x.tick.format = customDateFormatter || standardDateformatter;
-        }
         this._rendered = true;
         this._titleElement = titleElement;
         this._showTitle();        
-        this.loader = new Loader(this.targetElement, connectChartContainer);
-        this._chart = c3.generate(config);
+        this.loader = new Loader(this.targetElement, connectGaugeContainer);
+        this._gauge = c3.generate(config);
     }
 }
 
-export = Chart;
+export = Gauge;

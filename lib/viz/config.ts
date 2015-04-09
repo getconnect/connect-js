@@ -45,26 +45,33 @@ module Config {
         type: string;
         height?: number;
         colors?: ChartColors|string[];
-        padding?: {
-            top?: number;
-            right?: number;
-            bottom?: number;
-            left?: number;
-        };
+        padding?: PaddingOptions;
         showLegend?: boolean; 
         yAxisValueFormatter?: (value: any) => any;
     }
 
     export interface GaugeOptions { 
+        label?: {
+            format?: (value: any) => any;
+        };
         min?: number|string;
         max?: number|string;
+        color?: string;
+        padding?: PaddingOptions;
     }
 
 	export interface TextOptions {        
 	}
 
-    export interface TableOptions  {
+    export interface TableOptions {
         
+    }
+
+    export interface PaddingOptions {
+        top?: number;
+        right?: number;
+        bottom?: number;
+        left?: number;
     }
 
     export var defaultTimeSeriesFormats: IntervalFormats = {

@@ -4,6 +4,7 @@ import Config = require('./config');
 module Viz {
     export var DataVisualization = require('./data-visualization');
     export var Chart = require('./chart/chart');
+    export var Gauge = require('./chart/gauge');
     export var Text = require('./text');
     export var Table = require('./table/table');
 
@@ -22,6 +23,12 @@ module Viz {
             var table = new Table(targetElement, tableOptions);
             return new DataVisualization(query, table);
         }
+
+        public gauge(query: Queries.ConnectQuery, targetElement: string|HTMLElement, chartOptions: Config.ChartOptions){
+            var chart = new Gauge(targetElement, chartOptions);
+            return new DataVisualization(query, chart);
+        }
+
     }
 }
 

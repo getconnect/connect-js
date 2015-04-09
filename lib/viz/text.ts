@@ -18,7 +18,7 @@ class Text implements Common.Visualization {
 
     constructor(targetElement: string|HTMLElement, textOptions: Config.VisualizationOptions) {
         this._options = _.extend({ 
-            fieldOptions: {} 
+            fields: {} 
         }, textOptions);
 
         this.targetElement = Dom.getElement(targetElement);
