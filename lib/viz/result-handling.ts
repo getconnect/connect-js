@@ -16,15 +16,15 @@ module ResultHandling{
                 }
             }
 
-        ErrorHandling.clearError(targetElement);
-
         if (showLoader){
+            ErrorHandling.clearError(targetElement);
             loader.show();
         }
 
         resultsPromise.then(results => {
             hideLoader();
             try{
+                ErrorHandling.clearError(targetElement);
                 if (results == null || !results.length){
                     ErrorHandling.displayFriendlyError(targetElement, 'noResults');
                     return;
@@ -36,6 +36,7 @@ module ResultHandling{
             }
         }, error => {
             hideLoader();
+            ErrorHandling.clearError(targetElement);
             ErrorHandling.handleError(targetElement, error);
         });
     }

@@ -140,6 +140,7 @@ class Chart implements Common.Visualization {
             colors: colors
         });
         this._showTitle();
+        internalChartConfig.transition_duration = 300;
     }
 
     public clear(): void{        

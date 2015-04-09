@@ -16,6 +16,12 @@
         line-height: @text-value-line-height;
     }
 
+    &.connect-viz-loading, &.connect-viz-in-error{
+        .connect-text-value span{
+            visibility: hidden;
+        }
+    }    
+
     .connect-error{    
         .middle();
     }

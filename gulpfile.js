@@ -241,7 +241,8 @@ gulp.task('clean:dist', function() {
 gulp.task('serve', function() {
     browserSync({
         server: {
-            baseDir: dest.dist
+            baseDir: dest.dist,
+            https: true
         }
     });
 });
@@ -312,7 +313,8 @@ gulp.task('examples:clean:lib', function() {
 gulp.task('examples:serve', ['examples'], function() {
     browserSync({
         server: {
-            baseDir: exampleDest.dist
+            baseDir: exampleDest.dist,
+            https: true
         }
     });
 });
