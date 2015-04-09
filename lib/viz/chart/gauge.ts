@@ -27,6 +27,7 @@ class Gauge implements Common.Visualization {
     constructor(targetElement: string|HTMLElement, gaugeOptions: Config.VisualizationOptions) {     
         this._options = this._parseOptions(gaugeOptions);
         this.targetElement = Dom.getElement(targetElement);
+        this.loader = new Loader(this.targetElement);
     }
 
     private _parseOptions(gaugeOptions: Config.VisualizationOptions): Config.VisualizationOptions{
@@ -204,6 +205,7 @@ class Gauge implements Common.Visualization {
 
         this.clear();
         titleElement.className = 'connect-viz-title';
+        c3Element.className = 'connect-viz-result'
         connectGaugeContainer.className = 'connect-viz connect-chart connect-chart-gauge';
         connectGaugeContainer.appendChild(titleElement);
         connectGaugeContainer.appendChild(c3Element);
@@ -212,8 +214,7 @@ class Gauge implements Common.Visualization {
 
         this._rendered = true;
         this._titleElement = titleElement;
-        this._showTitle();        
-        this.loader = new Loader(this.targetElement, connectGaugeContainer);
+        this._showTitle();       
         this._gauge = c3.generate(config);
     }
 }
