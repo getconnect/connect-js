@@ -408,8 +408,8 @@
   color: #34495e;
   line-height: 1.1;
 }
-.connect-text.connect-viz-loading .connect-text-value span,
-.connect-text.connect-viz-in-error .connect-text-value span {
+.connect-text.connect-viz-loading .connect-text-value > span,
+.connect-text.connect-viz-in-error .connect-text-value > span {
   visibility: hidden;
 }
 .connect-text .connect-error {
