@@ -21,6 +21,7 @@ var Chart = (function () {
     function Chart(targetElement, chartOptions) {
         this._options = this._parseOptions(chartOptions);
         this.targetElement = Dom.getElement(targetElement);
+        this.loader = new Loader(this.targetElement);
     }
     Chart.prototype._parseOptions = function (chartOptions) {
         var defaultOptions = {
@@ -163,6 +164,7 @@ var Chart = (function () {
         };
         this.clear();
         titleElement.className = 'connect-viz-title';
+        c3Element.className = 'connect-viz-result';
         connectChartContainer.className = 'connect-viz connect-chart connect-chart-' + options.type;
         connectChartContainer.appendChild(titleElement);
         connectChartContainer.appendChild(c3Element);
@@ -178,7 +180,6 @@ var Chart = (function () {
         this._rendered = true;
         this._titleElement = titleElement;
         this._showTitle();
-        this.loader = new Loader(this.targetElement, connectChartContainer);
         this._chart = c3.generate(config);
     };
     return Chart;
@@ -405,9 +406,9 @@ var ErrorHandling;
             icon: 'ion-ios-bolt',
             defaultMessage: 'Network Error'
         },
-        setup: {
-            icon: 'ion-sad-outline',
-            defaultMessage: 'Invalid Query'
+        unsupportedQuery: {
+            icon: 'ion-wrench',
+            defaultMessage: 'Unsupported Query'
         },
         other: {
             icon: 'ion-bug',
@@ -432,10 +433,9 @@ var ErrorHandling;
         }
     }
     ErrorHandling.clearError = clearError;
-    function displayFriendlyError(targetElement, type, message) {
+    function displayFriendlyError(targetElement, type) {
         if (type === void 0) { type = 'other'; }
-        if (message === void 0) { message = ''; }
-        var errorIcon = errorTypes[type].icon, errorMessage = message || errorTypes[type].defaultMessage, elementForError = targetElement, errorIconElement = document.createElement('span'), errorMessageElement = document.createElement('span'), errorElement = document.createElement('div'), errorClassName = 'connect-error', viz = elementForError.querySelector('.connect-viz');
+        var errorIcon = errorTypes[type].icon, errorMessage = errorTypes[type].defaultMessage, elementForError = targetElement, errorIconElement = document.createElement('span'), errorMessageElement = document.createElement('span'), errorElement = document.createElement('div'), errorClassName = 'connect-error', viz = elementForError.querySelector('.connect-viz'), result = elementForError.querySelector('.connect-viz-result') || viz;
         if (!elementForError) {
             return;
         }
@@ -444,15 +444,18 @@ var ErrorHandling;
         errorElement.className += errorClassName + ' connect-error-message';
         errorElement.appendChild(errorIconElement);
         errorElement.appendChild(errorMessageElement);
-        if (viz) {
-            viz.appendChild(errorElement);
+        if (viz && result) {
+            result.appendChild(errorElement);
             viz.className += ' connect-viz-in-error';
         }
     }
     ErrorHandling.displayFriendlyError = displayFriendlyError;
     function logError(error) {
+        var printable = error;
         if (console && console.log) {
-            console.log(error.toString());
+            console.log(error.message);
+            if (printable.stack)
+                console.log(printable.stack);
         }
     }
     ErrorHandling.logError = logError;
@@ -509,7 +512,10 @@ else if (typeof global !== 'undefined') {
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"./apply-mixins":1,"./viz":19,"tipi-connect":20}],12:[function(require,module,exports){
 var Loader = (function () {
-    function Loader(targetElement, containerElement) {
+    function Loader(targetElement) {
+        this._vizSelector = '.connect-viz';
+        this._parentOfLoaderSelector = '.connect-viz-result';
+        this._loaderClass = 'connect-viz-loading';
         var bar1 = document.createElement('div'), bar2 = document.createElement('div'), bar3 = document.createElement('div'), bar4 = document.createElement('div'), bar5 = document.createElement('div'), loaderContainer = document.createElement('div');
         bar1.className = 'connect-loader-bar1';
         bar2.className = 'connect-loader-bar2';
@@ -522,20 +528,25 @@ var Loader = (function () {
         loaderContainer.appendChild(bar3);
         loaderContainer.appendChild(bar4);
         loaderContainer.appendChild(bar5);
-        this._elementForLoader = containerElement;
+        this._targetElement = targetElement;
         this._loaderContainer = loaderContainer;
-        this._vizContainer = targetElement.querySelector('.connect-viz');
     }
     Loader.prototype.show = function () {
-        this._vizContainer.className += ' connect-viz-loading';
-        this._elementForLoader.appendChild(this._loaderContainer);
+        var vizContainer = this._targetElement.querySelector(this._vizSelector), parentOfLoader = this._targetElement.querySelector(this._parentOfLoaderSelector);
+        if (!vizContainer || !parentOfLoader)
+            return;
+        vizContainer.classList.add(this._loaderClass);
+        parentOfLoader.appendChild(this._loaderContainer);
         this._visible = true;
     };
     Loader.prototype.hide = function () {
+        var vizContainer = this._targetElement.querySelector(this._vizSelector), parentOfLoader = this._targetElement.querySelector(this._parentOfLoaderSelector);
         if (!this._visible)
             return;
-        this._vizContainer.className = this._vizContainer.className.replace(' connect-viz-loading', '');
-        this._elementForLoader.removeChild(this._loaderContainer);
+        if (vizContainer)
+            vizContainer.classList.remove(this._loaderClass);
+        if (parentOfLoader)
+            parentOfLoader.removeChild(this._loaderContainer);
         this._visible = false;
     };
     return Loader;
@@ -759,6 +770,7 @@ var Table = (function () {
         this.targetElement = Dom.getElement(targetElement);
         this._options = _.extend(defaultTableOptions, suppliedOptions);
         this._options.intervalOptions = _.extend(this._options.intervalOptions, defaultIntervalOptions);
+        this.loader = new Loader(this.targetElement);
     }
     Table.prototype.displayData = function (resultsPromise, metadata, showLoader) {
         if (showLoader === void 0) { showLoader = true; }
@@ -782,19 +794,20 @@ var Table = (function () {
     Table.prototype._renderTable = function (metadata) {
         if (this._rendered)
             return;
-        var options = this._options, tableContainer = document.createElement('div'), tableWrapper = document.createElement('div'), rootElement = this.targetElement, titleElement = document.createElement('span');
+        var options = this._options, tableContainer = document.createElement('div'), tableWrapper = document.createElement('div'), results = document.createElement('div'), rootElement = this.targetElement, titleElement = document.createElement('span');
         this.clear();
         tableContainer.className = 'connect-viz connect-table';
         titleElement.className = 'connect-viz-title';
+        results.className = 'connect-viz-result';
         tableWrapper.className = 'connect-table-wrapper';
         tableContainer.appendChild(titleElement);
-        tableContainer.appendChild(tableWrapper);
+        tableContainer.appendChild(results);
+        results.appendChild(tableWrapper);
         rootElement.appendChild(tableContainer);
         this._rendered = true;
         this._tableWrapper = tableWrapper;
         this._titleElement = titleElement;
         this._showTitle();
-        this.loader = new Loader(this.targetElement, tableContainer);
     };
     return Table;
 })();
@@ -812,19 +825,20 @@ var Text = (function () {
             fieldOptions: {}
         }, textOptions);
         this.targetElement = Dom.getElement(targetElement);
+        this.loader = new Loader(this.targetElement);
     }
     Text.prototype.displayData = function (resultsPromise, metadata, showLoader) {
         if (showLoader === void 0) { showLoader = true; }
+        this._renderText(metadata);
         if (!this._checkMetaDataIsApplicable(metadata)) {
             this._renderQueryNotApplicable();
             return;
         }
-        this._renderText(metadata);
         ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
     };
     Text.prototype._loadData = function (results, metadata) {
         var options = this._options, onlyResult = results[0], aliasOfSelect = metadata.selects[0], defaultFieldOption = { valueFormatter: function (value) { return value; } }, fieldOption = options.fieldOptions[aliasOfSelect] || defaultFieldOption, valueFormatter = fieldOption.valueFormatter, value = onlyResult[aliasOfSelect], valueText = valueFormatter(value);
-        this._valueElement.textContent = valueText;
+        this._valueTextElement.textContent = valueText;
         this._showTitle(metadata);
     };
     Text.prototype.clear = function () {
@@ -846,23 +860,21 @@ var Text = (function () {
         var container = document.createElement('div'), label = document.createElement('span'), elementForWidget = this.targetElement, valueTextElement = document.createElement('span'), valueElement = document.createElement('div');
         container.className = 'connect-viz connect-text';
         label.className = 'connect-viz-title';
-        valueElement.className = 'connect-text-value';
+        valueElement.className = 'connect-viz-result connect-text-value';
         this.clear();
         valueElement.appendChild(valueTextElement);
         container.appendChild(label);
         container.appendChild(valueElement);
         elementForWidget.appendChild(container);
-        this._valueElement = valueTextElement;
-        this._valueElement.innerHTML = '&nbsp;';
+        this._valueTextElement = valueTextElement;
+        this._valueTextElement.innerHTML = '&nbsp;';
         this._titleElement = label;
         this._showTitle(metadata);
-        this.loader = new Loader(this.targetElement, valueElement);
         this._rendered = true;
     };
     Text.prototype._renderQueryNotApplicable = function () {
-        var errorMsg = 'To display in a text widget a query must contain 1 select, 0 groupBys, and no interval';
         this._rendered = false;
-        ErrorHandling.displayFriendlyError(this.targetElement, errorMsg);
+        ErrorHandling.displayFriendlyError(this.targetElement, 'unsupportedQuery');
     };
     return Text;
 })();
