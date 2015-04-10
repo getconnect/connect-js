@@ -94,7 +94,8 @@ module Config {
         gauge: {
             label: {
                 format: (value) => d3.format('.0f')(value) + '%',
-                formatall: true
+                formatall: true,
+                transition: false
             },
             expand: true
         },
