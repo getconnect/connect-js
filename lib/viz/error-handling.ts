@@ -25,7 +25,12 @@ module ErrorHandling {
     }
 
     var statusErrorTypes = {
-        status404: 'noResults'
+        status404: 'noResults',
+        statusNetworkFailure: 'network',
+        status408: 'network',        
+        status502: 'network',
+        status503: 'network',
+        status504: 'network',
     }
 
     export function handleError(targetElement: HTMLElement, error: any){
