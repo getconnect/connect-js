@@ -42,6 +42,11 @@
     .connect-viz-title{
         opacity: @viz-opacity-while-loading;
     }
+    .connect-viz-result{
+        > :not(.connect-loader){
+            opacity: @viz-opacity-while-loading;
+        }
+    }
 }
 
 @keyframes connect-loader-stretchdelay {

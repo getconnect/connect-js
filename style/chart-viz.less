@@ -1,18 +1,13 @@
 @import "variables";
 @import "mixins";
 
-@tooltip-padding: 6px;
-
 .connect-chart{
     box-sizing: @box-sizing;
     position: relative;
     height: 100%;
-}
-
-.connect-chart{
     display: flex;
     flex-direction: column;
-    div.c3{
+    .connect-viz-result {
         flex-grow: 1;
     }
     
@@ -24,12 +19,24 @@
             .c3 text{
                 display: none;
             }
+            
+            .c3-axis-x .tick{
+                display: none;
+            }
+
+            .c3-legend-item{
+                display: none;
+            }
+
+            .c3-chart{
+                visibility: hidden;
+            }
         }
-    }   
+    }
 
     &.connect-chart-gauge{
         .connect-error{    
-            bottom: 25px;
+            bottom: 10px;
             left: 0;
             right: 0;
         }
@@ -38,12 +45,10 @@
             .c3-chart-arcs-background{
                 opacity: 0.5;
             }
-        }
-    }
-
-    &.connect-viz-loading{
-        .c3{
-            opacity: @viz-opacity-while-loading;
+            
+            .c3-gauge-value{
+                visibility: hidden;
+            }
         }
     }
 }
@@ -87,14 +92,14 @@
         font: @label-size @label-font-family;
     }
     td{
-        padding-top: @tooltip-padding;
+        padding-top: @chart-tooltip-padding;
         padding-bottom: 0;
         border-width: 0;
         font: @label-size @label-font-family;
     }
     tr:last-child{
         td{
-            padding-bottom: @tooltip-padding;
+            padding-bottom: @chart-tooltip-padding;
         }
     }
     tr{        

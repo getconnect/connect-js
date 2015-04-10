@@ -2,8 +2,6 @@
   box-sizing: border-box;
   position: relative;
   height: 100%;
-}
-.connect-chart {
   display: -webkit-box;
   display: -webkit-flex;
   display: -ms-flexbox;
@@ -14,7 +12,7 @@
       -ms-flex-direction: column;
           flex-direction: column;
 }
-.connect-chart div.c3 {
+.connect-chart .connect-viz-result {
   -webkit-box-flex: 1;
   -webkit-flex-grow: 1;
       -ms-flex-positive: 1;
@@ -37,16 +35,40 @@
 .connect-chart.connect-chart-bar.connect-viz-in-error .c3 text {
   display: none;
 }
+.connect-chart.connect-chart-line.connect-viz-loading .c3-axis-x .tick,
+.connect-chart.connect-chart-spline.connect-viz-loading .c3-axis-x .tick,
+.connect-chart.connect-chart-bar.connect-viz-loading .c3-axis-x .tick,
+.connect-chart.connect-chart-line.connect-viz-in-error .c3-axis-x .tick,
+.connect-chart.connect-chart-spline.connect-viz-in-error .c3-axis-x .tick,
+.connect-chart.connect-chart-bar.connect-viz-in-error .c3-axis-x .tick {
+  display: none;
+}
+.connect-chart.connect-chart-line.connect-viz-loading .c3-legend-item,
+.connect-chart.connect-chart-spline.connect-viz-loading .c3-legend-item,
+.connect-chart.connect-chart-bar.connect-viz-loading .c3-legend-item,
+.connect-chart.connect-chart-line.connect-viz-in-error .c3-legend-item,
+.connect-chart.connect-chart-spline.connect-viz-in-error .c3-legend-item,
+.connect-chart.connect-chart-bar.connect-viz-in-error .c3-legend-item {
+  display: none;
+}
+.connect-chart.connect-chart-line.connect-viz-loading .c3-chart,
+.connect-chart.connect-chart-spline.connect-viz-loading .c3-chart,
+.connect-chart.connect-chart-bar.connect-viz-loading .c3-chart,
+.connect-chart.connect-chart-line.connect-viz-in-error .c3-chart,
+.connect-chart.connect-chart-spline.connect-viz-in-error .c3-chart,
+.connect-chart.connect-chart-bar.connect-viz-in-error .c3-chart {
+  visibility: hidden;
+}
 .connect-chart.connect-chart-gauge .connect-error {
-  bottom: 25px;
+  bottom: 10px;
   left: 0;
   right: 0;
 }
 .connect-chart.connect-chart-gauge.connect-viz-loading .c3-chart-arcs-background {
   opacity: 0.5;
 }
-.connect-chart.connect-viz-loading .c3 {
-  opacity: 0.35;
+.connect-chart.connect-chart-gauge.connect-viz-loading .c3-gauge-value {
+  visibility: hidden;
 }
 .c3-legend-item {
   font: 12px 'Roboto', sans-serif;
@@ -113,6 +135,7 @@
   text-align: center;
   font: 700 16px 'Roboto', sans-serif;
   color: #34495e;
+  padding-bottom: 5px;
 }
 
 .connect-error {
@@ -170,6 +193,9 @@
 .connect-viz-loading .connect-viz-title {
   opacity: 0.35;
 }
+.connect-viz-loading .connect-viz-result > :not(.connect-loader) {
+  opacity: 0.35;
+}
 @-webkit-keyframes connect-loader-stretchdelay {
   0%,
   40%,
@@ -202,6 +228,15 @@
   position: relative;
   height: 100%;
   overflow-y: hidden;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -webkit-flex-direction: column;
+      -ms-flex-direction: column;
+          flex-direction: column;
 }
 .connect-table .connect-error {
   left: 50%;
@@ -210,12 +245,16 @@
       -ms-transform: translate(-50%, -50%);
           transform: translate(-50%, -50%);
 }
-.connect-table.connect-viz-loading .connect-table-wrapper {
-  opacity: 0.35;
+.connect-table .connect-viz-result {
+  -webkit-box-flex: 1;
+  -webkit-flex-grow: 1;
+      -ms-flex-positive: 1;
+          flex-grow: 1;
+  position: relative;
 }
 .connect-table .connect-table-wrapper {
   position: absolute;
-  top: 24px;
+  top: 0;
   left: 0;
   right: 0;
   bottom: 0;
@@ -369,23 +408,15 @@
   color: #34495e;
   line-height: 1.1;
 }
+.connect-text.connect-viz-loading .connect-text-value > span,
+.connect-text.connect-viz-in-error .connect-text-value > span {
+  visibility: hidden;
+}
 .connect-text .connect-error {
   left: 50%;
   top: 50%;
   -webkit-transform: translate(-50%, -50%);
       -ms-transform: translate(-50%, -50%);
           transform: translate(-50%, -50%);
-}
-.connect-text.connect-viz-in-error .connect-text-value {
-  visibility: hidden;
-}
-.connect-text.connect-viz-in-error .connect-viz-title {
-  visibility: hidden;
-}
-.connect-text.connect-viz-loading .connect-text-value {
-  min-height: 46.2px;
-}
-.connect-text.connect-viz-loading .connect-text-value span {
-  opacity: 0.35;
 }
 

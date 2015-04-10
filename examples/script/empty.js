@@ -2,7 +2,9 @@ var queryResults = require('./query-results.js').empty;
 
 var bar = new Connect.Viz.Chart('#empty-bar', {
     title: 'Sales',
-    type: 'bar'
+    chart: {
+        type: 'bar'
+    }
 });
 
 var table = new Connect.Viz.Table('#empty-table', {
@@ -13,9 +15,8 @@ var text = new Connect.Viz.Text('#empty-text', {
     title: 'Sales'
 });
 
-var gauge = new Connect.Viz.Chart('#empty-gauge', {
+var gauge = new Connect.Viz.Gauge('#empty-gauge', {
     title: 'Market (%)',
-    type: 'gauge'
 });
 
 bar.displayData(queryResults.results, queryResults.metadata);

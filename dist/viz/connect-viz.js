@@ -7,7 +7,7 @@ function applyMixins(targetClass, mixinClass) {
 }
 module.exports = applyMixins;
 
-},{"underscore":25}],2:[function(require,module,exports){
+},{"underscore":26}],2:[function(require,module,exports){
 var Config = require('../config');
 var GroupedIntervalDataset = require('./grouped-interval-dataset');
 var StandardDataset = require('./standard-dataset');
@@ -21,63 +21,47 @@ var Chart = (function () {
     function Chart(targetElement, chartOptions) {
         this._options = this._parseOptions(chartOptions);
         this.targetElement = Dom.getElement(targetElement);
+        this.loader = new Loader(this.targetElement);
+        this._duration = {
+            firstLoad: null,
+            reload: 300
+        };
     }
     Chart.prototype._parseOptions = function (chartOptions) {
         var defaultOptions = {
-            type: 'bar',
-            intervalOptions: {},
-            fieldOptions: {},
-            showLegend: true,
-            yAxisValueFormatter: function (value) { return value; }
+            intervals: {},
+            fields: {},
+            chart: {
+                type: 'bar',
+                showLegend: true,
+                yAxisValueFormatter: function (value) { return value; }
+            },
         }, defaultIntervalOptions = {
             formats: Config.defaultTimeSeriesFormats
-        }, defaultC3Options = Config.defaultC3Options, type = chartOptions.type, options = null, loadsMinMaxFromResult = null, minMaxFromResultsOptions = _.extend(Config.defaultC3Options.minMaxFromResults, defaultC3Options[type]);
-        options = _.extend(defaultOptions, chartOptions);
-        options.intervalOptions = _.extend(options.intervalOptions, defaultIntervalOptions);
-        loadsMinMaxFromResult = options[options.type] && _.isString(options[options.type].min + options[options.type].max);
-        if (loadsMinMaxFromResult) {
-            this._minSelectName = _.isString(options[options.type].min) ? options[options.type].min : null;
-            this._maxSelectName = _.isString(options[options.type].max) ? options[options.type].max : null;
-            options[type] = _.extend(options[type] || {}, minMaxFromResultsOptions);
-        }
-        else {
-            options[type] = _.extend(options[type] || {}, defaultC3Options[type]);
-        }
+        }, defaultC3Options = Config.defaultC3Options, options = null, options = _.extend(defaultOptions, chartOptions), type = options.chart.type;
+        options.intervals = _.extend(options.intervals, defaultIntervalOptions);
+        options[type] = _.extend(options[type] || {}, defaultC3Options[type]);
         return options;
     };
     Chart.prototype._initializeFieldOptions = function (metadata) {
-        var fields = metadata.selects.concat(metadata.groups), firstSelect = metadata.selects[0], options = this._options, fieldOptions = options.fieldOptions, type = options.type, isSingleArc = fields.length == 1 && options[type].label && options[type].label.format;
+        var fields = metadata.selects.concat(metadata.groups), options = this._options, fieldOptions = options.fields, type = options.chart.type;
         _.each(fields, function (fieldName) {
             fieldOptions[fieldName] = fieldOptions[fieldName] || {};
         });
-        if (isSingleArc) {
-            options[type].label = _.clone(options[type].label);
-            fieldOptions[firstSelect].valueFormatter = fieldOptions[firstSelect].valueFormatter || options[type].label.format;
-            options[type].label.format = fieldOptions[firstSelect].valueFormatter;
-        }
     };
     Chart.prototype.displayData = function (resultsPromise, metadata, showLoader) {
         if (showLoader === void 0) { showLoader = true; }
-        var parsedMetaData = this._parseMetaData(metadata);
-        this._initializeFieldOptions(parsedMetaData);
-        this._renderChart(parsedMetaData);
-        ResultHandling.handleResult(resultsPromise, parsedMetaData, this, this._loadData, showLoader);
-    };
-    Chart.prototype._parseMetaData = function (metadata) {
-        var options = this._options, type = options.type, typeOptions = options[type], parsedMetaData = _.clone(metadata), filteredSelected = _.without(metadata.selects, this._minSelectName, this._maxSelectName);
-        parsedMetaData.selects = filteredSelected;
-        return parsedMetaData;
+        var internalChartConfig;
+        if (this._rendered && showLoader) {
+            internalChartConfig = this._chart.internal.config;
+            internalChartConfig.transition_duration = this._duration.firstLoad;
+        }
+        this._initializeFieldOptions(metadata);
+        this._renderChart(metadata);
+        ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
     };
     Chart.prototype._loadData = function (results, metadata) {
-        var options = this._options, type = options.type, typeOptions = options[type], dataset = this._buildDataset(results, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = Palette.getSwatch(uniqueKeys, options.colors), setMinProperty = this._minSelectName && results.length, setMaxProperty = this._maxSelectName && results.length, minConfigProperty = type + '_min', maxConfigProperty = type + '_max', showLabelConfigProperty = type + '_label_show', internalChartConfig = this._chart.internal.config;
-        if (setMinProperty) {
-            internalChartConfig[minConfigProperty] = results[0][this._minSelectName];
-            internalChartConfig[showLabelConfigProperty] = true;
-        }
-        if (setMaxProperty) {
-            internalChartConfig[maxConfigProperty] = results[0][this._maxSelectName];
-            internalChartConfig[showLabelConfigProperty] = true;
-        }
+        var options = this._options, type = options.chart.type, typeOptions = options[type], dataset = this._buildDataset(results, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = Palette.getSwatch(uniqueKeys, options.chart.colors), internalChartConfig = this._chart.internal.config;
         this._currentDataset = dataset;
         this._chart.load({
             json: dataset.getData(),
@@ -88,6 +72,7 @@ var Chart = (function () {
             colors: colors
         });
         this._showTitle();
+        internalChartConfig.transition_duration = this._duration.reload;
     };
     Chart.prototype.clear = function () {
         this._rendered = false;
@@ -96,7 +81,7 @@ var Chart = (function () {
     Chart.prototype._buildDataset = function (results, metadata) {
         var _this = this;
         var options = this._options, formatters = {
-            selectLabelFormatter: function (select) { return options.fieldOptions[select] && options.fieldOptions[select].label ? options.fieldOptions[select].label : select; },
+            selectLabelFormatter: function (select) { return options.fields[select] && options.fields[select].label ? options.fields[select].label : select; },
             groupValueFormatter: function (groupByName, groupValue) { return _this._formatGroupValue(groupByName, groupValue); }
         }, isGroupedInterval = metadata.interval && metadata.groups.length;
         return isGroupedInterval ? new GroupedIntervalDataset(results, metadata, formatters) : new StandardDataset(results, metadata, formatters);
@@ -107,14 +92,14 @@ var Chart = (function () {
         this._titleElement.style.display = !showTitle ? 'none' : '';
     };
     Chart.prototype._formatValueForLabel = function (label, value) {
-        var dataset = this._currentDataset, select = this._currentDataset.getSelect(label), options = this._options, fieldOption = options.fieldOptions[select], valueFormatter = fieldOption.valueFormatter;
+        var dataset = this._currentDataset, select = this._currentDataset.getSelect(label), options = this._options, fieldOption = options.fields[select], valueFormatter = fieldOption.valueFormatter;
         if (valueFormatter) {
             return valueFormatter(value);
         }
         return value;
     };
     Chart.prototype._formatGroupValue = function (groupByName, groupValue) {
-        var fieldOption = this._options.fieldOptions[groupByName], valueFormatter = fieldOption.valueFormatter;
+        var fieldOption = this._options.fields[groupByName], valueFormatter = fieldOption.valueFormatter;
         if (valueFormatter) {
             return valueFormatter(groupValue);
         }
@@ -124,15 +109,15 @@ var Chart = (function () {
         var _this = this;
         if (this._rendered)
             return;
-        var options = this._options, connectChartContainer = document.createElement('div'), c3Element = document.createElement('div'), rootElement = this.targetElement, titleElement = document.createElement('span'), timezone = options.timezone || metadata.timezone, dateFormat = null, standardDateformatter = function (value) { return Formatters.formatDate(value, timezone, dateFormat); }, customDateFormatter = options.intervalOptions.valueFormatter, tooltipValueFormatter = function (value, ratio, id, index) { return _this._formatValueForLabel(id, value); }, config = {
+        var options = this._options, connectChartContainer = document.createElement('div'), c3Element = document.createElement('div'), rootElement = this.targetElement, titleElement = document.createElement('span'), timezone = options.timezone || metadata.timezone, dateFormat = null, standardDateformatter = function (value) { return Formatters.formatDate(value, timezone, dateFormat); }, customDateFormatter = options.intervals.valueFormatter, tooltipValueFormatter = function (value, ratio, id, index) { return _this._formatValueForLabel(id, value); }, config = {
             bindto: c3Element,
             size: {
-                height: options.height
+                height: options.chart.height
             },
-            padding: options.padding,
+            padding: options.chart.padding,
             data: {
                 json: [],
-                type: options.type
+                type: options.chart.type
             },
             axis: {
                 x: {
@@ -145,12 +130,12 @@ var Chart = (function () {
                 y: {
                     tick: {
                         outer: false,
-                        format: options.yAxisValueFormatter
+                        format: options.chart.yAxisValueFormatter
                     }
                 }
             },
             transition: {
-                duration: null
+                duration: this._duration.firstLoad
             },
             tooltip: {
                 format: {
@@ -158,18 +143,19 @@ var Chart = (function () {
                 }
             },
             legend: {
-                show: options.showLegend
+                show: options.chart.showLegend
             }
         };
         this.clear();
         titleElement.className = 'connect-viz-title';
-        connectChartContainer.className = 'connect-viz connect-chart connect-chart-' + options.type;
+        c3Element.className = 'connect-viz-result';
+        connectChartContainer.className = 'connect-viz connect-chart connect-chart-' + options.chart.type;
         connectChartContainer.appendChild(titleElement);
         connectChartContainer.appendChild(c3Element);
         rootElement.appendChild(connectChartContainer);
-        config[options.type] = options[options.type];
+        config[options.chart.type] = options[options.chart.type];
         if (metadata.interval) {
-            dateFormat = options.intervalOptions.formats[metadata.interval];
+            dateFormat = options.intervals.formats[metadata.interval];
             config.data['xFormat'] = '%Y-%m-%dT%H:%M:%SZ';
             config.data['xLocaltime'] = false;
             config.axis.x.type = 'timeseries';
@@ -178,14 +164,13 @@ var Chart = (function () {
         this._rendered = true;
         this._titleElement = titleElement;
         this._showTitle();
-        this.loader = new Loader(this.targetElement, connectChartContainer);
         this._chart = c3.generate(config);
     };
     return Chart;
 })();
 module.exports = Chart;
 
-},{"../config":6,"../dom":8,"../formatters":10,"../loader":12,"../palette":13,"../result-handling":14,"./grouped-interval-dataset":4,"./standard-dataset":5,"underscore":25}],3:[function(require,module,exports){
+},{"../config":7,"../dom":9,"../formatters":11,"../loader":13,"../palette":14,"../result-handling":15,"./grouped-interval-dataset":5,"./standard-dataset":6,"underscore":26}],3:[function(require,module,exports){
 var _ = require('underscore');
 var Dataset;
 (function (Dataset) {
@@ -204,7 +189,145 @@ var Dataset;
 })(Dataset || (Dataset = {}));
 module.exports = Dataset;
 
-},{"underscore":25}],4:[function(require,module,exports){
+},{"underscore":26}],4:[function(require,module,exports){
+var Config = require('../config');
+var StandardDataset = require('./standard-dataset');
+var _ = require('underscore');
+var Palette = require('../palette');
+var Loader = require('../loader');
+var Dom = require('../dom');
+var ResultHandling = require('../result-handling');
+var Gauge = (function () {
+    function Gauge(targetElement, gaugeOptions) {
+        this._options = this._parseOptions(gaugeOptions);
+        this.targetElement = Dom.getElement(targetElement);
+        this.loader = new Loader(this.targetElement);
+    }
+    Gauge.prototype._parseOptions = function (gaugeOptions) {
+        var defaultOptions = {
+            fields: {},
+            gauge: {},
+        }, defaultC3Options = Config.defaultC3Options, options = null, loadsMinMaxFromResult = null, minMaxFromResultsOptions = _.extend(Config.defaultC3Options.minMaxFromResults, defaultC3Options.gauge);
+        options = _.extend(defaultOptions, gaugeOptions);
+        loadsMinMaxFromResult = _.isString(options.gauge.min + options.gauge.max);
+        if (loadsMinMaxFromResult) {
+            this._minSelectName = _.isString(options.gauge.min) ? options.gauge.min : null;
+            this._maxSelectName = _.isString(options.gauge.max) ? options.gauge.max : null;
+            options.gauge = _.extend(options.gauge || {}, minMaxFromResultsOptions);
+        }
+        else {
+            options.gauge = _.extend(options.gauge || {}, defaultC3Options.gauge);
+        }
+        return options;
+    };
+    Gauge.prototype._initializeFieldOptions = function (metadata) {
+        var fields = metadata.selects.concat(metadata.groups), firstSelect = metadata.selects[0], options = this._options, fieldOptions = options.fields;
+        _.each(fields, function (fieldName) {
+            fieldOptions[fieldName] = fieldOptions[fieldName] || {};
+        });
+        options.gauge.label = _.clone(options.gauge.label);
+        fieldOptions[firstSelect].valueFormatter = fieldOptions[firstSelect].valueFormatter || options.gauge.label.format;
+        options.gauge.label.format = fieldOptions[firstSelect].valueFormatter;
+    };
+    Gauge.prototype.displayData = function (resultsPromise, metadata, showLoader) {
+        if (showLoader === void 0) { showLoader = true; }
+        var parsedMetaData = this._parseMetaData(metadata);
+        this._initializeFieldOptions(parsedMetaData);
+        this._renderGauge(parsedMetaData);
+        ResultHandling.handleResult(resultsPromise, parsedMetaData, this, this._loadData, showLoader);
+    };
+    Gauge.prototype._parseMetaData = function (metadata) {
+        var options = this._options, typeOptions = options.gauge, parsedMetaData = _.clone(metadata), filteredSelected = _.without(metadata.selects, this._minSelectName, this._maxSelectName);
+        parsedMetaData.selects = filteredSelected;
+        return parsedMetaData;
+    };
+    Gauge.prototype._loadData = function (results, metadata) {
+        var options = this._options, typeOptions = options.gauge, dataset = this._buildDataset(results, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = Palette.getSwatch(uniqueKeys, options.gauge.color ? [options.gauge.color] : null), setMinProperty = this._minSelectName && results.length, setMaxProperty = this._maxSelectName && results.length, minConfigProperty = 'gauge_min', maxConfigProperty = 'gauge_max', showLabelConfigProperty = 'gauge_label_show', internalGaugeConfig = this._gauge.internal.config;
+        if (setMinProperty) {
+            internalGaugeConfig[minConfigProperty] = results[0][this._minSelectName];
+            internalGaugeConfig[showLabelConfigProperty] = true;
+        }
+        if (setMaxProperty) {
+            internalGaugeConfig[maxConfigProperty] = results[0][this._maxSelectName];
+            internalGaugeConfig[showLabelConfigProperty] = true;
+        }
+        this._currentDataset = dataset;
+        this._gauge.load({
+            json: dataset.getData(),
+            keys: {
+                x: '_x',
+                value: keys
+            },
+            colors: colors
+        });
+        this._showTitle();
+    };
+    Gauge.prototype.clear = function () {
+        this._rendered = false;
+        Dom.removeAllChildren(this.targetElement);
+    };
+    Gauge.prototype._buildDataset = function (results, metadata) {
+        var _this = this;
+        var options = this._options, formatters = {
+            selectLabelFormatter: function (select) { return options.fields[select] && options.fields[select].label ? options.fields[select].label : select; },
+            groupValueFormatter: function (groupByName, groupValue) { return _this._formatGroupValue(groupByName, groupValue); }
+        };
+        return new StandardDataset(results, metadata, formatters);
+    };
+    Gauge.prototype._showTitle = function () {
+        var options = this._options, titleText = options.title ? options.title.toString() : '', showTitle = titleText.length > 0;
+        this._titleElement.textContent = titleText;
+        this._titleElement.style.display = !showTitle ? 'none' : '';
+    };
+    Gauge.prototype._formatValueForLabel = function (label, value) {
+        var dataset = this._currentDataset, select = this._currentDataset.getSelect(label), options = this._options, fieldOption = options.fields[select], valueFormatter = fieldOption.valueFormatter;
+        if (valueFormatter) {
+            return valueFormatter(value);
+        }
+        return value;
+    };
+    Gauge.prototype._formatGroupValue = function (groupByName, groupValue) {
+        var fieldOption = this._options.fields[groupByName], valueFormatter = fieldOption.valueFormatter;
+        if (valueFormatter) {
+            return valueFormatter(groupValue);
+        }
+        return groupValue;
+    };
+    Gauge.prototype._renderGauge = function (metadata) {
+        var _this = this;
+        if (this._rendered)
+            return;
+        var options = this._options, connectGaugeContainer = document.createElement('div'), c3Element = document.createElement('div'), rootElement = this.targetElement, titleElement = document.createElement('span'), timezone = options.timezone || metadata.timezone, dateFormat = null, tooltipValueFormatter = function (value, ratio, id, index) { return _this._formatValueForLabel(id, value); }, config = {
+            bindto: c3Element,
+            padding: options.gauge.padding,
+            data: {
+                json: [],
+                type: 'gauge'
+            },
+            tooltip: {
+                format: {
+                    value: tooltipValueFormatter
+                }
+            }
+        };
+        this.clear();
+        titleElement.className = 'connect-viz-title';
+        c3Element.className = 'connect-viz-result';
+        connectGaugeContainer.className = 'connect-viz connect-chart connect-chart-gauge';
+        connectGaugeContainer.appendChild(titleElement);
+        connectGaugeContainer.appendChild(c3Element);
+        rootElement.appendChild(connectGaugeContainer);
+        config['gauge'] = options['gauge'];
+        this._rendered = true;
+        this._titleElement = titleElement;
+        this._showTitle();
+        this._gauge = c3.generate(config);
+    };
+    return Gauge;
+})();
+module.exports = Gauge;
+
+},{"../config":7,"../dom":9,"../loader":13,"../palette":14,"../result-handling":15,"./standard-dataset":6,"underscore":26}],5:[function(require,module,exports){
 var Dataset = require('./dataset');
 var _ = require('underscore');
 var GroupedIntervalDataset = (function () {
@@ -262,7 +385,7 @@ var GroupedIntervalDataset = (function () {
 })();
 module.exports = GroupedIntervalDataset;
 
-},{"./dataset":3,"underscore":25}],5:[function(require,module,exports){
+},{"./dataset":3,"underscore":26}],6:[function(require,module,exports){
 var Dataset = require('./dataset');
 var _ = require('underscore');
 var StandardDataset = (function () {
@@ -314,7 +437,7 @@ var StandardDataset = (function () {
 })();
 module.exports = StandardDataset;
 
-},{"./dataset":3,"underscore":25}],6:[function(require,module,exports){
+},{"./dataset":3,"underscore":26}],7:[function(require,module,exports){
 var Config;
 (function (Config) {
     Config.defaultTimeSeriesFormats = {
@@ -336,7 +459,8 @@ var Config;
         gauge: {
             label: {
                 format: function (value) { return d3.format('.0f')(value) + '%'; },
-                formatall: true
+                formatall: true,
+                transition: false
             },
             expand: true
         },
@@ -352,7 +476,7 @@ var Config;
 })(Config || (Config = {}));
 module.exports = Config;
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 var ErrorHandling = require('./error-handling');
 var DataVisualization = (function () {
     function DataVisualization(query, visualization) {
@@ -376,7 +500,7 @@ var DataVisualization = (function () {
 })();
 module.exports = DataVisualization;
 
-},{"./error-handling":9}],8:[function(require,module,exports){
+},{"./error-handling":10}],9:[function(require,module,exports){
 var _ = require('underscore');
 function getElement(selector) {
     if (_.isString(selector))
@@ -393,7 +517,7 @@ function removeAllChildren(targetElement) {
 }
 exports.removeAllChildren = removeAllChildren;
 
-},{"underscore":25}],9:[function(require,module,exports){
+},{"underscore":26}],10:[function(require,module,exports){
 var ErrorHandling;
 (function (ErrorHandling) {
     var errorTypes = {
@@ -405,9 +529,9 @@ var ErrorHandling;
             icon: 'ion-ios-bolt',
             defaultMessage: 'Network Error'
         },
-        setup: {
-            icon: 'ion-sad-outline',
-            defaultMessage: 'Invalid Query'
+        unsupportedQuery: {
+            icon: 'ion-wrench',
+            defaultMessage: 'Unsupported Query'
         },
         other: {
             icon: 'ion-bug',
@@ -432,10 +556,9 @@ var ErrorHandling;
         }
     }
     ErrorHandling.clearError = clearError;
-    function displayFriendlyError(targetElement, type, message) {
+    function displayFriendlyError(targetElement, type) {
         if (type === void 0) { type = 'other'; }
-        if (message === void 0) { message = ''; }
-        var errorIcon = errorTypes[type].icon, errorMessage = message || errorTypes[type].defaultMessage, elementForError = targetElement, errorIconElement = document.createElement('span'), errorMessageElement = document.createElement('span'), errorElement = document.createElement('div'), errorClassName = 'connect-error', viz = elementForError.querySelector('.connect-viz');
+        var errorIcon = errorTypes[type].icon, errorMessage = errorTypes[type].defaultMessage, elementForError = targetElement, errorIconElement = document.createElement('span'), errorMessageElement = document.createElement('span'), errorElement = document.createElement('div'), errorClassName = 'connect-error', viz = elementForError.querySelector('.connect-viz'), result = elementForError.querySelector('.connect-viz-result') || viz;
         if (!elementForError) {
             return;
         }
@@ -444,22 +567,25 @@ var ErrorHandling;
         errorElement.className += errorClassName + ' connect-error-message';
         errorElement.appendChild(errorIconElement);
         errorElement.appendChild(errorMessageElement);
-        if (viz) {
-            viz.appendChild(errorElement);
+        if (viz && result) {
+            result.appendChild(errorElement);
             viz.className += ' connect-viz-in-error';
         }
     }
     ErrorHandling.displayFriendlyError = displayFriendlyError;
     function logError(error) {
+        var printable = error;
         if (console && console.log) {
-            console.log(error.toString());
+            console.log(error.message);
+            if (printable.stack)
+                console.log(printable.stack);
         }
     }
     ErrorHandling.logError = logError;
 })(ErrorHandling || (ErrorHandling = {}));
 module.exports = ErrorHandling;
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 var moment = require('moment-timezone');
 var _ = require('underscore');
 function formatDate(dateToFormat, timezone, format) {
@@ -474,7 +600,7 @@ function formatDate(dateToFormat, timezone, format) {
 }
 exports.formatDate = formatDate;
 
-},{"moment-timezone":22,"underscore":25}],11:[function(require,module,exports){
+},{"moment-timezone":23,"underscore":26}],12:[function(require,module,exports){
 (function (global){
 var Viz = require('./viz');
 var applyMixins = require('./apply-mixins');
@@ -507,9 +633,12 @@ else if (typeof global !== 'undefined') {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./apply-mixins":1,"./viz":19,"tipi-connect":20}],12:[function(require,module,exports){
+},{"./apply-mixins":1,"./viz":20,"tipi-connect":21}],13:[function(require,module,exports){
 var Loader = (function () {
-    function Loader(targetElement, containerElement) {
+    function Loader(targetElement) {
+        this._vizSelector = '.connect-viz';
+        this._parentOfLoaderSelector = '.connect-viz-result';
+        this._loaderClass = 'connect-viz-loading';
         var bar1 = document.createElement('div'), bar2 = document.createElement('div'), bar3 = document.createElement('div'), bar4 = document.createElement('div'), bar5 = document.createElement('div'), loaderContainer = document.createElement('div');
         bar1.className = 'connect-loader-bar1';
         bar2.className = 'connect-loader-bar2';
@@ -522,27 +651,32 @@ var Loader = (function () {
         loaderContainer.appendChild(bar3);
         loaderContainer.appendChild(bar4);
         loaderContainer.appendChild(bar5);
-        this._elementForLoader = containerElement;
+        this._targetElement = targetElement;
         this._loaderContainer = loaderContainer;
-        this._vizContainer = targetElement.querySelector('.connect-viz');
     }
     Loader.prototype.show = function () {
-        this._vizContainer.className += ' connect-viz-loading';
-        this._elementForLoader.appendChild(this._loaderContainer);
+        var vizContainer = this._targetElement.querySelector(this._vizSelector), parentOfLoader = this._targetElement.querySelector(this._parentOfLoaderSelector);
+        if (!vizContainer || !parentOfLoader)
+            return;
+        vizContainer.classList.add(this._loaderClass);
+        parentOfLoader.appendChild(this._loaderContainer);
         this._visible = true;
     };
     Loader.prototype.hide = function () {
+        var vizContainer = this._targetElement.querySelector(this._vizSelector), parentOfLoader = this._targetElement.querySelector(this._parentOfLoaderSelector);
         if (!this._visible)
             return;
-        this._vizContainer.className = this._vizContainer.className.replace(' connect-viz-loading', '');
-        this._elementForLoader.removeChild(this._loaderContainer);
+        if (vizContainer)
+            vizContainer.classList.remove(this._loaderClass);
+        if (parentOfLoader)
+            parentOfLoader.removeChild(this._loaderContainer);
         this._visible = false;
     };
     return Loader;
 })();
 module.exports = Loader;
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 var _ = require('underscore');
 var Palette;
 (function (Palette) {
@@ -557,7 +691,7 @@ var Palette;
 })(Palette || (Palette = {}));
 module.exports = Palette;
 
-},{"underscore":25}],14:[function(require,module,exports){
+},{"underscore":26}],15:[function(require,module,exports){
 var ErrorHandling = require('./error-handling');
 var ResultHandling;
 (function (ResultHandling) {
@@ -567,13 +701,14 @@ var ResultHandling;
                 loader.hide();
             }
         };
-        ErrorHandling.clearError(targetElement);
         if (showLoader) {
+            ErrorHandling.clearError(targetElement);
             loader.show();
         }
         resultsPromise.then(function (results) {
             hideLoader();
             try {
+                ErrorHandling.clearError(targetElement);
                 if (results == null || !results.length) {
                     ErrorHandling.displayFriendlyError(targetElement, 'noResults');
                     return;
@@ -586,6 +721,7 @@ var ResultHandling;
             }
         }, function (error) {
             hideLoader();
+            ErrorHandling.clearError(targetElement);
             ErrorHandling.handleError(targetElement, error);
         });
     }
@@ -593,7 +729,7 @@ var ResultHandling;
 })(ResultHandling || (ResultHandling = {}));
 module.exports = ResultHandling;
 
-},{"./error-handling":9}],15:[function(require,module,exports){
+},{"./error-handling":10}],16:[function(require,module,exports){
 var _ = require('underscore');
 var Formatters = require('../formatters');
 var TableDataset = (function () {
@@ -614,7 +750,7 @@ var TableDataset = (function () {
             return _.isNumber(firstRowWithDesiredCol[key]);
         };
         var createHeaderCell = function (isGrouped, key) {
-            var optionsForField = options.fieldOptions[key];
+            var optionsForField = options.fields[key];
             return {
                 isGrouped: isGrouped,
                 title: optionsForField && optionsForField.label ? optionsForField.label : key,
@@ -628,7 +764,7 @@ var TableDataset = (function () {
         if (metadata.interval) {
             var intervalHeader = {
                 isGrouped: false,
-                title: options.intervalOptions && options.intervalOptions.label ? options.intervalOptions.label : '',
+                title: options.intervals && options.intervals.label ? options.intervals.label : '',
                 isNumeric: false,
                 isInterval: true
             };
@@ -638,7 +774,7 @@ var TableDataset = (function () {
     };
     TableDataset.prototype._buildContentRows = function (metadata, options, results) {
         var createContentCell = function (isGrouped, result, key) {
-            var optionsForField = options.fieldOptions[key];
+            var optionsForField = options.fields[key];
             var rawValue = result[key];
             var isNumeric = _.isNumber(rawValue);
             var defaultFormatter = isNumeric ? d3.format(',.2f') : function (value) { return value; };
@@ -655,13 +791,13 @@ var TableDataset = (function () {
             var startDate = serverTimeFormat.parse(result.interval.start);
             var endDate = serverTimeFormat.parse(result.interval.end);
             var defaultFormat = function (start, end) {
-                var timeFormat = options.intervalOptions.formats[metadata.interval];
+                var timeFormat = options.intervals.formats[metadata.interval];
                 var timezone = options.timezone || metadata.timezone;
                 var startDate = Formatters.formatDate(start, timezone, timeFormat);
                 var endDate = Formatters.formatDate(end, timezone, timeFormat);
                 return startDate + ' - ' + endDate;
             };
-            var intervalFormatter = options.intervalOptions.valueFormatter ? options.intervalOptions.valueFormatter : defaultFormat;
+            var intervalFormatter = options.intervals.valueFormatter ? options.intervals.valueFormatter : defaultFormat;
             return {
                 isGrouped: false,
                 rawValue: result.interval,
@@ -694,7 +830,7 @@ var TableDataset = (function () {
 })();
 exports.TableDataset = TableDataset;
 
-},{"../formatters":10,"underscore":25}],16:[function(require,module,exports){
+},{"../formatters":11,"underscore":26}],17:[function(require,module,exports){
 var _ = require('underscore');
 function renderDataset(dataset) {
     return template()({
@@ -740,7 +876,7 @@ function template() {
 	');
 }
 
-},{"underscore":25}],17:[function(require,module,exports){
+},{"underscore":26}],18:[function(require,module,exports){
 var _ = require('underscore');
 var Config = require('../config');
 var Dataset = require('./dataset');
@@ -751,14 +887,15 @@ var ResultHandling = require('../result-handling');
 var Table = (function () {
     function Table(targetElement, suppliedOptions) {
         var defaultTableOptions = {
-            fieldOptions: {},
-            intervalOptions: {}
+            fields: {},
+            intervals: {}
         }, defaultIntervalOptions = {
             formats: Config.defaultTimeSeriesFormats
         };
         this.targetElement = Dom.getElement(targetElement);
         this._options = _.extend(defaultTableOptions, suppliedOptions);
-        this._options.intervalOptions = _.extend(this._options.intervalOptions, defaultIntervalOptions);
+        this._options.intervals = _.extend(this._options.intervals, defaultIntervalOptions);
+        this.loader = new Loader(this.targetElement);
     }
     Table.prototype.displayData = function (resultsPromise, metadata, showLoader) {
         if (showLoader === void 0) { showLoader = true; }
@@ -782,25 +919,26 @@ var Table = (function () {
     Table.prototype._renderTable = function (metadata) {
         if (this._rendered)
             return;
-        var options = this._options, tableContainer = document.createElement('div'), tableWrapper = document.createElement('div'), rootElement = this.targetElement, titleElement = document.createElement('span');
+        var options = this._options, tableContainer = document.createElement('div'), tableWrapper = document.createElement('div'), results = document.createElement('div'), rootElement = this.targetElement, titleElement = document.createElement('span');
         this.clear();
         tableContainer.className = 'connect-viz connect-table';
         titleElement.className = 'connect-viz-title';
+        results.className = 'connect-viz-result';
         tableWrapper.className = 'connect-table-wrapper';
         tableContainer.appendChild(titleElement);
-        tableContainer.appendChild(tableWrapper);
+        tableContainer.appendChild(results);
+        results.appendChild(tableWrapper);
         rootElement.appendChild(tableContainer);
         this._rendered = true;
         this._tableWrapper = tableWrapper;
         this._titleElement = titleElement;
         this._showTitle();
-        this.loader = new Loader(this.targetElement, tableContainer);
     };
     return Table;
 })();
 module.exports = Table;
 
-},{"../config":6,"../dom":8,"../loader":12,"../result-handling":14,"./dataset":15,"./renderer":16,"underscore":25}],18:[function(require,module,exports){
+},{"../config":7,"../dom":9,"../loader":13,"../result-handling":15,"./dataset":16,"./renderer":17,"underscore":26}],19:[function(require,module,exports){
 var ErrorHandling = require('./error-handling');
 var _ = require('underscore');
 var Loader = require('./loader');
@@ -809,22 +947,23 @@ var Dom = require('./dom');
 var Text = (function () {
     function Text(targetElement, textOptions) {
         this._options = _.extend({
-            fieldOptions: {}
+            fields: {}
         }, textOptions);
         this.targetElement = Dom.getElement(targetElement);
+        this.loader = new Loader(this.targetElement);
     }
     Text.prototype.displayData = function (resultsPromise, metadata, showLoader) {
         if (showLoader === void 0) { showLoader = true; }
+        this._renderText(metadata);
         if (!this._checkMetaDataIsApplicable(metadata)) {
             this._renderQueryNotApplicable();
             return;
         }
-        this._renderText(metadata);
         ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
     };
     Text.prototype._loadData = function (results, metadata) {
-        var options = this._options, onlyResult = results[0], aliasOfSelect = metadata.selects[0], defaultFieldOption = { valueFormatter: function (value) { return value; } }, fieldOption = options.fieldOptions[aliasOfSelect] || defaultFieldOption, valueFormatter = fieldOption.valueFormatter, value = onlyResult[aliasOfSelect], valueText = valueFormatter(value);
-        this._valueElement.textContent = valueText;
+        var options = this._options, onlyResult = results[0], aliasOfSelect = metadata.selects[0], defaultFieldOption = { valueFormatter: function (value) { return value; } }, fieldOption = options.fields[aliasOfSelect] || defaultFieldOption, valueFormatter = fieldOption.valueFormatter, value = onlyResult[aliasOfSelect], valueText = valueFormatter(value);
+        this._valueTextElement.textContent = valueText;
         this._showTitle(metadata);
     };
     Text.prototype.clear = function () {
@@ -846,33 +985,32 @@ var Text = (function () {
         var container = document.createElement('div'), label = document.createElement('span'), elementForWidget = this.targetElement, valueTextElement = document.createElement('span'), valueElement = document.createElement('div');
         container.className = 'connect-viz connect-text';
         label.className = 'connect-viz-title';
-        valueElement.className = 'connect-text-value';
+        valueElement.className = 'connect-viz-result connect-text-value';
         this.clear();
         valueElement.appendChild(valueTextElement);
         container.appendChild(label);
         container.appendChild(valueElement);
         elementForWidget.appendChild(container);
-        this._valueElement = valueTextElement;
-        this._valueElement.innerHTML = '&nbsp;';
+        this._valueTextElement = valueTextElement;
+        this._valueTextElement.innerHTML = '&nbsp;';
         this._titleElement = label;
         this._showTitle(metadata);
-        this.loader = new Loader(this.targetElement, valueElement);
         this._rendered = true;
     };
     Text.prototype._renderQueryNotApplicable = function () {
-        var errorMsg = 'To display in a text widget a query must contain 1 select, 0 groupBys, and no interval';
         this._rendered = false;
-        ErrorHandling.displayFriendlyError(this.targetElement, errorMsg);
+        ErrorHandling.displayFriendlyError(this.targetElement, 'unsupportedQuery');
     };
     return Text;
 })();
 module.exports = Text;
 
-},{"./dom":8,"./error-handling":9,"./loader":12,"./result-handling":14,"underscore":25}],19:[function(require,module,exports){
+},{"./dom":9,"./error-handling":10,"./loader":13,"./result-handling":15,"underscore":26}],20:[function(require,module,exports){
 var Viz;
 (function (Viz) {
     Viz.DataVisualization = require('./data-visualization');
     Viz.Chart = require('./chart/chart');
+    Viz.Gauge = require('./chart/gauge');
     Viz.Text = require('./text');
     Viz.Table = require('./table/table');
     var Visualizations = (function () {
@@ -890,15 +1028,19 @@ var Viz;
             var table = new Viz.Table(targetElement, tableOptions);
             return new Viz.DataVisualization(query, table);
         };
+        Visualizations.prototype.gauge = function (query, targetElement, chartOptions) {
+            var chart = new Viz.Gauge(targetElement, chartOptions);
+            return new Viz.DataVisualization(query, chart);
+        };
         return Visualizations;
     })();
     Viz.Visualizations = Visualizations;
 })(Viz || (Viz = {}));
 module.exports = Viz;
 
-},{"./chart/chart":2,"./data-visualization":7,"./table/table":17,"./text":18}],20:[function(require,module,exports){
+},{"./chart/chart":2,"./chart/gauge":4,"./data-visualization":8,"./table/table":18,"./text":19}],21:[function(require,module,exports){
 
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 module.exports={
 	"version": "2015a",
 	"zones": [
@@ -1488,11 +1630,11 @@ module.exports={
 		"Pacific/Pohnpei|Pacific/Ponape"
 	]
 }
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 var moment = module.exports = require("./moment-timezone");
 moment.tz.load(require('./data/packed/latest.json'));
 
-},{"./data/packed/latest.json":21,"./moment-timezone":23}],23:[function(require,module,exports){
+},{"./data/packed/latest.json":22,"./moment-timezone":24}],24:[function(require,module,exports){
 //! moment-timezone.js
 //! version : 0.3.1
 //! author : Tim Wood
@@ -1912,9 +2054,9 @@ moment.tz.load(require('./data/packed/latest.json'));
 	return moment;
 }));
 
-},{"moment":24}],24:[function(require,module,exports){
+},{"moment":25}],25:[function(require,module,exports){
 //! moment.js
-//! version : 2.10.0
+//! version : 2.10.2
 //! authors : Tim Wood, Iskren Chernev, Moment.js contributors
 //! license : MIT
 //! momentjs.com
@@ -1927,7 +2069,7 @@ moment.tz.load(require('./data/packed/latest.json'));
 
     var hookCallback;
 
-    function hooks__hooks () {
+    function utils_hooks__hooks () {
         return hookCallback.apply(null, arguments);
     }
 
@@ -1991,7 +2133,7 @@ moment.tz.load(require('./data/packed/latest.json'));
         return a;
     }
 
-    function utc__createUTC (input, format, locale, strict) {
+    function create_utc__createUTC (input, format, locale, strict) {
         return createLocalOrUTC(input, format, locale, strict, true).utc();
     }
 
@@ -2016,7 +2158,7 @@ moment.tz.load(require('./data/packed/latest.json'));
     }
 
     function valid__createInvalid (flags) {
-        var m = utc__createUTC(NaN);
+        var m = create_utc__createUTC(NaN);
         if (flags != null) {
             extend(m._pf, flags);
         }
@@ -2027,7 +2169,7 @@ moment.tz.load(require('./data/packed/latest.json'));
         return m;
     }
 
-    var momentProperties = hooks__hooks.momentProperties = [];
+    var momentProperties = utils_hooks__hooks.momentProperties = [];
 
     function copyConfig(to, from) {
         var i, prop, val;
@@ -2086,7 +2228,7 @@ moment.tz.load(require('./data/packed/latest.json'));
         // objects.
         if (updateInProgress === false) {
             updateInProgress = true;
-            hooks__hooks.updateOffset(this);
+            utils_hooks__hooks.updateOffset(this);
             updateInProgress = false;
         }
     }
@@ -2171,7 +2313,7 @@ moment.tz.load(require('./data/packed/latest.json'));
                 require('./locale/' + name);
                 // because defineLocale currently also sets the global locale, we
                 // want to undo that for lazy loaded locales
-                locales__getSetGlobalLocale(oldLocale);
+                locale_locales__getSetGlobalLocale(oldLocale);
             } catch (e) { }
         }
         return locales[name];
@@ -2180,11 +2322,11 @@ moment.tz.load(require('./data/packed/latest.json'));
     // This function will load locale and then set the global locale.  If
     // no arguments are passed in, it will simply return the current global
     // locale key.
-    function locales__getSetGlobalLocale (key, values) {
+    function locale_locales__getSetGlobalLocale (key, values) {
         var data;
         if (key) {
             if (typeof values === 'undefined') {
-                data = locales__getLocale(key);
+                data = locale_locales__getLocale(key);
             }
             else {
                 data = defineLocale(key, values);
@@ -2208,7 +2350,7 @@ moment.tz.load(require('./data/packed/latest.json'));
             locales[name].set(values);
 
             // backwards compat for now: also set the locale
-            locales__getSetGlobalLocale(name);
+            locale_locales__getSetGlobalLocale(name);
 
             return locales[name];
         } else {
@@ -2219,7 +2361,7 @@ moment.tz.load(require('./data/packed/latest.json'));
     }
 
     // returns locale data
-    function locales__getLocale (key) {
+    function locale_locales__getLocale (key) {
         var locale;
 
         if (key && key._locale && key._locale._abbr) {
@@ -2274,7 +2416,7 @@ moment.tz.load(require('./data/packed/latest.json'));
         return function (value) {
             if (value != null) {
                 get_set__set(this, unit, value);
-                hooks__hooks.updateOffset(this, keepTime);
+                utils_hooks__hooks.updateOffset(this, keepTime);
                 return this;
             } else {
                 return get_set__get(this, unit);
@@ -2557,7 +2699,7 @@ moment.tz.load(require('./data/packed/latest.json'));
 
         for (i = 0; i < 12; i++) {
             // make the regex if we don't have it already
-            mom = utc__createUTC([2000, i]);
+            mom = create_utc__createUTC([2000, i]);
             if (strict && !this._longMonthsParse[i]) {
                 this._longMonthsParse[i] = new RegExp('^' + this.months(mom, '').replace('.', '') + '$', 'i');
                 this._shortMonthsParse[i] = new RegExp('^' + this.monthsShort(mom, '').replace('.', '') + '$', 'i');
@@ -2599,7 +2741,7 @@ moment.tz.load(require('./data/packed/latest.json'));
     function getSetMonth (value) {
         if (value != null) {
             setMonth(this, value);
-            hooks__hooks.updateOffset(this, true);
+            utils_hooks__hooks.updateOffset(this, true);
             return this;
         } else {
             return get_set__get(this, 'Month');
@@ -2635,7 +2777,7 @@ moment.tz.load(require('./data/packed/latest.json'));
     }
 
     function warn(msg) {
-        if (hooks__hooks.suppressDeprecationWarnings === false && typeof console !== 'undefined' && console.warn) {
+        if (utils_hooks__hooks.suppressDeprecationWarnings === false && typeof console !== 'undefined' && console.warn) {
             console.warn('Deprecation warning: ' + msg);
         }
     }
@@ -2660,7 +2802,7 @@ moment.tz.load(require('./data/packed/latest.json'));
         }
     }
 
-    hooks__hooks.suppressDeprecationWarnings = false;
+    utils_hooks__hooks.suppressDeprecationWarnings = false;
 
     var from_string__isoRegex = /^\s*(?:[+-]\d{6}|\d{4})-(?:(\d\d-\d\d)|(W\d\d$)|(W\d\d-\d)|(\d\d\d))((T| )(\d\d(:\d\d(:\d\d(\.\d+)?)?)?)?([\+\-]\d\d(?::?\d\d)?|\s*Z)?)?$/;
 
@@ -2724,11 +2866,11 @@ moment.tz.load(require('./data/packed/latest.json'));
         configFromISO(config);
         if (config._isValid === false) {
             delete config._isValid;
-            hooks__hooks.createFromInputFallback(config);
+            utils_hooks__hooks.createFromInputFallback(config);
         }
     }
 
-    hooks__hooks.createFromInputFallback = deprecate(
+    utils_hooks__hooks.createFromInputFallback = deprecate(
         'moment construction falls back to js Date. This is ' +
         'discouraged and will be removed in upcoming major ' +
         'release. Please refer to ' +
@@ -2780,7 +2922,7 @@ moment.tz.load(require('./data/packed/latest.json'));
 
     addParseToken(['YYYY', 'YYYYY', 'YYYYYY'], YEAR);
     addParseToken('YY', function (input, array) {
-        array[YEAR] = hooks__hooks.parseTwoDigitYear(input);
+        array[YEAR] = utils_hooks__hooks.parseTwoDigitYear(input);
     });
 
     // HELPERS
@@ -2795,7 +2937,7 @@ moment.tz.load(require('./data/packed/latest.json'));
 
     // HOOKS
 
-    hooks__hooks.parseTwoDigitYear = function (input) {
+    utils_hooks__hooks.parseTwoDigitYear = function (input) {
         return toInt(input) + (toInt(input) > 68 ? 1900 : 2000);
     };
 
@@ -3054,12 +3196,12 @@ moment.tz.load(require('./data/packed/latest.json'));
         config._dayOfYear = temp.dayOfYear;
     }
 
-    hooks__hooks.ISO_8601 = function () {};
+    utils_hooks__hooks.ISO_8601 = function () {};
 
     // date from string and format string
     function configFromStringAndFormat(config) {
         // TODO: Move this to another part of the creation flow to prevent circular deps
-        if (config._f === hooks__hooks.ISO_8601) {
+        if (config._f === utils_hooks__hooks.ISO_8601) {
             configFromISO(config);
             return;
         }
@@ -3205,7 +3347,7 @@ moment.tz.load(require('./data/packed/latest.json'));
             format = config._f,
             res;
 
-        config._locale = config._locale || locales__getLocale(config._l);
+        config._locale = config._locale || locale_locales__getLocale(config._l);
 
         if (input === null || (format === undefined && input === '')) {
             return valid__createInvalid({nullInput: true});
@@ -3254,7 +3396,7 @@ moment.tz.load(require('./data/packed/latest.json'));
             // from milliseconds
             config._d = new Date(input);
         } else {
-            hooks__hooks.createFromInputFallback(config);
+            utils_hooks__hooks.createFromInputFallback(config);
         }
     }
 
@@ -3363,7 +3505,7 @@ moment.tz.load(require('./data/packed/latest.json'));
 
         this._data = {};
 
-        this._locale = locales__getLocale();
+        this._locale = locale_locales__getLocale();
 
         this._bubble();
     }
@@ -3420,7 +3562,7 @@ moment.tz.load(require('./data/packed/latest.json'));
             diff = (isMoment(input) || isDate(input) ? +input : +local__createLocal(input)) - (+res);
             // Use low-level api, because this fn is low-level api.
             res._d.setTime(+res._d + diff);
-            hooks__hooks.updateOffset(res, false);
+            utils_hooks__hooks.updateOffset(res, false);
             return res;
         } else {
             return local__createLocal(input).local();
@@ -3438,7 +3580,7 @@ moment.tz.load(require('./data/packed/latest.json'));
 
     // This function will be called whenever a moment is mutated.
     // It is intended to keep the offset in sync with the timezone.
-    hooks__hooks.updateOffset = function () {};
+    utils_hooks__hooks.updateOffset = function () {};
 
     // MOMENTS
 
@@ -3475,7 +3617,7 @@ moment.tz.load(require('./data/packed/latest.json'));
                     add_subtract__addSubtract(this, create__createDuration(input - offset, 'm'), 1, false);
                 } else if (!this._changeInProgress) {
                     this._changeInProgress = true;
-                    hooks__hooks.updateOffset(this, true);
+                    utils_hooks__hooks.updateOffset(this, true);
                     this._changeInProgress = null;
                 }
             }
@@ -3544,7 +3686,7 @@ moment.tz.load(require('./data/packed/latest.json'));
 
     function isDaylightSavingTimeShifted () {
         if (this._a) {
-            var other = this._isUTC ? utc__createUTC(this._a) : local__createLocal(this._a);
+            var other = this._isUTC ? create_utc__createUTC(this._a) : local__createLocal(this._a);
             return this.isValid() && compareArrays(this._a, other.toArray()) > 0;
         }
 
@@ -3630,6 +3772,8 @@ moment.tz.load(require('./data/packed/latest.json'));
         return ret;
     }
 
+    create__createDuration.fn = Duration.prototype;
+
     function parseIso (inp, sign) {
         // We'd normally use ~~inp for this, but unfortunately it also
         // converts floats to ints.
@@ -3699,14 +3843,14 @@ moment.tz.load(require('./data/packed/latest.json'));
             setMonth(mom, get_set__get(mom, 'Month') + months * isAdding);
         }
         if (updateOffset) {
-            hooks__hooks.updateOffset(mom, days || months);
+            utils_hooks__hooks.updateOffset(mom, days || months);
         }
     }
 
     var add_subtract__add      = createAdder(1, 'add');
     var add_subtract__subtract = createAdder(-1, 'subtract');
 
-    function calendar__calendar (time) {
+    function moment_calendar__calendar (time) {
         // We want to compare the start of today, vs this.
         // Getting start-of-today depends on whether we're local/utc/offset or not.
         var now = time || local__createLocal(),
@@ -3819,7 +3963,7 @@ moment.tz.load(require('./data/packed/latest.json'));
         return -(wholeMonthDiff + adjust);
     }
 
-    hooks__hooks.defaultFormat = 'YYYY-MM-DDTHH:mm:ssZ';
+    utils_hooks__hooks.defaultFormat = 'YYYY-MM-DDTHH:mm:ssZ';
 
     function toString () {
         return this.clone().locale('en').format('ddd MMM DD YYYY HH:mm:ss [GMT]ZZ');
@@ -3840,7 +3984,7 @@ moment.tz.load(require('./data/packed/latest.json'));
     }
 
     function format (inputString) {
-        var output = formatMoment(this, inputString || hooks__hooks.defaultFormat);
+        var output = formatMoment(this, inputString || utils_hooks__hooks.defaultFormat);
         return this.localeData().postformat(output);
     }
 
@@ -3858,7 +4002,7 @@ moment.tz.load(require('./data/packed/latest.json'));
         if (key === undefined) {
             return this._locale._abbr;
         } else {
-            newLocaleData = locales__getLocale(key);
+            newLocaleData = locale_locales__getLocale(key);
             if (newLocaleData != null) {
                 this._locale = newLocaleData;
             }
@@ -3906,7 +4050,6 @@ moment.tz.load(require('./data/packed/latest.json'));
             /* falls through */
         case 'second':
             this.milliseconds(0);
-            /* falls through */
         }
 
         // weeks are a special case
@@ -4000,7 +4143,7 @@ moment.tz.load(require('./data/packed/latest.json'));
     });
 
     addWeekParseToken(['gg', 'GG'], function (input, week, config, token) {
-        week[token] = hooks__hooks.parseTwoDigitYear(input);
+        week[token] = utils_hooks__hooks.parseTwoDigitYear(input);
     });
 
     // HELPERS
@@ -4345,7 +4488,7 @@ moment.tz.load(require('./data/packed/latest.json'));
     var momentPrototype__proto = Moment.prototype;
 
     momentPrototype__proto.add          = add_subtract__add;
-    momentPrototype__proto.calendar     = calendar__calendar;
+    momentPrototype__proto.calendar     = moment_calendar__calendar;
     momentPrototype__proto.clone        = clone;
     momentPrototype__proto.diff         = diff;
     momentPrototype__proto.endOf        = endOf;
@@ -4528,7 +4671,7 @@ moment.tz.load(require('./data/packed/latest.json'));
         return typeof format === 'function' ? format(output) : format.replace(/%s/i, output);
     }
 
-    function set__set (config) {
+    function locale_set__set (config) {
         var prop, i;
         for (i in config) {
             prop = config[i];
@@ -4559,7 +4702,7 @@ moment.tz.load(require('./data/packed/latest.json'));
     prototype__proto._relativeTime   = defaultRelativeTime;
     prototype__proto.relativeTime    = relative__relativeTime;
     prototype__proto.pastFuture      = pastFuture;
-    prototype__proto.set             = set__set;
+    prototype__proto.set             = locale_set__set;
 
     // Month
     prototype__proto.months       =        localeMonths;
@@ -4589,8 +4732,8 @@ moment.tz.load(require('./data/packed/latest.json'));
     prototype__proto.meridiem = localeMeridiem;
 
     function lists__get (format, index, field, setter) {
-        var locale = locales__getLocale();
-        var utc = utc__createUTC().set(setter, index);
+        var locale = locale_locales__getLocale();
+        var utc = create_utc__createUTC().set(setter, index);
         return locale[field](utc, format);
     }
 
@@ -4634,7 +4777,7 @@ moment.tz.load(require('./data/packed/latest.json'));
         return list(format, index, 'weekdaysMin', 7, 'day');
     }
 
-    locales__getSetGlobalLocale('en', {
+    locale_locales__getSetGlobalLocale('en', {
         ordinalParse: /\d{1,2}(th|st|nd|rd)/,
         ordinal : function (number) {
             var b = number % 10,
@@ -4647,12 +4790,12 @@ moment.tz.load(require('./data/packed/latest.json'));
     });
 
     // Side effect imports
-    hooks__hooks.lang = deprecate('moment.lang is deprecated. Use moment.locale instead.', locales__getSetGlobalLocale);
-    hooks__hooks.langData = deprecate('moment.langData is deprecated. Use moment.localeData instead.', locales__getLocale);
+    utils_hooks__hooks.lang = deprecate('moment.lang is deprecated. Use moment.locale instead.', locale_locales__getSetGlobalLocale);
+    utils_hooks__hooks.langData = deprecate('moment.langData is deprecated. Use moment.localeData instead.', locale_locales__getLocale);
 
     var mathAbs = Math.abs;
 
-    function abs__abs () {
+    function duration_abs__abs () {
         var data           = this._data;
 
         this._milliseconds = mathAbs(this._milliseconds);
@@ -4770,7 +4913,7 @@ moment.tz.load(require('./data/packed/latest.json'));
     }
 
     // TODO: Use this.as('ms')?
-    function as__valueOf () {
+    function duration_as__valueOf () {
         return (
             this._milliseconds +
             this._days * 864e5 +
@@ -4794,7 +4937,7 @@ moment.tz.load(require('./data/packed/latest.json'));
     var asMonths       = makeAs('M');
     var asYears        = makeAs('y');
 
-    function get__get (units) {
+    function duration_get__get (units) {
         units = normalizeUnits(units);
         return this[units + 's']();
     }
@@ -4805,7 +4948,7 @@ moment.tz.load(require('./data/packed/latest.json'));
         };
     }
 
-    var get__milliseconds = makeGetter('milliseconds');
+    var duration_get__milliseconds = makeGetter('milliseconds');
     var seconds      = makeGetter('seconds');
     var minutes      = makeGetter('minutes');
     var hours        = makeGetter('hours');
@@ -4831,7 +4974,7 @@ moment.tz.load(require('./data/packed/latest.json'));
         return locale.relativeTime(number || 1, !!withoutSuffix, string, isFuture);
     }
 
-    function humanize__relativeTime (posNegDuration, withoutSuffix, locale) {
+    function duration_humanize__relativeTime (posNegDuration, withoutSuffix, locale) {
         var duration = create__createDuration(posNegDuration).abs();
         var seconds  = round(duration.as('s'));
         var minutes  = round(duration.as('m'));
@@ -4858,7 +5001,7 @@ moment.tz.load(require('./data/packed/latest.json'));
     }
 
     // This function allows you to set a threshold for relative time strings
-    function humanize__getSetRelativeTimeThreshold (threshold, limit) {
+    function duration_humanize__getSetRelativeTimeThreshold (threshold, limit) {
         if (thresholds[threshold] === undefined) {
             return false;
         }
@@ -4871,7 +5014,7 @@ moment.tz.load(require('./data/packed/latest.json'));
 
     function humanize (withSuffix) {
         var locale = this.localeData();
-        var output = humanize__relativeTime(this, !withSuffix, locale);
+        var output = duration_humanize__relativeTime(this, !withSuffix, locale);
 
         if (withSuffix) {
             output = locale.pastFuture(+this, output);
@@ -4911,7 +5054,7 @@ moment.tz.load(require('./data/packed/latest.json'));
 
     var duration_prototype__proto = Duration.prototype;
 
-    duration_prototype__proto.abs            = abs__abs;
+    duration_prototype__proto.abs            = duration_abs__abs;
     duration_prototype__proto.add            = duration_add_subtract__add;
     duration_prototype__proto.subtract       = duration_add_subtract__subtract;
     duration_prototype__proto.as             = as;
@@ -4923,10 +5066,10 @@ moment.tz.load(require('./data/packed/latest.json'));
     duration_prototype__proto.asWeeks        = asWeeks;
     duration_prototype__proto.asMonths       = asMonths;
     duration_prototype__proto.asYears        = asYears;
-    duration_prototype__proto.valueOf        = as__valueOf;
+    duration_prototype__proto.valueOf        = duration_as__valueOf;
     duration_prototype__proto._bubble        = bubble;
-    duration_prototype__proto.get            = get__get;
-    duration_prototype__proto.milliseconds   = get__milliseconds;
+    duration_prototype__proto.get            = duration_get__get;
+    duration_prototype__proto.milliseconds   = duration_get__milliseconds;
     duration_prototype__proto.seconds        = seconds;
     duration_prototype__proto.minutes        = minutes;
     duration_prototype__proto.hours          = hours;
@@ -4964,38 +5107,38 @@ moment.tz.load(require('./data/packed/latest.json'));
     // Side effect imports
 
 
-    hooks__hooks.version = '2.10.0';
+    utils_hooks__hooks.version = '2.10.2';
 
     setHookCallback(local__createLocal);
 
-    hooks__hooks.fn                    = momentPrototype;
-    hooks__hooks.min                   = min;
-    hooks__hooks.max                   = max;
-    hooks__hooks.utc                   = utc__createUTC;
-    hooks__hooks.unix                  = moment__createUnix;
-    hooks__hooks.months                = lists__listMonths;
-    hooks__hooks.isDate                = isDate;
-    hooks__hooks.locale                = locales__getSetGlobalLocale;
-    hooks__hooks.invalid               = valid__createInvalid;
-    hooks__hooks.duration              = create__createDuration;
-    hooks__hooks.isMoment              = isMoment;
-    hooks__hooks.weekdays              = lists__listWeekdays;
-    hooks__hooks.parseZone             = moment__createInZone;
-    hooks__hooks.localeData            = locales__getLocale;
-    hooks__hooks.isDuration            = isDuration;
-    hooks__hooks.monthsShort           = lists__listMonthsShort;
-    hooks__hooks.weekdaysMin           = lists__listWeekdaysMin;
-    hooks__hooks.defineLocale          = defineLocale;
-    hooks__hooks.weekdaysShort         = lists__listWeekdaysShort;
-    hooks__hooks.normalizeUnits        = normalizeUnits;
-    hooks__hooks.relativeTimeThreshold = humanize__getSetRelativeTimeThreshold;
+    utils_hooks__hooks.fn                    = momentPrototype;
+    utils_hooks__hooks.min                   = min;
+    utils_hooks__hooks.max                   = max;
+    utils_hooks__hooks.utc                   = create_utc__createUTC;
+    utils_hooks__hooks.unix                  = moment__createUnix;
+    utils_hooks__hooks.months                = lists__listMonths;
+    utils_hooks__hooks.isDate                = isDate;
+    utils_hooks__hooks.locale                = locale_locales__getSetGlobalLocale;
+    utils_hooks__hooks.invalid               = valid__createInvalid;
+    utils_hooks__hooks.duration              = create__createDuration;
+    utils_hooks__hooks.isMoment              = isMoment;
+    utils_hooks__hooks.weekdays              = lists__listWeekdays;
+    utils_hooks__hooks.parseZone             = moment__createInZone;
+    utils_hooks__hooks.localeData            = locale_locales__getLocale;
+    utils_hooks__hooks.isDuration            = isDuration;
+    utils_hooks__hooks.monthsShort           = lists__listMonthsShort;
+    utils_hooks__hooks.weekdaysMin           = lists__listWeekdaysMin;
+    utils_hooks__hooks.defineLocale          = defineLocale;
+    utils_hooks__hooks.weekdaysShort         = lists__listWeekdaysShort;
+    utils_hooks__hooks.normalizeUnits        = normalizeUnits;
+    utils_hooks__hooks.relativeTimeThreshold = duration_humanize__getSetRelativeTimeThreshold;
 
-    var _moment = hooks__hooks;
+    var _moment = utils_hooks__hooks;
 
     return _moment;
 
 }));
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -6545,4 +6688,4 @@ moment.tz.load(require('./data/packed/latest.json'));
   }
 }.call(this));
 
-},{}]},{},[11]);
+},{}]},{},[12]);

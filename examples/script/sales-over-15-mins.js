@@ -12,55 +12,68 @@ var fieldOptions = {
 }
 
 var bar = new Connect.Viz.Chart('#sales-over-15-mins-bar', {
-    title: 'Sales Over 15 Minutes',
-    type: 'bar',
-    fieldOptions: fieldOptions,
-    yAxisValueFormatter: d3.format('$,.2f')
+    title: 'Sales Over 15 Minutes',    
+    chart: {
+        type: 'bar',        
+        yAxisValueFormatter: d3.format('$,.2f'),
+    }, 
+    fields: fieldOptions,
 });
 
 var line = new Connect.Viz.Chart('#sales-over-15-mins-line', {
     title: 'Sales Over 15 Minutes',
-    type: 'line',
-    fieldOptions: fieldOptions,
-    yAxisValueFormatter: d3.format('$,.2f')
+    chart: {
+        type: 'line',        
+        yAxisValueFormatter: d3.format('$,.2f'),
+    }, 
+    fields: fieldOptions,
 });
 
 var spline = new Connect.Viz.Chart('#sales-over-15-mins-spline', {
     title: 'Sales Over 15 Minutes',
-    type: 'spline',
-    fieldOptions: fieldOptions,
-    yAxisValueFormatter: d3.format('$,.2f')
+    chart: {
+        type: 'spline',        
+        yAxisValueFormatter: d3.format('$,.2f'),
+    }, 
+    fields: fieldOptions,
 });
 
 var areaLine = new Connect.Viz.Chart('#sales-over-15-mins-area-line', {
     title: 'Sales Over 15 Minutes',
-    type: 'area',
-    fieldOptions: fieldOptions,
-    yAxisValueFormatter: d3.format('$,.2f')
+    chart: {
+        type: 'area',        
+        yAxisValueFormatter: d3.format('$,.2f'),
+    }, 
+    fields: fieldOptions,
 });
 
 var areaSpline = new Connect.Viz.Chart('#sales-over-15-mins-area-spline', {
-    title: 'Sales Over 15 Minutes',
-    type: 'area-spline',
-    fieldOptions: fieldOptions,
-    yAxisValueFormatter: d3.format('$,.2f')
+    title: 'Sales Over 15 Minutes',    
+    chart: {
+        type: 'area-spline',        
+        yAxisValueFormatter: d3.format('$,.2f'),
+    }, 
+    fields: fieldOptions,    
 });
+
+
+var timezone = new Connect.Viz.Chart('#sales-over-15-mins-timezone', {
+    title: 'Sales Over 15 Minutes in Asia/Tokyo Timezone',  
+    chart: {
+        type: 'line',        
+        yAxisValueFormatter: d3.format('$,.2f'),
+    }, 
+    timezone: 'Asia/Tokyo',
+    fields: fieldOptions,
+});
+
 
 var table = new Connect.Viz.Table('#sales-over-15-mins-table', {
     title: 'Sales Over 15 Minutes',
-    fieldOptions: fieldOptions,
+    fields: fieldOptions,
     intervalOptions: {
         label: 'Time'
-    },
-    yAxisValueFormatter: d3.format('$,.2f')
-});
-
-var timezone = new Connect.Viz.Chart('#sales-over-15-mins-timezone', {
-    title: 'Sales Over 15 Minutes in Asia/Tokyo Timezone',
-    type: 'line',
-    timezone: 'Asia/Tokyo',
-    fieldOptions: fieldOptions,
-    yAxisValueFormatter: d3.format('$,.2f')
+    }
 });
 
 bar.displayData(queryResults.results, queryResults.metadata);

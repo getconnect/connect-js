@@ -1,10 +1,10 @@
 <html>
 <head>
     <title>Examples of Connect Sdk Visualizations</title>
-    <link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
-    <link href='http://fonts.googleapis.com/css?family=Roboto:400,700' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Roboto:400,700' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/c3/0.4.10/c3.css" />
-    <link rel="stylesheet" type="text/css" href="http://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css" />
     <link rel="stylesheet" type="text/css" href="viz/connect-viz.css" />
     <link rel="stylesheet" type="text/css" href="examples.css" />
 </head>
@@ -28,12 +28,19 @@
         <div id="sales-line" class="example-viz"></div>
         <div id="sales-bar" class="example-viz"></div>
         <div id="sales-text" class="example-viz"></div>
-        <div id="market-share-percent-gauge" class="example-viz example-viz-gauge"></div>
-        <div id="market-share-dollars-gauge" class="example-viz example-viz-gauge"></div>
+        <div class="example-viz">
+            <div id="market-share-percent-gauge" class="example-viz-gauge"></div>
+        </div>
+        <div class="example-viz">
+            <div id="market-share-dollars-gauge" class="example-viz-gauge"></div>
+        </div>
         <div id="empty-bar" class="example-viz"></div>
         <div id="empty-table" class="example-viz"></div>
         <div id="empty-text" class="example-viz"></div>
-        <div id="empty-gauge" class="example-viz example-viz-gauge"></div>
+        <div id="invalid-text" class="example-viz"></div>
+        <div class="example-viz">
+            <div id="empty-gauge" class="example-viz-gauge"></div>
+        </div>
     </div>
     <script type="text/javascript" charset="utf-8" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.js"></script>
     <script type="text/javascript" src="https://rawgit.com/mattfurness/c3/master/c3.js"></script>   

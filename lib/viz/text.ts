@@ -11,26 +11,28 @@ import Dom = require('./dom');
 class Text implements Common.Visualization {
     public targetElement: HTMLElement;
     public loader: Loader;
-    private _options: Config.TextOptions;
+    private _options: Config.VisualizationOptions;
     private _rendered: boolean;
-    private _valueElement: HTMLElement;
+    private _valueTextElement: HTMLElement;
     private _titleElement: HTMLElement;
 
-    constructor(targetElement: string|HTMLElement, textOptions: Config.TextOptions) {
+    constructor(targetElement: string|HTMLElement, textOptions: Config.VisualizationOptions) {
         this._options = _.extend({ 
-            fieldOptions: {} 
+            fields: {} 
         }, textOptions);
 
         this.targetElement = Dom.getElement(targetElement);
+        this.loader = new Loader(this.targetElement);
     }
 
     public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata, showLoader: boolean = true): void {        
+        this._renderText(metadata);
+
         if (!this._checkMetaDataIsApplicable(metadata)){
             this._renderQueryNotApplicable();
             return;
-        }
+        }        
 
-        this._renderText(metadata);
         ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
     }
 
@@ -39,13 +41,13 @@ class Text implements Common.Visualization {
             onlyResult = results[0],
             aliasOfSelect = metadata.selects[0],
             defaultFieldOption = { valueFormatter: (value) => value },
-            fieldOption = options.fieldOptions[aliasOfSelect] || defaultFieldOption,
+            fieldOption = options.fields[aliasOfSelect] || defaultFieldOption,
             valueFormatter = fieldOption.valueFormatter,
             value = onlyResult[aliasOfSelect],
             valueText = valueFormatter(value);
 
-        this._valueElement.textContent = valueText;
-        this._showTitle(metadata);  
+        this._valueTextElement.textContent = valueText;
+        this._showTitle(metadata);
     }
 
     public clear(): void{        
@@ -84,7 +86,7 @@ class Text implements Common.Visualization {
 
         container.className = 'connect-viz connect-text';
         label.className = 'connect-viz-title';
-        valueElement.className = 'connect-text-value';
+        valueElement.className = 'connect-viz-result connect-text-value';
 
         this.clear();
         valueElement.appendChild(valueTextElement);
@@ -92,19 +94,16 @@ class Text implements Common.Visualization {
         container.appendChild(valueElement);
         elementForWidget.appendChild(container);
 
-        this._valueElement = valueTextElement;
-        this._valueElement.innerHTML = '&nbsp;'
+        this._valueTextElement = valueTextElement;
+        this._valueTextElement.innerHTML = '&nbsp;'
         this._titleElement = label;
         this._showTitle(metadata);        
-        this.loader = new Loader(this.targetElement, valueElement);
         this._rendered = true;
     }
 
     private _renderQueryNotApplicable(){
-        var errorMsg = 'To display in a text widget a query must contain 1 select, 0 groupBys, and no interval';
-
         this._rendered = false;
-        ErrorHandling.displayFriendlyError(this.targetElement, errorMsg);
+        ErrorHandling.displayFriendlyError(this.targetElement, 'unsupportedQuery');
     }
 }
 
