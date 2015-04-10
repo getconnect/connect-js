@@ -539,7 +539,12 @@ var ErrorHandling;
         }
     };
     var statusErrorTypes = {
-        status404: 'noResults'
+        status404: 'noResults',
+        statusNetworkFailure: 'network',
+        status408: 'network',
+        status502: 'network',
+        status503: 'network',
+        status504: 'network',
     };
     function handleError(targetElement, error) {
         var status = 'status' + error.status, errorType = statusErrorTypes[status] || 'other';

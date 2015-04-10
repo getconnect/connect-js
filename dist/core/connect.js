@@ -24,6 +24,9 @@ var Api;
             var deferred = Q.defer();
             requestToSend.set('X-API-Key', this._apiKey).end(function (err, res) {
                 if (err) {
+                    if (!err.status) {
+                        err.status = 'NetworkFailure';
+                    }
                     deferred.reject(err);
                     return;
                 }
