@@ -57,7 +57,6 @@ module ErrorHandling {
     export function displayFriendlyError(targetElement: HTMLElement, type: string = 'other'){
         var errorIcon = errorTypes[type].icon,
             errorMessage = errorTypes[type].defaultMessage,
-            retry = errorTypes[type].retry,
             elementForError = targetElement,
             errorIconElement = document.createElement('span'),
             errorMessageElement = document.createElement('span'),
