@@ -12,8 +12,7 @@ module ErrorHandling {
         },
         network: {
             icon: 'ion-ios-bolt',
-            defaultMessage: 'Network Error',
-            retry: true,
+            defaultMessage: 'Network Error'
         },
         unsupportedQuery: {
             icon: 'ion-wrench',
@@ -27,7 +26,11 @@ module ErrorHandling {
 
     var statusErrorTypes = {
         status404: 'noResults',
-        statusNetworkFailure: 'network'
+        statusNetworkFailure: 'network',
+        status408: 'network',        
+        status502: 'network',
+        status503: 'network',
+        status504: 'network',
     }
 
     export function handleError(targetElement: HTMLElement, error: any){
@@ -53,8 +56,8 @@ module ErrorHandling {
 
     export function displayFriendlyError(targetElement: HTMLElement, type: string = 'other'){
         var errorIcon = errorTypes[type].icon,
+            errorMessage = errorTypes[type].defaultMessage,
             retry = errorTypes[type].retry,
-            errorMessage = message || errorTypes[type].defaultMessage,
             elementForError = targetElement,
             errorIconElement = document.createElement('span'),
             errorMessageElement = document.createElement('span'),
@@ -73,12 +76,6 @@ module ErrorHandling {
 
         errorElement.appendChild(errorIconElement);
         errorElement.appendChild(errorMessageElement);
-
-        if(retry) {
-            var retryElement = document.createElement('span');
-            retryElement.textContent = "Retry";
-            errorElement.appendChild(retryElement);
-        }
 
         if (viz && result){
             result.appendChild(errorElement);
