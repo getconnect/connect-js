@@ -22,6 +22,10 @@ var Chart = (function () {
         this._options = this._parseOptions(chartOptions);
         this.targetElement = Dom.getElement(targetElement);
         this.loader = new Loader(this.targetElement);
+        this._duration = {
+            firstLoad: null,
+            reload: 300
+        };
     }
     Chart.prototype._parseOptions = function (chartOptions) {
         var defaultOptions = {
@@ -47,6 +51,11 @@ var Chart = (function () {
     };
     Chart.prototype.displayData = function (resultsPromise, metadata, showLoader) {
         if (showLoader === void 0) { showLoader = true; }
+        var internalChartConfig;
+        if (this._rendered && showLoader) {
+            internalChartConfig = this._chart.internal.config;
+            internalChartConfig.transition_duration = this._duration.firstLoad;
+        }
         this._initializeFieldOptions(metadata);
         this._renderChart(metadata);
         ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
@@ -63,6 +72,7 @@ var Chart = (function () {
             colors: colors
         });
         this._showTitle();
+        internalChartConfig.transition_duration = this._duration.reload;
     };
     Chart.prototype.clear = function () {
         this._rendered = false;
@@ -125,7 +135,7 @@ var Chart = (function () {
                 }
             },
             transition: {
-                duration: null
+                duration: this._duration.firstLoad
             },
             tooltip: {
                 format: {
@@ -294,9 +304,6 @@ var Gauge = (function () {
                 json: [],
                 type: 'gauge'
             },
-            transition: {
-                duration: null
-            },
             tooltip: {
                 format: {
                     value: tooltipValueFormatter
@@ -452,7 +459,8 @@ var Config;
         gauge: {
             label: {
                 format: function (value) { return d3.format('.0f')(value) + '%'; },
-                formatall: true
+                formatall: true,
+                transition: false
             },
             expand: true
         },
@@ -2048,7 +2056,7 @@ moment.tz.load(require('./data/packed/latest.json'));
 
 },{"moment":25}],25:[function(require,module,exports){
 //! moment.js
-//! version : 2.10.1
+//! version : 2.10.2
 //! authors : Tim Wood, Iskren Chernev, Moment.js contributors
 //! license : MIT
 //! momentjs.com
@@ -5099,7 +5107,7 @@ moment.tz.load(require('./data/packed/latest.json'));
     // Side effect imports
 
 
-    utils_hooks__hooks.version = '2.10.1';
+    utils_hooks__hooks.version = '2.10.2';
 
     setHookCallback(local__createLocal);
 
