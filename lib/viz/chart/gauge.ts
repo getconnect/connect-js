@@ -193,9 +193,6 @@ class Gauge implements Common.Visualization {
                     json: [],
                     type: 'gauge'
                 },
-                transition: {
-                    duration: null
-                },
                 tooltip: {
                     format: {
                         value: tooltipValueFormatter

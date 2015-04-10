@@ -21,11 +21,16 @@ class Chart implements Common.Visualization {
     private _rendered: boolean;
     private _titleElement: HTMLElement;
     private _currentDataset: Dataset.ChartDataset;
+    private _duration;
     
     constructor(targetElement: string|HTMLElement, chartOptions: Config.VisualizationOptions) {     
         this._options = this._parseOptions(chartOptions);
         this.targetElement = Dom.getElement(targetElement);
         this.loader = new Loader(this.targetElement);
+        this._duration = {
+            firstLoad: null,
+            reload: 300
+        }
     }
 
     private _parseOptions(chartOptions: Config.VisualizationOptions): Config.VisualizationOptions{
@@ -66,6 +71,13 @@ class Chart implements Common.Visualization {
     }
 
     public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata, showLoader: boolean = true): void {        
+        var internalChartConfig;
+
+        if (this._rendered && showLoader){
+            internalChartConfig = (<any>this._chart).internal.config;
+            internalChartConfig.transition_duration = this._duration.firstLoad;
+        }
+
         this._initializeFieldOptions(metadata);
         this._renderChart(metadata);
         ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
@@ -91,6 +103,7 @@ class Chart implements Common.Visualization {
             colors: colors
         });
         this._showTitle();
+        internalChartConfig.transition_duration = this._duration.reload;
     }
 
     public clear(): void{        
@@ -185,7 +198,7 @@ class Chart implements Common.Visualization {
                     }
                 },
                 transition: {
-                    duration: null
+                    duration: this._duration.firstLoad
                 },
                 tooltip: {
                     format: {
