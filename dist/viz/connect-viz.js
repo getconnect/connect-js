@@ -61,7 +61,7 @@ var Chart = (function () {
         ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
     };
     Chart.prototype._loadData = function (results, metadata) {
-        var options = this._options, type = options.chart.type, typeOptions = options[type], dataset = this._buildDataset(results, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = Palette.getSwatch(uniqueKeys, options.chart.colors), internalChartConfig = this._chart.internal.config;
+        var options = this._options, type = options.chart.type, resultItems = results.results, typeOptions = options[type], dataset = this._buildDataset(resultItems, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = Palette.getSwatch(uniqueKeys, options.chart.colors), internalChartConfig = this._chart.internal.config;
         this._currentDataset = dataset;
         this._chart.load({
             json: dataset.getData(),
@@ -78,13 +78,13 @@ var Chart = (function () {
         this._rendered = false;
         Dom.removeAllChildren(this.targetElement);
     };
-    Chart.prototype._buildDataset = function (results, metadata) {
+    Chart.prototype._buildDataset = function (resultItems, metadata) {
         var _this = this;
         var options = this._options, formatters = {
             selectLabelFormatter: function (select) { return options.fields[select] && options.fields[select].label ? options.fields[select].label : select; },
             groupValueFormatter: function (groupByName, groupValue) { return _this._formatGroupValue(groupByName, groupValue); }
         }, isGroupedInterval = metadata.interval && metadata.groups.length;
-        return isGroupedInterval ? new GroupedIntervalDataset(results, metadata, formatters) : new StandardDataset(results, metadata, formatters);
+        return isGroupedInterval ? new GroupedIntervalDataset(resultItems, metadata, formatters) : new StandardDataset(resultItems, metadata, formatters);
     };
     Chart.prototype._showTitle = function () {
         var options = this._options, titleText = options.title ? options.title.toString() : '', showTitle = titleText.length > 0;
@@ -242,13 +242,13 @@ var Gauge = (function () {
         return parsedMetaData;
     };
     Gauge.prototype._loadData = function (results, metadata) {
-        var options = this._options, typeOptions = options.gauge, dataset = this._buildDataset(results, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = Palette.getSwatch(uniqueKeys, options.gauge.color ? [options.gauge.color] : null), setMinProperty = this._minSelectName && results.length, setMaxProperty = this._maxSelectName && results.length, minConfigProperty = 'gauge_min', maxConfigProperty = 'gauge_max', showLabelConfigProperty = 'gauge_label_show', internalGaugeConfig = this._gauge.internal.config;
+        var options = this._options, typeOptions = options.gauge, resultItems = results.results, dataset = this._buildDataset(resultItems, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = Palette.getSwatch(uniqueKeys, options.gauge.color ? [options.gauge.color] : null), setMinProperty = this._minSelectName && resultItems.length, setMaxProperty = this._maxSelectName && resultItems.length, minConfigProperty = 'gauge_min', maxConfigProperty = 'gauge_max', showLabelConfigProperty = 'gauge_label_show', internalGaugeConfig = this._gauge.internal.config;
         if (setMinProperty) {
-            internalGaugeConfig[minConfigProperty] = results[0][this._minSelectName];
+            internalGaugeConfig[minConfigProperty] = resultItems[0][this._minSelectName];
             internalGaugeConfig[showLabelConfigProperty] = true;
         }
         if (setMaxProperty) {
-            internalGaugeConfig[maxConfigProperty] = results[0][this._maxSelectName];
+            internalGaugeConfig[maxConfigProperty] = resultItems[0][this._maxSelectName];
             internalGaugeConfig[showLabelConfigProperty] = true;
         }
         this._currentDataset = dataset;
@@ -266,13 +266,13 @@ var Gauge = (function () {
         this._rendered = false;
         Dom.removeAllChildren(this.targetElement);
     };
-    Gauge.prototype._buildDataset = function (results, metadata) {
+    Gauge.prototype._buildDataset = function (resultItems, metadata) {
         var _this = this;
         var options = this._options, formatters = {
             selectLabelFormatter: function (select) { return options.fields[select] && options.fields[select].label ? options.fields[select].label : select; },
             groupValueFormatter: function (groupByName, groupValue) { return _this._formatGroupValue(groupByName, groupValue); }
         };
-        return new StandardDataset(results, metadata, formatters);
+        return new StandardDataset(resultItems, metadata, formatters);
     };
     Gauge.prototype._showTitle = function () {
         var options = this._options, titleText = options.title ? options.title.toString() : '', showTitle = titleText.length > 0;
@@ -714,7 +714,7 @@ var ResultHandling;
             hideLoader();
             try {
                 ErrorHandling.clearError(targetElement);
-                if (results == null || !results.length) {
+                if (results == null || results.results == null || !results.results.length) {
                     ErrorHandling.displayFriendlyError(targetElement, 'noResults');
                     return;
                 }
@@ -908,7 +908,7 @@ var Table = (function () {
         ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
     };
     Table.prototype._loadData = function (results, metadata) {
-        var dataset = new Dataset.TableDataset(metadata, this._options, results);
+        var dataset = new Dataset.TableDataset(metadata, this._options, results.results);
         this._tableWrapper.innerHTML = TableRenderer.renderDataset(dataset);
         this._showTitle();
     };
@@ -967,7 +967,7 @@ var Text = (function () {
         ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
     };
     Text.prototype._loadData = function (results, metadata) {
-        var options = this._options, onlyResult = results[0], aliasOfSelect = metadata.selects[0], defaultFieldOption = { valueFormatter: function (value) { return value; } }, fieldOption = options.fields[aliasOfSelect] || defaultFieldOption, valueFormatter = fieldOption.valueFormatter, value = onlyResult[aliasOfSelect], valueText = valueFormatter(value);
+        var options = this._options, onlyResult = results.results[0], aliasOfSelect = metadata.selects[0], defaultFieldOption = { valueFormatter: function (value) { return value; } }, fieldOption = options.fields[aliasOfSelect] || defaultFieldOption, valueFormatter = fieldOption.valueFormatter, value = onlyResult[aliasOfSelect], valueText = valueFormatter(value);
         this._valueTextElement.textContent = valueText;
         this._showTitle(metadata);
     };
