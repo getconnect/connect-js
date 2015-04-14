@@ -19,31 +19,31 @@
             position: relative;
         }
 
-        transition: color 800ms linear;
+        transition: color @text-value-animation-delay linear;
 
         .connect-text-icon-increase, .connect-text-icon-decrease{
             position: absolute;
-            opacity: 0;
-            font-size: 16px;
-            left: -15px;
+            opacity: @text-value-icon-opacity-start;
+            font-size: @text-value-icon-size;
+            left: -@text-value-icon-size;
         }
 
         .connect-text-icon-increase{
-            bottom: 0;
-            transition: opacity 800ms linear, bottom 800ms linear, transform 800ms linear;
+            bottom: @text-value-icon-position-start;
+            transition: opacity @text-value-animation-delay linear, bottom @text-value-animation-delay linear, transform @text-value-animation-delay linear;
         }
 
         .connect-text-icon-decrease{
-            top: 0;
-            transition: opacity 800ms linear, top 800ms linear, transform 800ms linear;
+            top: @text-value-icon-position-start;
+            transition: opacity @text-value-animation-delay linear, top @text-value-animation-delay linear, transform @text-value-animation-delay linear;
         }
 
         &.connect-text-value-increasing{
             color: @text-value-increasing-color;     
 
             .connect-text-icon-increase{
-                opacity: 1;
-                bottom: 50%;
+                opacity: @text-value-icon-opacity-finish;
+                bottom: @text-value-icon-position-finish;
                 transform: translateY(50%);
             }
         }
@@ -52,8 +52,8 @@
             color: @text-value-decreasing-color;
 
             .connect-text-icon-decrease{
-                opacity: 1;
-                top: 50%;
+                opacity: @text-value-icon-opacity-finish;
+                top: @text-value-icon-position-finish;
                 transform: translateY(-50%);
             }
         }
@@ -67,11 +67,5 @@
 
     .connect-error{    
         .middle();
-    }
-}
-
-@keyframes connect-text-arrow-up{
-    0%, 100%{
-        opacity: 1;
     }
 }
