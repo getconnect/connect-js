@@ -24,7 +24,7 @@ class Text implements Common.Visualization {
     constructor(targetElement: string|HTMLElement, textOptions: Config.VisualizationOptions) {
         this._options = _.extend({ 
             text: {
-                counterDurationMs: 1000
+                counterDurationMs: 800
             },
             fields: {} 
         }, textOptions);
