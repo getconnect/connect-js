@@ -14,6 +14,16 @@
         font: @text-value-size @text-value-font-family;
         color: @label-color;
         line-height: @text-value-line-height;
+
+        transition: color 800ms linear;
+
+        &.connect-text-value-increasing{
+            color: #7ED321;
+        }
+
+        &.connect-text-value-decreasing{
+            color: #D0021B;
+        }
     }
 
     &.connect-viz-loading, &.connect-viz-in-error{
