@@ -34,7 +34,7 @@ class Text implements Common.Visualization {
         this._currentValue = 0;
     }
 
-    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata, showLoader: boolean = true): void {        
+    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Api.Metadata, showLoader: boolean = true): void {        
         this._renderText(metadata);
 
         if (!this._checkMetaDataIsApplicable(metadata)){
@@ -45,9 +45,9 @@ class Text implements Common.Visualization {
         ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
     }
 
-    private _loadData(results: Api.QueryResults, metadata: Queries.Metadata): void {        
+    private _loadData(results: Api.QueryResults, metadata: Api.Metadata): void {        
         var options = this._options,
-            onlyResult = results[0],
+            onlyResult = results.results[0],
             aliasOfSelect = metadata.selects[0],
             defaultFieldOption = { valueFormatter: (value) => value },
             fieldOption = options.fields[aliasOfSelect] || defaultFieldOption,
@@ -77,7 +77,7 @@ class Text implements Common.Visualization {
         Dom.removeAllChildren(this.targetElement);
     }
 
-    private _checkMetaDataIsApplicable(metadata: Queries.Metadata): boolean {
+    private _checkMetaDataIsApplicable(metadata: Api.Metadata): boolean {
         var exactlyOneSelect = metadata.selects.length === 1,
             noGroupBys = metadata.groups.length === 0,
             noInterval = metadata.interval == null;
@@ -85,7 +85,7 @@ class Text implements Common.Visualization {
         return exactlyOneSelect && noGroupBys && noInterval;
     }
 
-    private _showTitle(metadata: Queries.Metadata){
+    private _showTitle(metadata: Api.Metadata){
         var options = this._options,
             aliasOfSelect = metadata.selects[0],
             title = options.title,

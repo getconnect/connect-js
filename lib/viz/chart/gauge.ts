@@ -55,7 +55,7 @@ class Gauge implements Common.Visualization {
         return options;
     }
 
-    private _initializeFieldOptions(metadata: Queries.Metadata): void{
+    private _initializeFieldOptions(metadata: Api.Metadata): void{
         var fields = metadata.selects.concat(metadata.groups),
             firstSelect = metadata.selects[0],
             options = this._options,
@@ -70,7 +70,7 @@ class Gauge implements Common.Visualization {
         options.gauge.label.format = fieldOptions[firstSelect].valueFormatter;
     }
 
-    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata, showLoader: boolean = true): void {        
+    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Api.Metadata, showLoader: boolean = true): void {        
         var parsedMetaData = this._parseMetaData(metadata);
 
         this._initializeFieldOptions(parsedMetaData);
@@ -78,7 +78,7 @@ class Gauge implements Common.Visualization {
         ResultHandling.handleResult(resultsPromise, parsedMetaData, this, this._loadData, showLoader);
     }
 
-    private _parseMetaData(metadata: Queries.Metadata){
+    private _parseMetaData(metadata: Api.Metadata){
         var options = this._options,
             typeOptions = options.gauge,
             parsedMetaData = _.clone(metadata),
@@ -89,27 +89,28 @@ class Gauge implements Common.Visualization {
         return parsedMetaData;
     }
 
-    private _loadData(results: Api.QueryResults, metadata: Queries.Metadata): void {
+    private _loadData(results: Api.QueryResults, metadata: Api.Metadata): void {
         var options = this._options,
             typeOptions = options.gauge,
-            dataset = this._buildDataset(results, metadata),
+            resultItems = results.results,
+            dataset = this._buildDataset(resultItems, metadata),
             keys = dataset.getLabels(),
             uniqueKeys = _.unique(keys),
             colors = Palette.getSwatch(uniqueKeys, options.gauge.color ? [options.gauge.color] : null),
-            setMinProperty = this._minSelectName && results.length,
-            setMaxProperty = this._maxSelectName && results.length,
+            setMinProperty = this._minSelectName && resultItems.length,
+            setMaxProperty = this._maxSelectName && resultItems.length,
             minConfigProperty = 'gauge_min',
             maxConfigProperty = 'gauge_max',
             showLabelConfigProperty = 'gauge_label_show',
             internalGaugeConfig = (<any>this._gauge).internal.config;                    
 
         if (setMinProperty){
-            internalGaugeConfig[minConfigProperty] = results[0][this._minSelectName];
+            internalGaugeConfig[minConfigProperty] = resultItems[0][this._minSelectName];
             internalGaugeConfig[showLabelConfigProperty] = true;
         }
 
         if (setMaxProperty){
-            internalGaugeConfig[maxConfigProperty] = results[0][this._maxSelectName];
+            internalGaugeConfig[maxConfigProperty] = resultItems[0][this._maxSelectName];
             internalGaugeConfig[showLabelConfigProperty] = true;
         }
 
@@ -130,14 +131,14 @@ class Gauge implements Common.Visualization {
         Dom.removeAllChildren(this.targetElement)
     }
 
-    private _buildDataset(results: Api.QueryResults, metadata: Queries.Metadata): Dataset.ChartDataset{
+    private _buildDataset(resultItems: Api.QueryResultItem[], metadata: Api.Metadata): Dataset.ChartDataset{
         var options = this._options,
             formatters = {        
                 selectLabelFormatter: select => options.fields[select] && options.fields[select].label ? options.fields[select].label : select,
                 groupValueFormatter: (groupByName, groupValue) => this._formatGroupValue(groupByName, groupValue)
             };
 
-        return new StandardDataset(results, metadata, formatters); 
+        return new StandardDataset(resultItems, metadata, formatters); 
     }
 
     private _showTitle(){
@@ -174,7 +175,7 @@ class Gauge implements Common.Visualization {
         return groupValue;
     }
 
-    private _renderGauge(metadata: Queries.Metadata) {
+    private _renderGauge(metadata: Api.Metadata) {
         if(this._rendered)
             return;
             

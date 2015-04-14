@@ -59,7 +59,7 @@ class Chart implements Common.Visualization {
 
     }
 
-    private _initializeFieldOptions(metadata: Queries.Metadata): void{
+    private _initializeFieldOptions(metadata: Api.Metadata): void{
         var fields = metadata.selects.concat(metadata.groups),
             options = this._options,
             fieldOptions = options.fields,
@@ -70,7 +70,7 @@ class Chart implements Common.Visualization {
         });       
     }
 
-    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata, showLoader: boolean = true): void {        
+    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Api.Metadata, showLoader: boolean = true): void {        
         var internalChartConfig;
 
         if (this._rendered && showLoader){
@@ -83,11 +83,12 @@ class Chart implements Common.Visualization {
         ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
     }
 
-    private _loadData(results: Api.QueryResults, metadata: Queries.Metadata): void {
+    private _loadData(results: Api.QueryResults, metadata: Api.Metadata): void {
         var options = this._options,
             type = options.chart.type,
+            resultItems = results.results,
             typeOptions = options[type],
-            dataset = this._buildDataset(results, metadata),
+            dataset = this._buildDataset(resultItems, metadata),
             keys = dataset.getLabels(),
             uniqueKeys = _.unique(keys),
             colors = Palette.getSwatch(uniqueKeys, options.chart.colors),
@@ -111,7 +112,7 @@ class Chart implements Common.Visualization {
         Dom.removeAllChildren(this.targetElement)
     }
 
-    private _buildDataset(results: Api.QueryResults, metadata: Queries.Metadata): Dataset.ChartDataset{
+    private _buildDataset(resultItems: Api.QueryResultItem[], metadata: Api.Metadata): Dataset.ChartDataset{
         var options = this._options,
             formatters = {        
                 selectLabelFormatter: select => options.fields[select] && options.fields[select].label ? options.fields[select].label : select,
@@ -119,8 +120,8 @@ class Chart implements Common.Visualization {
             },
             isGroupedInterval = metadata.interval && metadata.groups.length;
 
-            return isGroupedInterval ? new GroupedIntervalDataset(results, metadata, formatters)
-                                     : new StandardDataset(results, metadata, formatters);
+            return isGroupedInterval ? new GroupedIntervalDataset(resultItems, metadata, formatters)
+                                     : new StandardDataset(resultItems, metadata, formatters);
 
     }
 
@@ -158,7 +159,7 @@ class Chart implements Common.Visualization {
         return groupValue;
     }
 
-    private _renderChart(metadata: Queries.Metadata) {
+    private _renderChart(metadata: Api.Metadata) {
         if(this._rendered)
             return;
             

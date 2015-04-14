@@ -12,6 +12,13 @@ module Api {
         timezone?: string|number;
     }
 
+    export interface Metadata {
+        selects: string[];
+        groups: string[];
+        interval: string;
+        timezone: string | number;
+    }
+
     export interface QuerySelect {
         [index: string]: string;
     }
@@ -45,7 +52,10 @@ module Api {
         results?: QueryResultItem[];
     }
 
-    export type QueryResults = QueryResultItem[];
+    export interface QueryResults { 
+        metadata: Metadata;
+        results: QueryResultItem[];
+    }
     
     export class Client {
         _baseUrl: string;
