@@ -5,14 +5,14 @@ import Dataset = require('./dataset');
 import _ = require('underscore');
 
 class StandardDataset implements Dataset.ChartDataset {
-    private _metadata: Queries.Metadata;
+    private _metadata: Api.Metadata;
     private _selectLabelFormatter: (value: string) => string;
     private _groupValueFormatter: (groupByName: string, groupValue: any) => string;
 
     private _selectLabels: Dataset.SelectLabel[] = [];
     private _data: any = [];
 
-    constructor(results: Api.QueryResults, metadata: Queries.Metadata, formatters: Dataset.Formatters) {
+    constructor(results: Api.QueryResultItem[], metadata: Api.Metadata, formatters: Dataset.Formatters) {
         this._metadata = metadata;
         this._selectLabelFormatter = formatters.selectLabelFormatter;
         this._groupValueFormatter = formatters.groupValueFormatter;
@@ -33,14 +33,14 @@ class StandardDataset implements Dataset.ChartDataset {
         return this._data;
     }
 
-    private _mapLabels(results: Api.QueryResults): Dataset.SelectLabel[] {
+    private _mapLabels(results: Api.QueryResultItem[]): Dataset.SelectLabel[] {
         return _.map(this._metadata.selects, select => <Dataset.SelectLabel>{
             select: select,
             label: this._selectLabelFormatter(select)
         });
     }
 
-    private _mapData(results: Api.QueryResults): any {      
+    private _mapData(results: Api.QueryResultItem[]): any {      
         return _.map(results, result => {
                 var isGrouped = this._metadata.groups.length > 0,
                     interval = result['interval'],

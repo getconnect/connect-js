@@ -26,12 +26,12 @@ export class TableDataset {
 	public headerRow: HeaderRow;
 	public contentRows: ContentRow[];
 
-	constructor(metadata: Queries.Metadata, options: Config.VisualizationOptions, results?: Api.QueryResults) {
+	constructor(metadata: Api.Metadata, options: Config.VisualizationOptions, results?: Api.QueryResultItem[]) {
 		this.headerRow = this._buildHeaderRow(metadata, options, results);
 		this.contentRows = this._buildContentRows(metadata, options, results);
 	}
 
-	private _buildHeaderRow(metadata: Queries.Metadata, options: Config.VisualizationOptions, results?: Api.QueryResults) {
+	private _buildHeaderRow(metadata: Api.Metadata, options: Config.VisualizationOptions, results?: Api.QueryResultItem[]) {
 		var isColoumnNumeric = (key: string): boolean => {
 			if (metadata.interval) {
 				var firstIntervalWithDesiredCol = _(results).find((interval) => { 
@@ -72,7 +72,7 @@ export class TableDataset {
 		return _.union(groupHeaderCells, selectHeaderCells);
 	}
 
-	private _buildContentRows(metadata: Queries.Metadata, options: Config.VisualizationOptions, results?: Api.QueryResults) {
+	private _buildContentRows(metadata: Api.Metadata, options: Config.VisualizationOptions, results?: Api.QueryResultItem[]) {
 		var createContentCell = (isGrouped: boolean, result: Api.QueryResultItem, key: string): ContentCell => {
 			var optionsForField: Config.FieldOption = options.fields[key];
 			var rawValue = result[key];

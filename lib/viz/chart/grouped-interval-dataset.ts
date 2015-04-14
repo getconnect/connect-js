@@ -5,14 +5,14 @@ import Api = require('../../core/api');
 import _ = require('underscore');
 
 class GroupedIntervalDataset implements Dataset.ChartDataset {
-    private _metadata: Queries.Metadata;
+    private _metadata: Api.Metadata;
     private _selectLabelFormatter: (value: string) => string;
     private _groupValueFormatter: (groupByName: string, groupValue: any) => string;
 
     private _selectLabels: Dataset.SelectLabel[] = [];
     private _data: any = [];
 
-    constructor(results: Api.QueryResults, metadata: Queries.Metadata, formatters: Dataset.Formatters) {
+    constructor(results: Api.QueryResultItem[], metadata: Api.Metadata, formatters: Dataset.Formatters) {
         this._metadata = metadata;
         this._selectLabelFormatter = formatters.selectLabelFormatter;
         this._groupValueFormatter = formatters.groupValueFormatter;
@@ -33,7 +33,7 @@ class GroupedIntervalDataset implements Dataset.ChartDataset {
         return this._data;
     }
 
-    private _mapLabels(results: Api.QueryResults): Dataset.SelectLabel[] {  
+    private _mapLabels(results: Api.QueryResultItem[]): Dataset.SelectLabel[] {  
         return _.chain(results)
             .map(result => result['results'])
             .flatten()
@@ -48,7 +48,7 @@ class GroupedIntervalDataset implements Dataset.ChartDataset {
             .value();        
     }
 
-    private _mapData(results: Api.QueryResults): any {      
+    private _mapData(results: Api.QueryResultItem[]): any {      
         return _.chain(results)
             .map(result => {
                 var start = result.interval.start,

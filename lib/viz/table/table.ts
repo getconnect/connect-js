@@ -32,13 +32,13 @@ class Table implements Common.Visualization {
         this.loader = new Loader(this.targetElement);
 	}
 
-	public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata, showLoader: boolean = true) {
+	public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Api.Metadata, showLoader: boolean = true) {
 		this._renderTable(metadata);
         ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
     }
 
-	private _loadData(results: Api.QueryResults, metadata: Queries.Metadata) {
-        var dataset = new Dataset.TableDataset(metadata, this._options, results);
+	private _loadData(results: Api.QueryResults, metadata: Api.Metadata) {
+        var dataset = new Dataset.TableDataset(metadata, this._options, results.results);
         this._tableWrapper.innerHTML = TableRenderer.renderDataset(dataset);
         this._showTitle();
     }
@@ -57,7 +57,7 @@ class Table implements Common.Visualization {
         this._titleElement.style.display = !showTitle ? 'none' : '';      
     }
 
-    private _renderTable(metadata: Queries.Metadata) {
+    private _renderTable(metadata: Api.Metadata) {
         if(this._rendered)
             return;
             

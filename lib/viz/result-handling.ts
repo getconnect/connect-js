@@ -5,9 +5,9 @@ import Loader = require('./loader');
 import ErrorHandling = require('./error-handling');
 
 module ResultHandling{
-    export type LoadDataFunction = (results: Api.QueryResults, metadata: Queries.Metadata) => void;
+    export type LoadDataFunction = (results: Api.QueryResults, metadata: Api.Metadata) => void;
 
-    export function handleResult(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Queries.Metadata, visualization: Common.Visualization, loadData: LoadDataFunction, showLoader: boolean){
+    export function handleResult(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Api.Metadata, visualization: Common.Visualization, loadData: LoadDataFunction, showLoader: boolean){
         var loader = visualization.loader,
             targetElement = visualization.targetElement,
             hideLoader = () => {
@@ -25,7 +25,7 @@ module ResultHandling{
             hideLoader();
             try{
                 ErrorHandling.clearError(targetElement);
-                if (results == null || !results.length){
+                if (results == null || results.results == null || !results.results.length){
                     ErrorHandling.displayFriendlyError(targetElement, 'noResults');
                     return;
                 }
