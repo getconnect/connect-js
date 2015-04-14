@@ -10,13 +10,6 @@ module Queries {
 	export type FilterFactory = (builder: (field: string) => Filters.QueryFilterBuilder) => Filters.QueryFilter;
 	export type TimeframeFactory = (builder: Timeframes.TimeframeBuilder) => Timeframes.Timeframe;
 
-	export interface Metadata {
-		selects: string[];
-		groups: string[];
-		interval: string;
-		timezone: string | number;
-	}
-
 	export class ConnectQuery {
 		_client: Api.Client;
 		_collection: string;
@@ -50,7 +43,7 @@ module Queries {
 			return this._collection;
 		}
 
-		public metadata(): Metadata {
+		public metadata(): Api.Metadata {
 			return {
 				selects: _(this._selects).keys(),
 				groups: this._groups,
