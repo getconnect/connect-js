@@ -1,10 +1,17 @@
 var q = require('q');
 
+function createResponse(results, metadata){
+    return {
+        results: results,
+        metadata: metadata
+    }
+}
+
 function empty(){
+    var metadata = {"selects":["sellPriceTotal"],"groups":[],"interval":null,"timezone":"UTC"};
     var resultsPromise = q.fcall(function(){
-        return null;
+        return createResponse(null, metadata);
     });
-    var metadata = {"selects":["sellPriceTotal"],"groups":[],"interval":null,"timezone":"UTC"}
 
     return {
         results: resultsPromise,
@@ -13,10 +20,10 @@ function empty(){
 }
 
 function sales(){
+    var metadata = {"selects":["sellPriceTotal","costPriceTotal"],"groups":[],"interval":null,"timezone":"UTC"};
     var resultsPromise = q.fcall(function(){
-        return [{sellPriceTotal: 16.7793, costPriceTotal: 7.0553, _count: 2388740}]
+        return createResponse([{sellPriceTotal: 16.7793, costPriceTotal: 7.0553, _count: 2388740}], metadata);
     });
-    var metadata = {"selects":["sellPriceTotal","costPriceTotal"],"groups":[],"interval":null,"timezone":"UTC"}
 
     return {
         results: resultsPromise,
@@ -25,10 +32,10 @@ function sales(){
 }
 
 function marketSharePercent(){
+    var metadata = {"selects":["share"],"groups":[],"interval":null,"timezone":"UTC"};
     var resultsPromise = q.fcall(function(){
-        return [{share: 77.2345, _count: 1}]
+        return createResponse([{share: 77.2345, _count: 1}], metadata);
     });
-    var metadata = {"selects":["share"],"groups":[],"interval":null,"timezone":"UTC"}
 
     return {
         results: resultsPromise,
@@ -37,10 +44,10 @@ function marketSharePercent(){
 }
 
 function marketShareDollars(){
-    var resultsPromise = q.fcall(function(){
-        return [{share: 22.2345, totalMarketValue: 27, _count: 1}]
-    });
     var metadata = {"selects":["share", 'totalMarketValue'],"groups":[],"interval":null,"timezone":"UTC"}
+    var resultsPromise = q.fcall(function(){
+        return createResponse([{share: 22.2345, totalMarketValue: 27, _count: 1}], metadata);
+    });
 
     return {
         results: resultsPromise,
@@ -49,10 +56,10 @@ function marketShareDollars(){
 }
 
 function salesSellPrice(){
+    var metadata = {"selects":["sellPriceTotal"],"groups":[],"interval":null,"timezone":"UTC"};
     var resultsPromise = q.fcall(function(){
-        return [{sellPriceTotal: 100001.7793, _count: 2388740}]
+        return createResponse([{sellPriceTotal: 100001.7793, _count: 2388740}], metadata);
     });
-    var metadata = {"selects":["sellPriceTotal"],"groups":[],"interval":null,"timezone":"UTC"}
 
     return {
         results: resultsPromise,
@@ -61,13 +68,13 @@ function salesSellPrice(){
 }
 
 function salesByPayment(){
+    var metadata = {"selects":["sellPriceTotal","costPriceTotal"],"groups":["paymentType"],"interval":null,"timezone":"UTC"};
     var resultsPromise = q.fcall(function(){
-        return [
+        return createResponse([
         {"paymentType":"cash","sellPriceTotal":13.7793,"costPriceTotal":12.7793,"_count":1974313.0},
         {"paymentType":"card","sellPriceTotal":37.7793,"costPriceTotal":36.7793,"_count":336411.0}
-        ]
+        ], metadata);
     });
-    var metadata = {"selects":["sellPriceTotal","costPriceTotal"],"groups":["paymentType"],"interval":null,"timezone":"UTC"}
 
     return {
         results: resultsPromise,
@@ -76,8 +83,9 @@ function salesByPayment(){
 }
 
 function salesOver15Mins(){
+    var metadata = {"selects":["sellPriceTotal","costPriceTotal"],"groups":[],"interval":"minutely","timezone":"UTC"};
     var resultsPromise = q.fcall(function(){
-        return [
+        return createResponse([
         {"interval": {"start": "2015-03-04T00:00:00Z", "end": "2015-03-04T00:01:00Z"}, "results": [{sellPriceTotal: 22.7793, costPriceTotal: 7.0553, _count: 2388740}]},
         {"interval": {"start": "2015-03-04T00:01:00Z", "end": "2015-03-04T00:02:00Z"}, "results": [{sellPriceTotal: 2.7793, costPriceTotal: 4.0553, _count: 2388740}]},
         {"interval": {"start": "2015-03-04T00:02:00Z", "end": "2015-03-04T00:03:00Z"}, "results": [{sellPriceTotal: 33.7793, costPriceTotal: 5.0553, _count: 2388740}]},
@@ -94,9 +102,8 @@ function salesOver15Mins(){
         {"interval": {"start": "2015-03-04T00:13:00Z", "end": "2015-03-04T00:14:00Z"}, "results": [{sellPriceTotal: 33.7793, costPriceTotal: 6.0553, _count: 2388740}]},
         {"interval": {"start": "2015-03-04T00:14:00Z", "end": "2015-03-04T00:15:00Z"}, "results": [{sellPriceTotal: 12.7793, costPriceTotal: 8.0553, _count: 2388740}]},
         {"interval": {"start": "2015-03-04T00:15:00Z", "end": "2015-03-04T00:16:00Z"}, "results": [{sellPriceTotal: 5.7793, costPriceTotal: 1.0553, _count: 2388740}]}
-        ]
+        ], metadata);
     });
-    var metadata = {"selects":["sellPriceTotal","costPriceTotal"],"groups":[],"interval":"minutely","timezone":"UTC"}
 
     return {
         results: resultsPromise,
@@ -105,8 +112,9 @@ function salesOver15Mins(){
 }
 
 function salesOver15MinsTimezone(){
+    var metadata = {"selects":["sellPriceTotal","costPriceTotal"],"groups":[],"interval":"minutely","timezone":"UTC"}
     var resultsPromise = q.fcall(function(){
-        return [
+        return createResponse([
         {"interval": {"start": "2015-03-04T00:00:00Z", "end": "2015-03-04T00:01:00Z"}, "results": [{sellPriceTotal: 22.7793, costPriceTotal: 7.0553, _count: 2388740}]},
         {"interval": {"start": "2015-03-04T00:01:00Z", "end": "2015-03-04T00:02:00Z"}, "results": [{sellPriceTotal: 2.7793, costPriceTotal: 4.0553, _count: 2388740}]},
         {"interval": {"start": "2015-03-04T00:02:00Z", "end": "2015-03-04T00:03:00Z"}, "results": [{sellPriceTotal: 33.7793, costPriceTotal: 5.0553, _count: 2388740}]},
@@ -123,9 +131,8 @@ function salesOver15MinsTimezone(){
         {"interval": {"start": "2015-03-04T00:13:00Z", "end": "2015-03-04T00:14:00Z"}, "results": [{sellPriceTotal: 33.7793, costPriceTotal: 6.0553, _count: 2388740}]},
         {"interval": {"start": "2015-03-04T00:14:00Z", "end": "2015-03-04T00:15:00Z"}, "results": [{sellPriceTotal: 12.7793, costPriceTotal: 8.0553, _count: 2388740}]},
         {"interval": {"start": "2015-03-04T00:15:00Z", "end": "2015-03-04T00:16:00Z"}, "results": [{sellPriceTotal: 5.7793, costPriceTotal: 1.0553, _count: 2388740}]}
-        ]
+        ], metadata);
     });
-    var metadata = {"selects":["sellPriceTotal","costPriceTotal"],"groups":[],"interval":"minutely","timezone":"UTC"}
 
     return {
         results: resultsPromise,
@@ -134,8 +141,9 @@ function salesOver15MinsTimezone(){
 }
 
 function salesOver15MinsByPayment(){
+    var metadata = {"selects":["sellPriceTotal","costPriceTotal"],"groups":["paymentType"],"interval":"minutely","timezone":"UTC"};
     var resultsPromise = q.fcall(function(){
-        return [
+        return createResponse([
         {"interval": {"start": "2015-03-04T00:00:00Z", "end": "2015-03-04T00:01:00Z"}, "results": [{paymentType: "cash", sellPriceTotal: 22.7793, costPriceTotal: 7.0553, _count: 2388740}, {paymentType: "card", sellPriceTotal: 11.7793, costPriceTotal: 7.0553, _count: 2388740}]},
         {"interval": {"start": "2015-03-04T00:01:00Z", "end": "2015-03-04T00:02:00Z"}, "results": [{paymentType: "cash", sellPriceTotal: 2.7793, costPriceTotal: 4.0553, _count: 2388740}, {paymentType: "card", sellPriceTotal: 3.7793, costPriceTotal: 6.0553, _count: 2388740}]},
         {"interval": {"start": "2015-03-04T00:02:00Z", "end": "2015-03-04T00:03:00Z"}, "results": [{paymentType: "cash", sellPriceTotal: 33.7793, costPriceTotal: 5.0553, _count: 2388740}, {paymentType: "card", sellPriceTotal: 55.7793, costPriceTotal: 9.0553, _count: 2388740}]},
@@ -152,9 +160,8 @@ function salesOver15MinsByPayment(){
         {"interval": {"start": "2015-03-04T00:13:00Z", "end": "2015-03-04T00:14:00Z"}, "results": [{paymentType: "cash", sellPriceTotal: 33.7793, costPriceTotal: 6.0553, _count: 2388740}, {paymentType: "card", sellPriceTotal: 9.7793, costPriceTotal: 12.0553, _count: 2388740}]},
         {"interval": {"start": "2015-03-04T00:14:00Z", "end": "2015-03-04T00:15:00Z"}, "results": [{paymentType: "cash", sellPriceTotal: 12.7793, costPriceTotal: 8.0553, _count: 2388740}, {paymentType: "card", sellPriceTotal: 33.7793, costPriceTotal: 9.0553, _count: 2388740}]},
         {"interval": {"start": "2015-03-04T00:15:00Z", "end": "2015-03-04T00:16:00Z"}, "results": [{paymentType: "cash", sellPriceTotal: 5.7793, costPriceTotal: 1.0553, _count: 2388740}, {paymentType: "card", sellPriceTotal: 12.7793, costPriceTotal: 2.0553, _count: 2388740}]}
-        ]
+        ], metadata);
     });
-    var metadata = {"selects":["sellPriceTotal","costPriceTotal"],"groups":["paymentType"],"interval":"minutely","timezone":"UTC"}
 
     return {
         results: resultsPromise,
@@ -165,8 +172,9 @@ function salesOver15MinsByPayment(){
 
 
 function sellPriceOver15MinsByPayment(){
+    var metadata = {"selects":["sellPriceTotal"],"groups":["paymentType"],"interval":"minutely","timezone":"UTC"};
     var resultsPromise = q.fcall(function(){
-        return [
+        return createResponse([
         {"interval": {"start": "2015-03-04T00:00:00Z", "end": "2015-03-04T00:01:00Z"}, "results": [{paymentType: "cash", sellPriceTotal: 22.7793, _count: 2388740}, {paymentType: "card", sellPriceTotal: 11.7793, costPriceTotal: 7.0553, _count: 2388740}]},
         {"interval": {"start": "2015-03-04T00:01:00Z", "end": "2015-03-04T00:02:00Z"}, "results": [{paymentType: "cash", sellPriceTotal: 2.7793, _count: 2388740}, {paymentType: "card", sellPriceTotal: 3.7793, costPriceTotal: 6.0553, _count: 2388740}]},
         {"interval": {"start": "2015-03-04T00:02:00Z", "end": "2015-03-04T00:03:00Z"}, "results": [{paymentType: "cash", sellPriceTotal: 33.7793, _count: 2388740}, {paymentType: "card", sellPriceTotal: 55.7793, costPriceTotal: 9.0553, _count: 2388740}]},
@@ -183,9 +191,8 @@ function sellPriceOver15MinsByPayment(){
         {"interval": {"start": "2015-03-04T00:13:00Z", "end": "2015-03-04T00:14:00Z"}, "results": [{paymentType: "cash", sellPriceTotal: 33.7793, _count: 2388740}, {paymentType: "card", sellPriceTotal: 9.7793, costPriceTotal: 12.0553, _count: 2388740}]},
         {"interval": {"start": "2015-03-04T00:14:00Z", "end": "2015-03-04T00:15:00Z"}, "results": [{paymentType: "cash", sellPriceTotal: 12.7793, _count: 2388740}, {paymentType: "card", sellPriceTotal: 33.7793, costPriceTotal: 9.0553, _count: 2388740}]},
         {"interval": {"start": "2015-03-04T00:15:00Z", "end": "2015-03-04T00:16:00Z"}, "results": [{paymentType: "cash", sellPriceTotal: 5.7793, _count: 2388740}, {paymentType: "card", sellPriceTotal: 12.7793, costPriceTotal: 2.0553, _count: 2388740}]}
-        ]
+        ], metadata);
     });
-    var metadata = {"selects":["sellPriceTotal"],"groups":["paymentType"],"interval":"minutely","timezone":"UTC"}
 
     return {
         results: resultsPromise,
