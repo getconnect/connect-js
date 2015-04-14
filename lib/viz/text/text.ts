@@ -24,7 +24,7 @@ class Text implements Common.Visualization {
     constructor(targetElement: string|HTMLElement, textOptions: Config.VisualizationOptions) {
         this._options = _.extend({ 
             text: {
-                counterDurationMs: 800
+                counterDurationMs: 1000
             },
             fields: {} 
         }, textOptions);
@@ -67,7 +67,9 @@ class Text implements Common.Visualization {
         animationElementClassList.add(transitionClass);
         this._currentValue = value;
         this._counter = this._counter || new Counter(this._valueTextElement, duration, valueFormatter);
-        this._counter.update(value, () => animationElementClassList.remove(transitionClass));
+        this._counter.update(value, () => {
+            animationElementClassList.remove(transitionClass);
+        });
     }
 
     public clear(): void{        
@@ -101,7 +103,10 @@ class Text implements Common.Visualization {
         var container = document.createElement('div'),
             label = document.createElement('span'),
             elementForWidget = this.targetElement,
+            spanForValues = document.createElement('span'),
             valueTextElement = document.createElement('span'),
+            valueIncreaseIconElement = document.createElement('span'),
+            valueDecreaseIconElement = document.createElement('span'),
             valueElement = document.createElement('div');
 
         container.classList.add('connect-viz');
@@ -109,9 +114,14 @@ class Text implements Common.Visualization {
         label.classList.add('connect-viz-title');
         valueElement.classList.add('connect-viz-result');
         valueElement.classList.add('connect-text-value');
+        valueIncreaseIconElement.className = 'connect-text-icon-increase ion-arrow-up-b';
+        valueDecreaseIconElement.className = 'connect-text-icon-decrease ion-arrow-down-b';
 
         this.clear();
-        valueElement.appendChild(valueTextElement);
+        spanForValues.appendChild(valueIncreaseIconElement);
+        spanForValues.appendChild(valueDecreaseIconElement);
+        spanForValues.appendChild(valueTextElement);
+        valueElement.appendChild(spanForValues);
         container.appendChild(label);
         container.appendChild(valueElement);
         elementForWidget.appendChild(container);

@@ -14,15 +14,48 @@
         font: @text-value-size @text-value-font-family;
         color: @label-color;
         line-height: @text-value-line-height;
+        
+        span{
+            position: relative;
+        }
 
         transition: color 800ms linear;
 
+        .connect-text-icon-increase, .connect-text-icon-decrease{
+            position: absolute;
+            opacity: 0;
+            font-size: 16px;
+            left: -15px;
+        }
+
+        .connect-text-icon-increase{
+            bottom: 0;
+            transition: opacity 800ms linear, bottom 800ms linear, transform 800ms linear;
+        }
+
+        .connect-text-icon-decrease{
+            top: 0;
+            transition: opacity 800ms linear, top 800ms linear, transform 800ms linear;
+        }
+
         &.connect-text-value-increasing{
-            color: #7ED321;
+            color: @text-value-increasing-color;     
+
+            .connect-text-icon-increase{
+                opacity: 1;
+                bottom: 50%;
+                transform: translateY(50%);
+            }
         }
 
         &.connect-text-value-decreasing{
-            color: #D0021B;
+            color: @text-value-decreasing-color;
+
+            .connect-text-icon-decrease{
+                opacity: 1;
+                top: 50%;
+                transform: translateY(-50%);
+            }
         }
     }
 
@@ -34,5 +67,11 @@
 
     .connect-error{    
         .middle();
+    }
+}
+
+@keyframes connect-text-arrow-up{
+    0%, 100%{
+        opacity: 1;
     }
 }
