@@ -109,11 +109,9 @@ class Text implements Common.Visualization {
             valueDecreaseIconElement = document.createElement('span'),
             valueElement = document.createElement('div');
 
-        container.classList.add('connect-viz');
-        container.classList.add('connect-text');
-        label.classList.add('connect-viz-title');
-        valueElement.classList.add('connect-viz-result');
-        valueElement.classList.add('connect-text-value');
+        container.className = 'connect-viz connect-text';
+        label.className = 'connect-viz-title';
+        valueElement.className = 'connect-viz-result connect-text-value';
         valueIncreaseIconElement.className = 'connect-text-icon-increase ion-arrow-up-b';
         valueDecreaseIconElement.className = 'connect-text-icon-decrease ion-arrow-down-b';
 
