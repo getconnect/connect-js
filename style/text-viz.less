@@ -21,30 +21,31 @@
 
         transition: color @text-value-animation-delay linear;
 
-        .connect-text-icon-increase, .connect-text-icon-decrease{
+        .connect-text-icon, .connect-text-icon{
             position: absolute;
-            opacity: @text-value-icon-opacity-start;
+            visibility: hidden;
             font-size: @text-value-icon-size;
             left: -@text-value-icon-size;
         }
 
         .connect-text-icon-increase{
             bottom: @text-value-icon-position-start;
-            transition: opacity @text-value-animation-delay linear, bottom @text-value-animation-delay linear, transform @text-value-animation-delay linear;
+            transform: translateY(50%);
+            transition: visibility @text-value-animation-delay linear, bottom @text-value-animation-delay linear;
         }
 
         .connect-text-icon-decrease{
             top: @text-value-icon-position-start;
-            transition: opacity @text-value-animation-delay linear, top @text-value-animation-delay linear, transform @text-value-animation-delay linear;
+            transform: translateY(-50%);
+            transition: visibility @text-value-animation-delay linear, top @text-value-animation-delay linear;
         }
 
         &.connect-text-value-increasing{
             color: @text-value-increasing-color;     
 
             .connect-text-icon-increase{
-                opacity: @text-value-icon-opacity-finish;
+                visibility: visible;
                 bottom: @text-value-icon-position-finish;
-                transform: translateY(50%);
             }
         }
 
@@ -52,9 +53,8 @@
             color: @text-value-decreasing-color;
 
             .connect-text-icon-decrease{
-                opacity: @text-value-icon-opacity-finish;
+                visibility: visible;
                 top: @text-value-icon-position-finish;
-                transform: translateY(-50%);
             }
         }
     }
