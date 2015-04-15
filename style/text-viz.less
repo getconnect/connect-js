@@ -23,7 +23,8 @@
 
         .connect-text-icon, .connect-text-icon{
             position: absolute;
-            visibility: hidden;
+            backface-visibility: hidden;
+            opacity: 0;
             font-size: @text-value-icon-size;
             left: -@text-value-icon-size;
         }
@@ -31,20 +32,20 @@
         .connect-text-icon-increase{
             bottom: @text-value-icon-position-start;
             transform: translateY(50%);
-            transition: visibility @text-value-animation-delay linear, bottom @text-value-animation-delay linear;
+            transition: opacity @text-value-animation-delay linear, bottom @text-value-animation-delay linear;
         }
 
         .connect-text-icon-decrease{
             top: @text-value-icon-position-start;
             transform: translateY(-50%);
-            transition: visibility @text-value-animation-delay linear, top @text-value-animation-delay linear;
+            transition: opacity @text-value-animation-delay linear, top @text-value-animation-delay linear;
         }
 
         &.connect-text-value-increasing{
             color: @text-value-increasing-color;     
 
             .connect-text-icon-increase{
-                visibility: visible;
+                opacity: 1;
                 bottom: @text-value-icon-position-finish;
             }
         }
@@ -53,7 +54,7 @@
             color: @text-value-decreasing-color;
 
             .connect-text-icon-decrease{
-                visibility: visible;
+                opacity: 1;
                 top: @text-value-icon-position-finish;
             }
         }
