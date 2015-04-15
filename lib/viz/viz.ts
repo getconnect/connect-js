@@ -5,7 +5,7 @@ module Viz {
     export var DataVisualization = require('./data-visualization');
     export var Chart = require('./chart/chart');
     export var Gauge = require('./chart/gauge');
-    export var Text = require('./text');
+    export var Text = require('./text/text');
     export var Table = require('./table/table');
 
     export class Visualizations{

@@ -1,28 +1,37 @@
-import Config = require('./config');
-import ErrorHandling = require('./error-handling');
-import Queries = require('../core/queries/queries');
-import Api = require('../core/api');
+import Config = require('../config');
+import ErrorHandling = require('../error-handling');
+import Queries = require('../../core/queries/queries');
+import Api = require('../../core/api');
 import _ = require('underscore');
-import Common = require('./visualization');
-import Loader = require('./loader');
-import ResultHandling = require('./result-handling');
-import Dom = require('./dom');
+import Common = require('../visualization');
+import Loader = require('../loader');
+import ResultHandling = require('../result-handling');
+import Dom = require('../dom');
+import Counter = require('./counter');
 
 class Text implements Common.Visualization {
     public targetElement: HTMLElement;
     public loader: Loader;
     private _options: Config.VisualizationOptions;
+    private _currentValue: number;
     private _rendered: boolean;
     private _valueTextElement: HTMLElement;
+    private _valueContainerElement: HTMLElement;
     private _titleElement: HTMLElement;
+    private _counter: Counter;
+    private _counterDuration: number;
 
     constructor(targetElement: string|HTMLElement, textOptions: Config.VisualizationOptions) {
         this._options = _.extend({ 
+            text: {
+                counterDurationMs: 800
+            },
             fields: {} 
         }, textOptions);
 
         this.targetElement = Dom.getElement(targetElement);
         this.loader = new Loader(this.targetElement);
+        this._currentValue = 0;
     }
 
     public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Api.Metadata, showLoader: boolean = true): void {        
@@ -44,10 +53,23 @@ class Text implements Common.Visualization {
             fieldOption = options.fields[aliasOfSelect] || defaultFieldOption,
             valueFormatter = fieldOption.valueFormatter,
             value = onlyResult[aliasOfSelect],
-            valueText = valueFormatter(value);
-
-        this._valueTextElement.textContent = valueText;
+            animationElementClassList = this._valueContainerElement.classList,
+            isIncreasing = value > this._currentValue,
+            hasChanged = valueFormatter(this._currentValue) !== valueFormatter(value),
+            duration = options.text.counterDurationMs,
+            transitionClass = isIncreasing ? 'connect-text-value-increasing' : 'connect-text-value-decreasing';
+        
         this._showTitle(metadata);
+
+        if (!hasChanged)
+            return;
+        
+        animationElementClassList.add(transitionClass);
+        this._currentValue = value;
+        this._counter = this._counter || new Counter(this._valueTextElement, duration, valueFormatter);
+        this._counter.update(value, () => {
+            animationElementClassList.remove(transitionClass);
+        });
     }
 
     public clear(): void{        
@@ -81,23 +103,32 @@ class Text implements Common.Visualization {
         var container = document.createElement('div'),
             label = document.createElement('span'),
             elementForWidget = this.targetElement,
+            spanForValues = document.createElement('span'),
             valueTextElement = document.createElement('span'),
+            valueIncreaseIconElement = document.createElement('span'),
+            valueDecreaseIconElement = document.createElement('span'),
             valueElement = document.createElement('div');
 
         container.className = 'connect-viz connect-text';
         label.className = 'connect-viz-title';
         valueElement.className = 'connect-viz-result connect-text-value';
+        valueIncreaseIconElement.className = 'connect-text-icon connect-text-icon-increase ion-arrow-up-b';
+        valueDecreaseIconElement.className = 'connect-text-icon connect-text-icon-decrease ion-arrow-down-b';
 
         this.clear();
-        valueElement.appendChild(valueTextElement);
+        spanForValues.appendChild(valueIncreaseIconElement);
+        spanForValues.appendChild(valueDecreaseIconElement);
+        spanForValues.appendChild(valueTextElement);
+        valueElement.appendChild(spanForValues);
         container.appendChild(label);
         container.appendChild(valueElement);
         elementForWidget.appendChild(container);
 
+        this._valueContainerElement = valueElement;
         this._valueTextElement = valueTextElement;
-        this._valueTextElement.innerHTML = '&nbsp;'
+        this._valueTextElement.innerHTML = '&nbsp;';
         this._titleElement = label;
-        this._showTitle(metadata);        
+        this._showTitle(metadata);
         this._rendered = true;
     }
 
