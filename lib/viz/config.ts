@@ -60,9 +60,9 @@ module Config {
         padding?: PaddingOptions;
     }
 
-	export interface TextOptions {    
+    export interface TextOptions {    
         counterDurationMs: number;    
-	}
+    }
 
     export interface TableOptions {
         
