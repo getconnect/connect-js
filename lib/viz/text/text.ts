@@ -111,7 +111,8 @@ class Text implements Common.Visualization {
 
         container.className = 'connect-viz connect-text';
         label.className = 'connect-viz-title';
-        valueElement.className = 'connect-viz-result connect-text-value';
+        valueElement.className = 'connect-viz-result';
+        valueTextElement.className = 'connect-text-value'
         valueIncreaseIconElement.className = 'connect-text-icon connect-text-icon-increase ion-arrow-up-b';
         valueDecreaseIconElement.className = 'connect-text-icon connect-text-icon-decrease ion-arrow-down-b';
 
