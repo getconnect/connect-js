@@ -41,12 +41,12 @@
             right: 0;
         }
 
-        &.connect-viz-loading{
-            .c3-chart-arcs-background{
-                opacity: 0.5;
+        &.connect-viz-loading, &.connect-viz-in-error{
+            .c3-chart-arc{
+                display: none;
             }
-            
-            .c3-gauge-value{
+
+            .c3-chart-arcs-gauge-min, .c3-chart-arcs-gauge-max{
                 visibility: hidden;
             }
         }
@@ -60,12 +60,17 @@
 
 .c3-chart-arc, .c3-chart-arcs{
     .c3-gauge-value, .c3-chart-arcs-gauge-min, .c3-chart-arcs-gauge-max{
-        font-family: @label-font-family;
         fill: @label-color;
+        font-feature-settings: 'tnum';
+    }
+    
+    .c3-gauge-value{
+        font-family: @text-value-font-family;
     }
 
     .c3-chart-arcs-gauge-min, .c3-chart-arcs-gauge-max{
-        font-size: @label-size;
+        font-family: @label-font-family;
+        font-size: @gauge-label-size;
     }
 }
 

@@ -64,10 +64,14 @@
   left: 0;
   right: 0;
 }
-.connect-chart.connect-chart-gauge.connect-viz-loading .c3-chart-arcs-background {
-  opacity: 0.5;
+.connect-chart.connect-chart-gauge.connect-viz-loading .c3-chart-arc,
+.connect-chart.connect-chart-gauge.connect-viz-in-error .c3-chart-arc {
+  display: none;
 }
-.connect-chart.connect-chart-gauge.connect-viz-loading .c3-gauge-value {
+.connect-chart.connect-chart-gauge.connect-viz-loading .c3-chart-arcs-gauge-min,
+.connect-chart.connect-chart-gauge.connect-viz-in-error .c3-chart-arcs-gauge-min,
+.connect-chart.connect-chart-gauge.connect-viz-loading .c3-chart-arcs-gauge-max,
+.connect-chart.connect-chart-gauge.connect-viz-in-error .c3-chart-arcs-gauge-max {
   visibility: hidden;
 }
 .c3-legend-item {
@@ -80,14 +84,21 @@
 .c3-chart-arcs .c3-chart-arcs-gauge-min,
 .c3-chart-arc .c3-chart-arcs-gauge-max,
 .c3-chart-arcs .c3-chart-arcs-gauge-max {
-  font-family: 'Roboto', sans-serif;
   fill: #34495e;
+  -webkit-font-feature-settings: 'tnum';
+     -moz-font-feature-settings: 'tnum';
+          font-feature-settings: 'tnum';
+}
+.c3-chart-arc .c3-gauge-value,
+.c3-chart-arcs .c3-gauge-value {
+  font-family: 'Open Sans', sans-serif;
 }
 .c3-chart-arc .c3-chart-arcs-gauge-min,
 .c3-chart-arcs .c3-chart-arcs-gauge-min,
 .c3-chart-arc .c3-chart-arcs-gauge-max,
 .c3-chart-arcs .c3-chart-arcs-gauge-max {
-  font-size: 12px;
+  font-family: 'Roboto', sans-serif;
+  font-size: 11px;
 }
 .c3-axis,
 .c3-line {
@@ -136,6 +147,9 @@
   font: 700 16px 'Roboto', sans-serif;
   color: #34495e;
   padding-bottom: 5px;
+}
+.connect-viz svg {
+  font-family: 'Roboto', sans-serif;
 }
 
 .connect-error {
@@ -400,7 +414,7 @@
       -ms-transform: translateY(-50%);
           transform: translateY(-50%);
 }
-.connect-text .connect-text-value {
+.connect-text .connect-viz-result {
   position: relative;
   display: block;
   text-align: center;
@@ -410,11 +424,15 @@
   -webkit-transition: color 400ms linear;
           transition: color 400ms linear;
 }
-.connect-text .connect-text-value span {
+.connect-text .connect-viz-result > span {
   position: relative;
 }
-.connect-text .connect-text-value .connect-text-icon,
-.connect-text .connect-text-value .connect-text-icon {
+.connect-text .connect-viz-result .connect-text-value {
+  -webkit-font-feature-settings: 'tnum';
+     -moz-font-feature-settings: 'tnum';
+          font-feature-settings: 'tnum';
+}
+.connect-text .connect-viz-result .connect-text-icon {
   position: absolute;
   -webkit-backface-visibility: hidden;
           backface-visibility: hidden;
@@ -422,7 +440,7 @@
   font-size: 16px;
   left: -16px;
 }
-.connect-text .connect-text-value .connect-text-icon-increase {
+.connect-text .connect-viz-result .connect-text-icon-increase {
   bottom: 10%;
   -webkit-transform: translateY(50%);
       -ms-transform: translateY(50%);
@@ -430,7 +448,7 @@
   -webkit-transition: opacity 400ms linear, bottom 400ms linear;
           transition: opacity 400ms linear, bottom 400ms linear;
 }
-.connect-text .connect-text-value .connect-text-icon-decrease {
+.connect-text .connect-viz-result .connect-text-icon-decrease {
   top: 10%;
   -webkit-transform: translateY(-50%);
       -ms-transform: translateY(-50%);
@@ -438,17 +456,17 @@
   -webkit-transition: opacity 400ms linear, top 400ms linear;
           transition: opacity 400ms linear, top 400ms linear;
 }
-.connect-text .connect-text-value.connect-text-value-increasing {
+.connect-text .connect-viz-result.connect-text-value-increasing {
   color: #7ed321;
 }
-.connect-text .connect-text-value.connect-text-value-increasing .connect-text-icon-increase {
+.connect-text .connect-viz-result.connect-text-value-increasing .connect-text-icon-increase {
   opacity: 1;
   bottom: 50%;
 }
-.connect-text .connect-text-value.connect-text-value-decreasing {
+.connect-text .connect-viz-result.connect-text-value-decreasing {
   color: #d0021b;
 }
-.connect-text .connect-text-value.connect-text-value-decreasing .connect-text-icon-decrease {
+.connect-text .connect-viz-result.connect-text-value-decreasing .connect-text-icon-decrease {
   opacity: 1;
   top: 50%;
 }

@@ -7,7 +7,7 @@
 
     .vertical-middle();
 
-    .connect-text-value{
+    .connect-viz-result{
         position: relative;
         display: block;
         text-align: center;
@@ -15,13 +15,17 @@
         color: @label-color;
         line-height: @text-value-line-height;
         
-        span{
+        > span{
             position: relative;
         }
 
         transition: color @text-value-animation-delay linear;
+        
+        .connect-text-value{
+            font-feature-settings: 'tnum';            
+        }
 
-        .connect-text-icon, .connect-text-icon{
+        .connect-text-icon{
             position: absolute;
             backface-visibility: hidden;
             opacity: 0;
