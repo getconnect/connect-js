@@ -7,7 +7,7 @@ function applyMixins(targetClass, mixinClass) {
 }
 module.exports = applyMixins;
 
-},{"underscore":26}],2:[function(require,module,exports){
+},{"underscore":27}],2:[function(require,module,exports){
 var Config = require('../config');
 var GroupedIntervalDataset = require('./grouped-interval-dataset');
 var StandardDataset = require('./standard-dataset');
@@ -170,7 +170,7 @@ var Chart = (function () {
 })();
 module.exports = Chart;
 
-},{"../config":7,"../dom":9,"../formatters":11,"../loader":13,"../palette":14,"../result-handling":15,"./grouped-interval-dataset":5,"./standard-dataset":6,"underscore":26}],3:[function(require,module,exports){
+},{"../config":7,"../dom":9,"../formatters":11,"../loader":13,"../palette":14,"../result-handling":15,"./grouped-interval-dataset":5,"./standard-dataset":6,"underscore":27}],3:[function(require,module,exports){
 var _ = require('underscore');
 var Dataset;
 (function (Dataset) {
@@ -189,7 +189,7 @@ var Dataset;
 })(Dataset || (Dataset = {}));
 module.exports = Dataset;
 
-},{"underscore":26}],4:[function(require,module,exports){
+},{"underscore":27}],4:[function(require,module,exports){
 var Config = require('../config');
 var StandardDataset = require('./standard-dataset');
 var _ = require('underscore');
@@ -327,7 +327,7 @@ var Gauge = (function () {
 })();
 module.exports = Gauge;
 
-},{"../config":7,"../dom":9,"../loader":13,"../palette":14,"../result-handling":15,"./standard-dataset":6,"underscore":26}],5:[function(require,module,exports){
+},{"../config":7,"../dom":9,"../loader":13,"../palette":14,"../result-handling":15,"./standard-dataset":6,"underscore":27}],5:[function(require,module,exports){
 var Dataset = require('./dataset');
 var _ = require('underscore');
 var GroupedIntervalDataset = (function () {
@@ -385,7 +385,7 @@ var GroupedIntervalDataset = (function () {
 })();
 module.exports = GroupedIntervalDataset;
 
-},{"./dataset":3,"underscore":26}],6:[function(require,module,exports){
+},{"./dataset":3,"underscore":27}],6:[function(require,module,exports){
 var Dataset = require('./dataset');
 var _ = require('underscore');
 var StandardDataset = (function () {
@@ -437,7 +437,7 @@ var StandardDataset = (function () {
 })();
 module.exports = StandardDataset;
 
-},{"./dataset":3,"underscore":26}],7:[function(require,module,exports){
+},{"./dataset":3,"underscore":27}],7:[function(require,module,exports){
 var Config;
 (function (Config) {
     Config.defaultTimeSeriesFormats = {
@@ -517,7 +517,7 @@ function removeAllChildren(targetElement) {
 }
 exports.removeAllChildren = removeAllChildren;
 
-},{"underscore":26}],10:[function(require,module,exports){
+},{"underscore":27}],10:[function(require,module,exports){
 var ErrorHandling;
 (function (ErrorHandling) {
     var errorTypes = {
@@ -605,7 +605,7 @@ function formatDate(dateToFormat, timezone, format) {
 }
 exports.formatDate = formatDate;
 
-},{"moment-timezone":23,"underscore":26}],12:[function(require,module,exports){
+},{"moment-timezone":24,"underscore":27}],12:[function(require,module,exports){
 (function (global){
 var Viz = require('./viz');
 var applyMixins = require('./apply-mixins');
@@ -638,7 +638,7 @@ else if (typeof global !== 'undefined') {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./apply-mixins":1,"./viz":20,"tipi-connect":21}],13:[function(require,module,exports){
+},{"./apply-mixins":1,"./viz":21,"tipi-connect":22}],13:[function(require,module,exports){
 var Loader = (function () {
     function Loader(targetElement) {
         this._vizSelector = '.connect-viz';
@@ -696,7 +696,7 @@ var Palette;
 })(Palette || (Palette = {}));
 module.exports = Palette;
 
-},{"underscore":26}],15:[function(require,module,exports){
+},{"underscore":27}],15:[function(require,module,exports){
 var ErrorHandling = require('./error-handling');
 var ResultHandling;
 (function (ResultHandling) {
@@ -835,7 +835,7 @@ var TableDataset = (function () {
 })();
 exports.TableDataset = TableDataset;
 
-},{"../formatters":11,"underscore":26}],17:[function(require,module,exports){
+},{"../formatters":11,"underscore":27}],17:[function(require,module,exports){
 var _ = require('underscore');
 function renderDataset(dataset) {
     return template()({
@@ -881,7 +881,7 @@ function template() {
 	');
 }
 
-},{"underscore":26}],18:[function(require,module,exports){
+},{"underscore":27}],18:[function(require,module,exports){
 var _ = require('underscore');
 var Config = require('../config');
 var Dataset = require('./dataset');
@@ -943,19 +943,111 @@ var Table = (function () {
 })();
 module.exports = Table;
 
-},{"../config":7,"../dom":9,"../loader":13,"../result-handling":15,"./dataset":16,"./renderer":17,"underscore":26}],19:[function(require,module,exports){
-var ErrorHandling = require('./error-handling');
+},{"../config":7,"../dom":9,"../loader":13,"../result-handling":15,"./dataset":16,"./renderer":17,"underscore":27}],19:[function(require,module,exports){
+//Adapted from https://github.com/inorganik/countUp.js
+var lastTime = 0;
+var vendors = ['webkit', 'moz', 'ms', 'o'];
+for (var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+    window.requestAnimationFrame = window[vendors[x] + 'RequestAnimationFrame'];
+    window.cancelAnimationFrame = window[vendors[x] + 'CancelAnimationFrame'] || window[vendors[x] + 'CancelRequestAnimationFrame'];
+}
+if (!window.requestAnimationFrame) {
+    window.requestAnimationFrame = function (callback) {
+        var currTime = new Date().getTime();
+        var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+        var id = window.setTimeout(function () {
+            callback(currTime + timeToCall);
+        }, timeToCall);
+        lastTime = currTime + timeToCall;
+        return id;
+    };
+}
+if (!window.cancelAnimationFrame) {
+    window.cancelAnimationFrame = function (id) {
+        clearTimeout(id);
+    };
+}
+var Counter = (function () {
+    function Counter(target, duration, valueFormatter) {
+        this.target = target;
+        this.duration = duration;
+        this.valueFormatter = valueFormatter;
+    }
+    Counter.prototype.printCurrentValue = function () {
+        this.target.textContent = this.valueFormatter(this.currentValue);
+    };
+    Counter.prototype.easeOutExpo = function (t, b, c, d) {
+        return c * (-Math.pow(2, -10 * t / d) + 1) * 1024 / 1023 + b;
+    };
+    Counter.prototype.count = function (timestamp, finished) {
+        var _this = this;
+        var progress = 0;
+        var isFinished = false;
+        if (this.startTime == null)
+            this.startTime = timestamp;
+        this.timestamp = timestamp;
+        progress = timestamp - this.startTime;
+        this.remaining = this.duration - progress;
+        if (this.countDown) {
+            var easedValue = this.easeOutExpo(progress, 0, this.startValue - this.endValue, this.duration);
+            this.currentValue = this.startValue - easedValue;
+        }
+        else {
+            this.currentValue = this.easeOutExpo(progress, this.startValue, this.endValue - this.startValue, this.duration);
+        }
+        // don't go past endValue since progress can exceed duration in the last frame
+        if (this.countDown) {
+            this.currentValue = (this.currentValue < this.endValue) ? this.endValue : this.currentValue;
+        }
+        else {
+            this.currentValue = (this.currentValue > this.endValue) ? this.endValue : this.currentValue;
+        }
+        this.printCurrentValue();
+        isFinished = progress < this.duration;
+        if (isFinished) {
+            this.animationId = requestAnimationFrame(function (timestamp) { return _this.count(timestamp, finished); });
+        }
+        else {
+            this.animationId = null;
+            if (finished)
+                finished();
+        }
+    };
+    Counter.prototype.stop = function () {
+        if (this.animationId)
+            cancelAnimationFrame(this.animationId);
+    };
+    Counter.prototype.update = function (endValue, finished) {
+        var _this = this;
+        this.stop();
+        this.startTime = null;
+        this.startValue = this.endValue || 0;
+        this.endValue = endValue;
+        this.countDown = (this.startValue > this.endValue) ? true : false;
+        this.animationId = requestAnimationFrame(function (timestamp) { return _this.count(timestamp, finished); });
+    };
+    return Counter;
+})();
+module.exports = Counter;
+
+},{}],20:[function(require,module,exports){
+var ErrorHandling = require('../error-handling');
 var _ = require('underscore');
-var Loader = require('./loader');
-var ResultHandling = require('./result-handling');
-var Dom = require('./dom');
+var Loader = require('../loader');
+var ResultHandling = require('../result-handling');
+var Dom = require('../dom');
+var Counter = require('./counter');
 var Text = (function () {
     function Text(targetElement, textOptions) {
         this._options = _.extend({
+            text: {
+                counterDurationMs: 800
+            },
             fields: {}
         }, textOptions);
         this.targetElement = Dom.getElement(targetElement);
         this.loader = new Loader(this.targetElement);
+        this._currentValue = 0;
     }
     Text.prototype.displayData = function (resultsPromise, metadata, showLoader) {
         if (showLoader === void 0) { showLoader = true; }
@@ -967,9 +1059,16 @@ var Text = (function () {
         ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
     };
     Text.prototype._loadData = function (results, metadata) {
-        var options = this._options, onlyResult = results.results[0], aliasOfSelect = metadata.selects[0], defaultFieldOption = { valueFormatter: function (value) { return value; } }, fieldOption = options.fields[aliasOfSelect] || defaultFieldOption, valueFormatter = fieldOption.valueFormatter, value = onlyResult[aliasOfSelect], valueText = valueFormatter(value);
-        this._valueTextElement.textContent = valueText;
+        var options = this._options, onlyResult = results.results[0], aliasOfSelect = metadata.selects[0], defaultFieldOption = { valueFormatter: function (value) { return value; } }, fieldOption = options.fields[aliasOfSelect] || defaultFieldOption, valueFormatter = fieldOption.valueFormatter, value = onlyResult[aliasOfSelect], animationElementClassList = this._valueContainerElement.classList, isIncreasing = value > this._currentValue, hasChanged = valueFormatter(this._currentValue) !== valueFormatter(value), duration = options.text.counterDurationMs, transitionClass = isIncreasing ? 'connect-text-value-increasing' : 'connect-text-value-decreasing';
         this._showTitle(metadata);
+        if (!hasChanged)
+            return;
+        animationElementClassList.add(transitionClass);
+        this._currentValue = value;
+        this._counter = this._counter || new Counter(this._valueTextElement, duration, valueFormatter);
+        this._counter.update(value, function () {
+            animationElementClassList.remove(transitionClass);
+        });
     };
     Text.prototype.clear = function () {
         this._rendered = false;
@@ -987,15 +1086,21 @@ var Text = (function () {
     Text.prototype._renderText = function (metadata) {
         if (this._rendered)
             return;
-        var container = document.createElement('div'), label = document.createElement('span'), elementForWidget = this.targetElement, valueTextElement = document.createElement('span'), valueElement = document.createElement('div');
+        var container = document.createElement('div'), label = document.createElement('span'), elementForWidget = this.targetElement, spanForValues = document.createElement('span'), valueTextElement = document.createElement('span'), valueIncreaseIconElement = document.createElement('span'), valueDecreaseIconElement = document.createElement('span'), valueElement = document.createElement('div');
         container.className = 'connect-viz connect-text';
         label.className = 'connect-viz-title';
         valueElement.className = 'connect-viz-result connect-text-value';
+        valueIncreaseIconElement.className = 'connect-text-icon connect-text-icon-increase ion-arrow-up-b';
+        valueDecreaseIconElement.className = 'connect-text-icon connect-text-icon-decrease ion-arrow-down-b';
         this.clear();
-        valueElement.appendChild(valueTextElement);
+        spanForValues.appendChild(valueIncreaseIconElement);
+        spanForValues.appendChild(valueDecreaseIconElement);
+        spanForValues.appendChild(valueTextElement);
+        valueElement.appendChild(spanForValues);
         container.appendChild(label);
         container.appendChild(valueElement);
         elementForWidget.appendChild(container);
+        this._valueContainerElement = valueElement;
         this._valueTextElement = valueTextElement;
         this._valueTextElement.innerHTML = '&nbsp;';
         this._titleElement = label;
@@ -1010,13 +1115,13 @@ var Text = (function () {
 })();
 module.exports = Text;
 
-},{"./dom":9,"./error-handling":10,"./loader":13,"./result-handling":15,"underscore":26}],20:[function(require,module,exports){
+},{"../dom":9,"../error-handling":10,"../loader":13,"../result-handling":15,"./counter":19,"underscore":27}],21:[function(require,module,exports){
 var Viz;
 (function (Viz) {
     Viz.DataVisualization = require('./data-visualization');
     Viz.Chart = require('./chart/chart');
     Viz.Gauge = require('./chart/gauge');
-    Viz.Text = require('./text');
+    Viz.Text = require('./text/text');
     Viz.Table = require('./table/table');
     var Visualizations = (function () {
         function Visualizations() {
@@ -1043,9 +1148,9 @@ var Viz;
 })(Viz || (Viz = {}));
 module.exports = Viz;
 
-},{"./chart/chart":2,"./chart/gauge":4,"./data-visualization":8,"./table/table":18,"./text":19}],21:[function(require,module,exports){
+},{"./chart/chart":2,"./chart/gauge":4,"./data-visualization":8,"./table/table":18,"./text/text":20}],22:[function(require,module,exports){
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 module.exports={
 	"version": "2015a",
 	"zones": [
@@ -1635,11 +1740,11 @@ module.exports={
 		"Pacific/Pohnpei|Pacific/Ponape"
 	]
 }
-},{}],23:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 var moment = module.exports = require("./moment-timezone");
 moment.tz.load(require('./data/packed/latest.json'));
 
-},{"./data/packed/latest.json":22,"./moment-timezone":24}],24:[function(require,module,exports){
+},{"./data/packed/latest.json":23,"./moment-timezone":25}],25:[function(require,module,exports){
 //! moment-timezone.js
 //! version : 0.3.1
 //! author : Tim Wood
@@ -2059,7 +2164,7 @@ moment.tz.load(require('./data/packed/latest.json'));
 	return moment;
 }));
 
-},{"moment":25}],25:[function(require,module,exports){
+},{"moment":26}],26:[function(require,module,exports){
 //! moment.js
 //! version : 2.10.2
 //! authors : Tim Wood, Iskren Chernev, Moment.js contributors
@@ -5143,7 +5248,7 @@ moment.tz.load(require('./data/packed/latest.json'));
     return _moment;
 
 }));
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors

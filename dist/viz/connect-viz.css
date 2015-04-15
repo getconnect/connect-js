@@ -407,6 +407,50 @@
   font: 42px 'Open Sans', sans-serif;
   color: #34495e;
   line-height: 1.1;
+  -webkit-transition: color 400ms linear;
+          transition: color 400ms linear;
+}
+.connect-text .connect-text-value span {
+  position: relative;
+}
+.connect-text .connect-text-value .connect-text-icon,
+.connect-text .connect-text-value .connect-text-icon {
+  position: absolute;
+  -webkit-backface-visibility: hidden;
+          backface-visibility: hidden;
+  opacity: 0;
+  font-size: 16px;
+  left: -16px;
+}
+.connect-text .connect-text-value .connect-text-icon-increase {
+  bottom: 10%;
+  -webkit-transform: translateY(50%);
+      -ms-transform: translateY(50%);
+          transform: translateY(50%);
+  -webkit-transition: opacity 400ms linear, bottom 400ms linear;
+          transition: opacity 400ms linear, bottom 400ms linear;
+}
+.connect-text .connect-text-value .connect-text-icon-decrease {
+  top: 10%;
+  -webkit-transform: translateY(-50%);
+      -ms-transform: translateY(-50%);
+          transform: translateY(-50%);
+  -webkit-transition: opacity 400ms linear, top 400ms linear;
+          transition: opacity 400ms linear, top 400ms linear;
+}
+.connect-text .connect-text-value.connect-text-value-increasing {
+  color: #7ed321;
+}
+.connect-text .connect-text-value.connect-text-value-increasing .connect-text-icon-increase {
+  opacity: 1;
+  bottom: 50%;
+}
+.connect-text .connect-text-value.connect-text-value-decreasing {
+  color: #d0021b;
+}
+.connect-text .connect-text-value.connect-text-value-decreasing .connect-text-icon-decrease {
+  opacity: 1;
+  top: 50%;
 }
 .connect-text.connect-viz-loading .connect-text-value > span,
 .connect-text.connect-viz-in-error .connect-text-value > span {
