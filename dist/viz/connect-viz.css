@@ -470,8 +470,8 @@
   opacity: 1;
   top: 50%;
 }
-.connect-text.connect-viz-loading .connect-text-value > span,
-.connect-text.connect-viz-in-error .connect-text-value > span {
+.connect-text.connect-viz-loading .connect-text-results > span,
+.connect-text.connect-viz-in-error .connect-text-results > span {
   visibility: hidden;
 }
 .connect-text .connect-error {
