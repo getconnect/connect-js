@@ -1061,10 +1061,10 @@ var Text = (function () {
     Text.prototype._loadData = function (results, metadata) {
         var options = this._options, onlyResult = results.results[0], aliasOfSelect = metadata.selects[0], defaultFieldOption = { valueFormatter: function (value) { return value; } }, fieldOption = options.fields[aliasOfSelect] || defaultFieldOption, valueFormatter = fieldOption.valueFormatter, value = onlyResult[aliasOfSelect], animationElementClassList = this._valueContainerElement.classList, isIncreasing = value > this._currentValue, hasChanged = valueFormatter(this._currentValue) !== valueFormatter(value), duration = options.text.counterDurationMs, transitionClass = isIncreasing ? 'connect-text-value-increasing' : 'connect-text-value-decreasing';
         this._showTitle(metadata);
+        this._currentValue = value;
         if (!hasChanged)
             return;
         animationElementClassList.add(transitionClass);
-        this._currentValue = value;
         this._counter = this._counter || new Counter(this._valueTextElement, duration, valueFormatter);
         this._counter.update(value, function () {
             animationElementClassList.remove(transitionClass);
