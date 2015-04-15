@@ -60,12 +60,12 @@ class Text implements Common.Visualization {
             transitionClass = isIncreasing ? 'connect-text-value-increasing' : 'connect-text-value-decreasing';
         
         this._showTitle(metadata);
+        this._currentValue = value;
 
         if (!hasChanged)
             return;
         
         animationElementClassList.add(transitionClass);
-        this._currentValue = value;
         this._counter = this._counter || new Counter(this._valueTextElement, duration, valueFormatter);
         this._counter.update(value, () => {
             animationElementClassList.remove(transitionClass);
