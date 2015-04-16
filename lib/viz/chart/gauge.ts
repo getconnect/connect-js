@@ -23,7 +23,7 @@ class Gauge implements Common.Visualization {
     private _rendered: boolean;
     private _titleElement: HTMLElement;
     private _currentDataset: Dataset.ChartDataset;
-    private _duration;
+    private _transitionDuration;
     private _resultHandler: ResultHandling.ResultHandler;
     
     constructor(targetElement: string|HTMLElement, gaugeOptions: Config.VisualizationOptions) {     
@@ -31,15 +31,16 @@ class Gauge implements Common.Visualization {
         this.targetElement = Dom.getElement(targetElement);
         this.loader = new Loader(this.targetElement);
         this._resultHandler = new ResultHandling.ResultHandler();
-        this._duration = {
-            fullReload: null,
-            update: 300
+        this._transitionDuration = {
+            none: null,
+            some: 300
         }
     }
 
     private _parseOptions(gaugeOptions: Config.VisualizationOptions): Config.VisualizationOptions{
 
         var defaultOptions: Config.VisualizationOptions = {
+                transitionOnReload: true,
                 fields: {},                
                 gauge: {},
             },
@@ -82,7 +83,7 @@ class Gauge implements Common.Visualization {
 
         this._initializeFieldOptions(parsedMetaData);
         this._renderGauge(parsedMetaData);
-        ResultHandling.handleResult(resultsPromise, parsedMetaData, this, this._loadData, showLoader);
+        this._resultHandler.handleResult(resultsPromise, parsedMetaData, this, this._loadData, fullReload);
     }
 
     private _parseMetaData(metadata: Api.Metadata){
@@ -110,7 +111,7 @@ class Gauge implements Common.Visualization {
             maxConfigProperty = 'gauge_max',
             showLabelConfigProperty = 'gauge_label_show',
             internalGaugeConfig = (<any>this._gauge).internal.config,
-            transitionDuration = fullReload ? this._duration.fullReload : this._duration.update;
+            transitionDuration = !options.transitionOnReload && fullReload ? this._transitionDuration.none : this._transitionDuration.some;
             
         internalGaugeConfig.transition_duration = transitionDuration;
 
@@ -205,7 +206,7 @@ class Gauge implements Common.Visualization {
                     type: 'gauge'
                 },
                 transition: {
-                    duration: this._duration.fullReload
+                    duration: this._transitionDuration.none
                 },
                 tooltip: {
                     format: {

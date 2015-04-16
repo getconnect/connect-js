@@ -24,6 +24,7 @@ class Text implements Common.Visualization {
 
     constructor(targetElement: string|HTMLElement, textOptions: Config.VisualizationOptions) {
         this._options = _.extend({ 
+            transitionOnReload: true,
             text: {
                 counterDurationMs: 800
             },
@@ -43,7 +44,7 @@ class Text implements Common.Visualization {
             this._renderQueryNotApplicable();
             return;
         }        
-        ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
+        this._resultHandler.handleResult(resultsPromise, metadata, this, this._loadData, fullReload);
     }
 
     private _loadData(results: Api.QueryResults, metadata: Api.Metadata, fullReload: boolean): void {        
@@ -67,7 +68,7 @@ class Text implements Common.Visualization {
         if (!hasChanged)
             return;
         
-        if (fullReload){
+        if (!options.transitionOnReload && fullReload){
             this._counter.setValue(value);
         }else{
             animationElementClassList.add(transitionClass);
