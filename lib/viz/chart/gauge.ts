@@ -77,12 +77,12 @@ class Gauge implements Common.Visualization {
         options.gauge.label.format = fieldOptions[firstSelect].valueFormatter;
     }
 
-    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Api.Metadata, fullReload: boolean = true): void {        
+    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, fullReload: boolean = true): void {        
         var parsedMetaData = this._parseMetaData(metadata);
 
         this._initializeFieldOptions(parsedMetaData);
         this._renderGauge(parsedMetaData);
-        ResultHandling.handleResult(resultsPromise, parsedMetaData, this, this._loadData, showLoader);
+        this._resultHandler.handleResult(resultsPromise, parsedMetaData, this, this._loadData, fullReload);
     }
 
     private _parseMetaData(metadata: Api.Metadata){
@@ -96,7 +96,7 @@ class Gauge implements Common.Visualization {
         return parsedMetaData;
     }
 
-    private _loadData(results: Api.QueryResults, metadata: Api.Metadata, fullReload: boolean): void {
+    private _loadData(results: Api.QueryResults, fullReload: boolean): void {
         var options = this._options,
             typeOptions = options.gauge,
             resultItems = results.results,

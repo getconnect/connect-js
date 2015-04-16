@@ -1,6 +1,4 @@
 import Config = require('../config');
-import GroupedIntervalDataset = require('./grouped-interval-dataset');
-import StandardDataset = require('./standard-dataset');
 import Dataset = require('./dataset');
 import Queries = require('../../core/queries/queries');
 import Api = require('../../core/api');
@@ -72,19 +70,19 @@ class Chart implements Common.Visualization {
         });       
     }
 
-    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Api.Metadata, fullReload: boolean = true): void {        
+    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, fullReload: boolean = true): void {        
         var internalChartConfig;
         this._initializeFieldOptions(metadata);
         this._renderChart(metadata);
         this._resultHandler.handleResult(resultsPromise, metadata, this, this._loadData, fullReload);
     }
 
-    private _loadData(results: Api.QueryResults, metadata: Api.Metadata, fullReload: boolean): void {
+    private _loadData(results: Api.QueryResults, fullReload: boolean): void {
         var options = this._options,
             type = options.chart.type,
             resultItems = results.results,
             typeOptions = options[type],
-            dataset = this._buildDataset(resultItems, metadata),
+            dataset = this._buildDataset(results),
             keys = dataset.getLabels(),
             uniqueKeys = _.unique(keys),
             colors = Palette.getSwatch(uniqueKeys, options.chart.colors),
@@ -110,17 +108,14 @@ class Chart implements Common.Visualization {
         Dom.removeAllChildren(this.targetElement)
     }
 
-    private _buildDataset(resultItems: Api.QueryResultItem[], metadata: Api.Metadata): Dataset.ChartDataset{
+    private _buildDataset(results: Api.QueryResults): Dataset.ChartDataset{
         var options = this._options,
             formatters = {        
                 selectLabelFormatter: select => options.fields[select] && options.fields[select].label ? options.fields[select].label : select,
                 groupValueFormatter: (groupByName, groupValue) => this._formatGroupValue(groupByName, groupValue)
-            },
-            isGroupedInterval = metadata.interval && metadata.groups.length;
+            }
 
-            return isGroupedInterval ? new GroupedIntervalDataset(resultItems, metadata, formatters)
-                                     : new StandardDataset(resultItems, metadata, formatters);
-
+        return new Dataset.ChartDataset(results, formatters);
     }
 
     private _showTitle(){
@@ -157,7 +152,7 @@ class Chart implements Common.Visualization {
         return groupValue;
     }
 
-    private _renderChart(metadata: Api.Metadata) {
+    private _renderChart() {
         if(this._rendered)
             return;
             

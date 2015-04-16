@@ -6,15 +6,19 @@ import ErrorHandling = require('./error-handling');
 
 class DataVisualization{
     private _visualization: Common.Visualization;
-    private _query: Queries.ConnectQuery;
+    private _promiser: Api.Promiser;
     private _isLoading: boolean;
 
-    constructor(query: Queries.ConnectQuery, visualization: Common.Visualization) {
-        this._query = query;
+    constructor(data: Queries.ConnectQuery|Api.Promiser, visualization: Common.Visualization) {
+        this._promiser = getPromiser(data);
         this._visualization = visualization;
         this._isLoading = false;
 
         this.refresh();
+    }
+
+    private getPromiser(data: Queries.ConnectQuery|Api.Promiser) : Api.Promiser{
+        return data.execute ? () => (data.execute()) : <Api.Promiser>data
     }
 
     public refresh() {
@@ -24,12 +28,10 @@ class DataVisualization{
         this._isLoading = true;
 
         var targetElement = this._visualization.targetElement,
-            qryPromise = this._query.execute(),
             loadingTracker = qryPromise.then(
                 (data) => { this._isLoading = false });
-                
-        ErrorHandling.clearError(targetElement);
-        this._visualization.displayData(qryPromise, this._query.metadata());
+
+        this._visualization.displayData(this._promiser());
     }
 }
 

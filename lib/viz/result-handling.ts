@@ -24,7 +24,7 @@ module ResultHandling{
                 requestNumber,
                 lastReloadTime;  
 
-            if (reload || this._lastReloadTime === 0){
+            if (fullReload || this._lastReloadTime === 0){
                 ErrorHandling.clearError(targetElement);
                 loader.show();
                 this._lastReloadTime = Date.now();

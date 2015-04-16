@@ -13,14 +13,14 @@ import ResultHandling = require('../result-handling');
 class Table implements Common.Visualization {
     public targetElement: HTMLElement;
     public loader: Loader;
-	private _options: Config.VisualizationOptions;
-	private _rendered: boolean;
+    private _options: Config.VisualizationOptions;
+    private _rendered: boolean;
     private _titleElement: HTMLElement;
     private _tableWrapper: HTMLElement;
     private _resultHandler: ResultHandling.ResultHandler;
 
-	constructor(targetElement: string|HTMLElement, suppliedOptions: Config.VisualizationOptions) {
-	    var defaultTableOptions: Config.VisualizationOptions = { 
+    constructor(targetElement: string|HTMLElement, suppliedOptions: Config.VisualizationOptions) {
+        var defaultTableOptions: Config.VisualizationOptions = { 
                 fields: {},
                 intervals: {}
             },
@@ -28,25 +28,25 @@ class Table implements Common.Visualization {
                 formats: Config.defaultTimeSeriesFormats
             };
         this.targetElement = Dom.getElement(targetElement);
-	    this._options = _.extend(defaultTableOptions, suppliedOptions);
+        this._options = _.extend(defaultTableOptions, suppliedOptions);
         this._options.intervals = _.extend(this._options.intervals, defaultIntervalOptions);
         this.loader = new Loader(this.targetElement);
         this._resultHandler = new ResultHandling.ResultHandler();
-	}
-
-	public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Api.Metadata, fullReload: boolean = true) {
-		this._renderTable(metadata);
-        this._resultHandler.handleResult(resultsPromise, metadata, this, this._loadData, fullReload);
     }
 
-	private _loadData(results: Api.QueryResults, metadata: Api.Metadata, fullReload: boolean) {
-        var dataset = new Dataset.TableDataset(metadata, this._options, results.results);
+    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, fullReload: boolean = true) {
+        this._renderTable();
+        this._resultHandler.handleResult(resultsPromise, this, this._loadData, fullReload);
+    }
+
+    private _loadData(results: Api.QueryResults, fullReload: boolean) {
+        var dataset = new Dataset.TableDataset(results.results, this._options);
         this._tableWrapper.innerHTML = TableRenderer.renderDataset(dataset);
         this._showTitle();
     }
 
     public clear() {        
-    	this._rendered = false;
+        this._rendered = false;
         Dom.removeAllChildren(this.targetElement)
     }
 
@@ -59,7 +59,7 @@ class Table implements Common.Visualization {
         this._titleElement.style.display = !showTitle ? 'none' : '';      
     }
 
-    private _renderTable(metadata: Api.Metadata) {
+    private _renderTable() {
         if(this._rendered)
             return;
             

@@ -1,8 +1,7 @@
 import request = require('superagent');
 import Q = require('q');
 
-module Api {
-    
+module Api {    
     export interface Query {
         select?: Api.QuerySelects;
         filter?: Api.QueryFilters;
@@ -13,6 +12,12 @@ module Api {
     }
 
     export interface Metadata {
+        groups: string[];
+        interval: string;
+        timezone: string | number;
+    }
+
+    export interface ResultMetadata : Metadata {
         selects: string[];
         groups: string[];
         interval: string;
@@ -52,10 +57,56 @@ module Api {
         results?: QueryResultItem[];
     }
 
-    export interface QueryResults { 
+    export interface QueryResponse { 
         metadata: Metadata;
         results: QueryResultItem[];
     }
+
+    export class QueryResults { 
+        private _metadata: ResultMetadata;
+        private _results: ResultMetadata;
+
+        constructor(response: QueryResponse) {
+            var responseMetadata = response.metadata;
+
+            this._metadata = {
+                selects: this.parseReponseForSelects(response),
+                groups: responseMetadata.groups,
+                interval: responseMetadata.interval,
+                timezone: responseMetadata.timezone
+            };
+
+            this._results = response.results;
+        }
+
+        get metadata(): ResultMetadata{
+            return this._metadata;
+        }
+
+        get results(): QueryResultItem[]{
+            return this._results;
+        }
+
+        public updateResults(results: QueryResultItem[], metadata?: Metadata): QueryResults{
+            return new QueryResults({
+                results: results,
+                metadata: metadata || this._metadata
+            });
+        }
+
+        private parseReponseForSelects(response: QueryResponse): string[]{
+            var firstResultItem,
+                metadata = response.metadata,
+                results = response.results
+
+            if (response == null || response.results == null || response.results.length)
+                return [];
+
+            firstResultItem = metadata.interval ? results[0] : results[0].results[0];
+        }
+    }
+
+    export type Promiser = () => Q.IPromise<Api.QueryResults>;
     
     export class Client {
         _baseUrl: string;

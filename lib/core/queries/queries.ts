@@ -43,15 +43,6 @@ module Queries {
 			return this._collection;
 		}
 
-		public metadata(): Api.Metadata {
-			return {
-				selects: _(this._selects).keys(),
-				groups: this._groups,
-				interval: this._interval,
-				timezone: this._timezone || 'UTC'
-			};
-		}
-
 		public select(selects: Selects.QuerySelects): ConnectQuery {
 			for(var key in selects) {
 				var select = selects[key];

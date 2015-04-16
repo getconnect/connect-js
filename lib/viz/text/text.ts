@@ -36,18 +36,14 @@ class Text implements Common.Visualization {
         this._resultHandler = new ResultHandling.ResultHandler();
     }
 
-    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Api.Metadata, fullReload: boolean = true): void {        
-        this._renderText(metadata);
-
-        if (!this._checkMetaDataIsApplicable(metadata)){
-            this._renderQueryNotApplicable();
-            return;
-        }        
-        ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
+    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, fullReload: boolean = true): void {        
+        this._renderText();
+        this._resultHandler.handleResult(resultsPromise, this, this._loadData, fullReload);
     }
 
-    private _loadData(results: Api.QueryResults, metadata: Api.Metadata, fullReload: boolean): void {        
+    private _loadData(results: Api.QueryResults, fullReload: boolean): void {        
         var options = this._options,
+            metadata = results.metadata,
             onlyResult = results.results[0],
             aliasOfSelect = metadata.selects[0],
             defaultFieldOption = { valueFormatter: (value) => value },
@@ -58,9 +54,13 @@ class Text implements Common.Visualization {
             isIncreasing = value > this._currentValue,
             hasChanged = valueFormatter(this._currentValue) !== valueFormatter(value),
             duration = options.text.counterDurationMs,
-            transitionClass = isIncreasing ? 'connect-text-value-increasing' : 'connect-text-value-decreasing';
-        
-        this._showTitle(metadata);
+            transitionClass = isIncreasing ? 'connect-text-value-increasing' : 'connect-text-value-decreasing';        
+
+        if (!this._checkMetaDataIsApplicable(metadata)){
+            this._renderQueryNotApplicable();
+            return;
+        }        
+
         this._currentValue = value;
         this._counter = this._counter || new Counter(this._valueTextElement, duration, valueFormatter);
 
@@ -90,18 +90,17 @@ class Text implements Common.Visualization {
         return exactlyOneSelect && noGroupBys && noInterval;
     }
 
-    private _showTitle(metadata: Api.Metadata){
+    private _showTitle(){
         var options = this._options,
-            aliasOfSelect = metadata.selects[0],
             title = options.title,
-            titleText = title && (<string>title).length > 0 ? title.toString() : aliasOfSelect,
+            titleText = title && (<string>title).length > 0 ? title.toString(),
             showTitle = title !== false;
 
         this._titleElement.textContent = titleText;
         this._titleElement.style.display = !showTitle ? 'none' : '';
     }
 
-    private _renderText(metadata){
+    private _renderText(){
         if (this._rendered)
             return;
 
@@ -134,7 +133,7 @@ class Text implements Common.Visualization {
         this._valueTextElement = valueTextElement;
         this._valueTextElement.innerHTML = '&nbsp;';
         this._titleElement = label;
-        this._showTitle(metadata);
+        this._showTitle();
         this._rendered = true;
     }
 
