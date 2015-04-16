@@ -97,12 +97,9 @@ module Api {
         private parseReponseForSelects(response: QueryResponse): string[]{
             var firstResultItem,
                 metadata = response.metadata,
-                results = response.results
+                results = !metadata.interval ? response.results : _.chain(results).map(result => result.results).flatten().value();
 
-            if (response == null || response.results == null || response.results.length)
-                return [];
-
-            firstResultItem = metadata.interval ? results[0] : results[0].results[0];
+            return _.keys(_.first(results)).difference(metadata.groups.concat(['_count']));
         }
     }
 

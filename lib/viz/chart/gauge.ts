@@ -62,27 +62,9 @@ class Gauge implements Common.Visualization {
         return options;
     }
 
-    private _initializeFieldOptions(metadata: Api.Metadata): void{
-        var fields = metadata.selects.concat(metadata.groups),
-            firstSelect = metadata.selects[0],
-            options = this._options,
-            fieldOptions = options.fields;         
-
-        _.each(fields, (fieldName) => {
-            fieldOptions[fieldName] = fieldOptions[fieldName] || {}
-        });
-        
-        options.gauge.label = _.clone(options.gauge.label);
-        fieldOptions[firstSelect].valueFormatter = fieldOptions[firstSelect].valueFormatter || options.gauge.label.format;
-        options.gauge.label.format = fieldOptions[firstSelect].valueFormatter;
-    }
-
     public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, fullReload: boolean = true): void {        
-        var parsedMetaData = this._parseMetaData(metadata);
-
-        this._initializeFieldOptions(parsedMetaData);
-        this._renderGauge(parsedMetaData);
-        this._resultHandler.handleResult(resultsPromise, parsedMetaData, this, this._loadData, fullReload);
+        this._renderGauge();
+        this._resultHandler.handleResult(resultsPromise, this, this._loadData, fullReload);
     }
 
     private _parseMetaData(metadata: Api.Metadata){
@@ -100,7 +82,7 @@ class Gauge implements Common.Visualization {
         var options = this._options,
             typeOptions = options.gauge,
             resultItems = results.results,
-            dataset = this._buildDataset(resultItems, metadata),
+            dataset = this._buildDataset(results),
             keys = dataset.getLabels(),
             uniqueKeys = _.unique(keys),
             colors = Palette.getSwatch(uniqueKeys, options.gauge.color ? [options.gauge.color] : null),
@@ -113,6 +95,7 @@ class Gauge implements Common.Visualization {
             transitionDuration = fullReload ? this._duration.fullReload : this._duration.update;
             
         internalGaugeConfig.transition_duration = transitionDuration;
+        internalGaugeConfig.gauge_label_format = transition_duration;
 
         if (setMinProperty){
             internalGaugeConfig[minConfigProperty] = resultItems[0][this._minSelectName];
@@ -141,14 +124,14 @@ class Gauge implements Common.Visualization {
         Dom.removeAllChildren(this.targetElement)
     }
 
-    private _buildDataset(resultItems: Api.QueryResultItem[], metadata: Api.Metadata): Dataset.ChartDataset{
+    private _buildDataset(results: Api.QueryResults): Dataset.ChartDataset{
         var options = this._options,
             formatters = {        
-                selectLabelFormatter: select => options.fields[select] && options.fields[select].label ? options.fields[select].label : select,
+                selectLabelFormatter: select => (options.fields[select] || {}).label || select,
                 groupValueFormatter: (groupByName, groupValue) => this._formatGroupValue(groupByName, groupValue)
             };
 
-        return new StandardDataset(resultItems, metadata, formatters); 
+        return new StandardDataset(results, formatters); 
     }
 
     private _showTitle(){
@@ -164,7 +147,7 @@ class Gauge implements Common.Visualization {
         var dataset = this._currentDataset,
             select = this._currentDataset.getSelect(label),
             options = this._options,
-            fieldOption = options.fields[select],
+            fieldOption = options.fields[select] || {},
             valueFormatter = fieldOption.valueFormatter;
 
         if (valueFormatter){
@@ -175,7 +158,7 @@ class Gauge implements Common.Visualization {
     }
 
     private _formatGroupValue(groupByName: string, groupValue: any){
-        var fieldOption = this._options.fields[groupByName],
+        var fieldOption = this._options.fields[groupByName] || {},
             valueFormatter = fieldOption.valueFormatter;
 
         if (valueFormatter){
@@ -185,7 +168,7 @@ class Gauge implements Common.Visualization {
         return groupValue;
     }
 
-    private _renderGauge(metadata: Api.Metadata) {
+    private _renderGauge() {
         if(this._rendered)
             return;
             
@@ -194,7 +177,6 @@ class Gauge implements Common.Visualization {
             c3Element: HTMLElement = document.createElement('div'),
             rootElement = this.targetElement,
             titleElement = document.createElement('span'),
-            timezone = options.timezone || metadata.timezone,
             dateFormat = null,
             tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
             config = {

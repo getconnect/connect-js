@@ -59,22 +59,9 @@ class Chart implements Common.Visualization {
 
     }
 
-    private _initializeFieldOptions(metadata: Api.Metadata): void{
-        var fields = metadata.selects.concat(metadata.groups),
-            options = this._options,
-            fieldOptions = options.fields,
-            type = options.chart.type;
-
-        _.each(fields, (fieldName) => {
-            fieldOptions[fieldName] = fieldOptions[fieldName] || {}
-        });       
-    }
-
-    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, fullReload: boolean = true): void {        
-        var internalChartConfig;
-        this._initializeFieldOptions(metadata);
-        this._renderChart(metadata);
-        this._resultHandler.handleResult(resultsPromise, metadata, this, this._loadData, fullReload);
+    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, fullReload: boolean = true): void {
+        this._renderChart();
+        this._resultHandler.handleResult(resultsPromise, this, this._loadData, fullReload);
     }
 
     private _loadData(results: Api.QueryResults, fullReload: boolean): void {
@@ -111,9 +98,9 @@ class Chart implements Common.Visualization {
     private _buildDataset(results: Api.QueryResults): Dataset.ChartDataset{
         var options = this._options,
             formatters = {        
-                selectLabelFormatter: select => options.fields[select] && options.fields[select].label ? options.fields[select].label : select,
+                selectLabelFormatter: select => (options.fields[select] || {}).label || select,
                 groupValueFormatter: (groupByName, groupValue) => this._formatGroupValue(groupByName, groupValue)
-            }
+            };
 
         return new Dataset.ChartDataset(results, formatters);
     }
@@ -131,7 +118,7 @@ class Chart implements Common.Visualization {
         var dataset = this._currentDataset,
             select = this._currentDataset.getSelect(label),
             options = this._options,
-            fieldOption = options.fields[select],
+            fieldOption = options.fields[select] || {},
             valueFormatter = fieldOption.valueFormatter;
 
         if (valueFormatter){
@@ -142,7 +129,7 @@ class Chart implements Common.Visualization {
     }
 
     private _formatGroupValue(groupByName: string, groupValue: any){
-        var fieldOption = this._options.fields[groupByName],
+        var fieldOption = this._options.fields[groupByName] || {},
             valueFormatter = fieldOption.valueFormatter;
 
         if (valueFormatter){
