@@ -102,6 +102,11 @@ class Counter {
         this.countDown = (this.startValue > this.endValue) ? true : false;
         this.animationId = requestAnimationFrame((timestamp) => this.count(timestamp, finished));
     }
+
+    public setValue(newValue) {
+        this.currentValue = newValue;
+        this.printCurrentValue();
+    }
 }
 
 export = Counter;

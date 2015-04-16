@@ -28,8 +28,8 @@ class Chart implements Common.Visualization {
         this.targetElement = Dom.getElement(targetElement);
         this.loader = new Loader(this.targetElement);
         this._duration = {
-            firstLoad: null,
-            reload: 300
+            fullReload: null,
+            update: 300
         }
     }
 
@@ -70,20 +70,14 @@ class Chart implements Common.Visualization {
         });       
     }
 
-    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Api.Metadata, showLoader: boolean = true): void {        
+    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Api.Metadata, fullReload: boolean = true): void {        
         var internalChartConfig;
-
-        if (this._rendered && showLoader){
-            internalChartConfig = (<any>this._chart).internal.config;
-            internalChartConfig.transition_duration = this._duration.firstLoad;
-        }
-
         this._initializeFieldOptions(metadata);
         this._renderChart(metadata);
-        ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
+        ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, fullReload);
     }
 
-    private _loadData(results: Api.QueryResults, metadata: Api.Metadata): void {
+    private _loadData(results: Api.QueryResults, metadata: Api.Metadata, fullReload: boolean): void {
         var options = this._options,
             type = options.chart.type,
             resultItems = results.results,
@@ -92,7 +86,10 @@ class Chart implements Common.Visualization {
             keys = dataset.getLabels(),
             uniqueKeys = _.unique(keys),
             colors = Palette.getSwatch(uniqueKeys, options.chart.colors),
-            internalChartConfig = (<any>this._chart).internal.config;
+            internalChartConfig = (<any>this._chart).internal.config,
+            transitionDuration = fullReload ? this._duration.fullReload : this._duration.update;
+            
+        internalChartConfig.transition_duration = transitionDuration;
      
         this._currentDataset = dataset;
         this._chart.load({
@@ -104,7 +101,6 @@ class Chart implements Common.Visualization {
             colors: colors
         });
         this._showTitle();
-        internalChartConfig.transition_duration = this._duration.reload;
     }
 
     public clear(): void{        
@@ -199,7 +195,7 @@ class Chart implements Common.Visualization {
                     }
                 },
                 transition: {
-                    duration: this._duration.firstLoad
+                    duration: this._duration.fullReload
                 },
                 tooltip: {
                     format: {

@@ -32,12 +32,12 @@ class Table implements Common.Visualization {
         this.loader = new Loader(this.targetElement);
 	}
 
-	public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Api.Metadata, showLoader: boolean = true) {
+	public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Api.Metadata, fullReload: boolean = true) {
 		this._renderTable(metadata);
-        ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
+        ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, fullReload);
     }
 
-	private _loadData(results: Api.QueryResults, metadata: Api.Metadata) {
+	private _loadData(results: Api.QueryResults, metadata: Api.Metadata, fullReload: boolean) {
         var dataset = new Dataset.TableDataset(metadata, this._options, results.results);
         this._tableWrapper.innerHTML = TableRenderer.renderDataset(dataset);
         this._showTitle();

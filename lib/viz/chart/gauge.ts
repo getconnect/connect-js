@@ -23,11 +23,16 @@ class Gauge implements Common.Visualization {
     private _rendered: boolean;
     private _titleElement: HTMLElement;
     private _currentDataset: Dataset.ChartDataset;
+    private _duration;
     
     constructor(targetElement: string|HTMLElement, gaugeOptions: Config.VisualizationOptions) {     
         this._options = this._parseOptions(gaugeOptions);
         this.targetElement = Dom.getElement(targetElement);
         this.loader = new Loader(this.targetElement);
+        this._duration = {
+            fullReload: null,
+            update: 300
+        }
     }
 
     private _parseOptions(gaugeOptions: Config.VisualizationOptions): Config.VisualizationOptions{
@@ -70,12 +75,12 @@ class Gauge implements Common.Visualization {
         options.gauge.label.format = fieldOptions[firstSelect].valueFormatter;
     }
 
-    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Api.Metadata, showLoader: boolean = true): void {        
+    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Api.Metadata, fullReload: boolean = true): void {        
         var parsedMetaData = this._parseMetaData(metadata);
 
         this._initializeFieldOptions(parsedMetaData);
         this._renderGauge(parsedMetaData);
-        ResultHandling.handleResult(resultsPromise, parsedMetaData, this, this._loadData, showLoader);
+        ResultHandling.handleResult(resultsPromise, parsedMetaData, this, this._loadData, fullReload);
     }
 
     private _parseMetaData(metadata: Api.Metadata){
@@ -89,7 +94,7 @@ class Gauge implements Common.Visualization {
         return parsedMetaData;
     }
 
-    private _loadData(results: Api.QueryResults, metadata: Api.Metadata): void {
+    private _loadData(results: Api.QueryResults, metadata: Api.Metadata, fullReload: boolean): void {
         var options = this._options,
             typeOptions = options.gauge,
             resultItems = results.results,
@@ -102,7 +107,10 @@ class Gauge implements Common.Visualization {
             minConfigProperty = 'gauge_min',
             maxConfigProperty = 'gauge_max',
             showLabelConfigProperty = 'gauge_label_show',
-            internalGaugeConfig = (<any>this._gauge).internal.config;                    
+            internalGaugeConfig = (<any>this._gauge).internal.config,
+            transitionDuration = fullReload ? this._duration.fullReload : this._duration.update;
+            
+        internalGaugeConfig.transition_duration = transitionDuration;
 
         if (setMinProperty){
             internalGaugeConfig[minConfigProperty] = resultItems[0][this._minSelectName];
@@ -193,6 +201,9 @@ class Gauge implements Common.Visualization {
                 data: {
                     json: [],
                     type: 'gauge'
+                },
+                transition: {
+                    duration: this._duration.fullReload
                 },
                 tooltip: {
                     format: {
