@@ -26,6 +26,7 @@ var Chart = (function () {
             firstLoad: null,
             reload: 300
         };
+        this._resultHandler = new ResultHandling.ResultHandler();
     }
     Chart.prototype._parseOptions = function (chartOptions) {
         var defaultOptions = {
@@ -58,7 +59,7 @@ var Chart = (function () {
         }
         this._initializeFieldOptions(metadata);
         this._renderChart(metadata);
-        ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
+        this._resultHandler.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
     };
     Chart.prototype._loadData = function (results, metadata) {
         var options = this._options, type = options.chart.type, resultItems = results.results, typeOptions = options[type], dataset = this._buildDataset(resultItems, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = Palette.getSwatch(uniqueKeys, options.chart.colors), internalChartConfig = this._chart.internal.config;
@@ -202,6 +203,7 @@ var Gauge = (function () {
         this._options = this._parseOptions(gaugeOptions);
         this.targetElement = Dom.getElement(targetElement);
         this.loader = new Loader(this.targetElement);
+        this._resultHandler = new ResultHandling.ResultHandler();
     }
     Gauge.prototype._parseOptions = function (gaugeOptions) {
         var defaultOptions = {
@@ -234,7 +236,7 @@ var Gauge = (function () {
         var parsedMetaData = this._parseMetaData(metadata);
         this._initializeFieldOptions(parsedMetaData);
         this._renderGauge(parsedMetaData);
-        ResultHandling.handleResult(resultsPromise, parsedMetaData, this, this._loadData, showLoader);
+        this._resultHandler.handleResult(resultsPromise, parsedMetaData, this, this._loadData, showLoader);
     };
     Gauge.prototype._parseMetaData = function (metadata) {
         var options = this._options, typeOptions = options.gauge, parsedMetaData = _.clone(metadata), filteredSelected = _.without(metadata.selects, this._minSelectName, this._maxSelectName);
@@ -700,37 +702,53 @@ module.exports = Palette;
 var ErrorHandling = require('./error-handling');
 var ResultHandling;
 (function (ResultHandling) {
-    function handleResult(resultsPromise, metadata, visualization, loadData, showLoader) {
-        var loader = visualization.loader, targetElement = visualization.targetElement, hideLoader = function () {
-            if (showLoader) {
-                loader.hide();
-            }
-        };
-        if (showLoader) {
-            ErrorHandling.clearError(targetElement);
-            loader.show();
+    var ResultHandler = (function () {
+        function ResultHandler() {
+            this._currentRequestCount = 0;
+            this._lastRequestProcessed = 0;
+            this._lastReloadTime = 0;
         }
-        resultsPromise.then(function (results) {
-            hideLoader();
-            try {
+        ResultHandler.prototype.handleResult = function (resultsPromise, metadata, visualization, loadData, reload) {
+            var _this = this;
+            var loader = visualization.loader, targetElement = visualization.targetElement, requestNumber, lastReloadTime;
+            if (reload || this._lastReloadTime === 0) {
                 ErrorHandling.clearError(targetElement);
-                if (results == null || results.results == null || !results.results.length) {
-                    ErrorHandling.displayFriendlyError(targetElement, 'noResults');
+                loader.show();
+                this._lastReloadTime = Date.now();
+                this._currentRequestCount = 0;
+                this._lastRequestProcessed = 0;
+            }
+            lastReloadTime = this._lastReloadTime;
+            requestNumber = this._currentRequestCount;
+            this._currentRequestCount++;
+            resultsPromise.then(function (results) {
+                if (lastReloadTime < _this._lastReloadTime)
                     return;
+                if (requestNumber < _this._lastRequestProcessed)
+                    return;
+                loader.hide();
+                _this._lastRequestProcessed = requestNumber;
+                try {
+                    ErrorHandling.clearError(targetElement);
+                    if (results == null || results.results == null || !results.results.length) {
+                        ErrorHandling.displayFriendlyError(targetElement, 'noResults');
+                        return;
+                    }
+                    loadData.call(visualization, results, metadata);
                 }
-                loadData.call(visualization, results, metadata);
-            }
-            catch (error) {
-                ErrorHandling.logError(error);
-                ErrorHandling.displayFriendlyError(targetElement);
-            }
-        }, function (error) {
-            hideLoader();
-            ErrorHandling.clearError(targetElement);
-            ErrorHandling.handleError(targetElement, error);
-        });
-    }
-    ResultHandling.handleResult = handleResult;
+                catch (error) {
+                    ErrorHandling.logError(error);
+                    ErrorHandling.displayFriendlyError(targetElement);
+                }
+            }, function (error) {
+                loader.hide();
+                ErrorHandling.clearError(targetElement);
+                ErrorHandling.handleError(targetElement, error);
+            });
+        };
+        return ResultHandler;
+    })();
+    ResultHandling.ResultHandler = ResultHandler;
 })(ResultHandling || (ResultHandling = {}));
 module.exports = ResultHandling;
 
@@ -901,11 +919,12 @@ var Table = (function () {
         this._options = _.extend(defaultTableOptions, suppliedOptions);
         this._options.intervals = _.extend(this._options.intervals, defaultIntervalOptions);
         this.loader = new Loader(this.targetElement);
+        this._resultHandler = new ResultHandling.ResultHandler();
     }
     Table.prototype.displayData = function (resultsPromise, metadata, showLoader) {
         if (showLoader === void 0) { showLoader = true; }
         this._renderTable(metadata);
-        ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
+        this._resultHandler.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
     };
     Table.prototype._loadData = function (results, metadata) {
         var dataset = new Dataset.TableDataset(metadata, this._options, results.results);
@@ -1048,6 +1067,7 @@ var Text = (function () {
         this.targetElement = Dom.getElement(targetElement);
         this.loader = new Loader(this.targetElement);
         this._currentValue = 0;
+        this._resultHandler = new ResultHandling.ResultHandler();
     }
     Text.prototype.displayData = function (resultsPromise, metadata, showLoader) {
         if (showLoader === void 0) { showLoader = true; }
@@ -1056,7 +1076,7 @@ var Text = (function () {
             this._renderQueryNotApplicable();
             return;
         }
-        ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
+        this._resultHandler.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
     };
     Text.prototype._loadData = function (results, metadata) {
         var options = this._options, onlyResult = results.results[0], aliasOfSelect = metadata.selects[0], defaultFieldOption = { valueFormatter: function (value) { return value; } }, fieldOption = options.fields[aliasOfSelect] || defaultFieldOption, valueFormatter = fieldOption.valueFormatter, value = onlyResult[aliasOfSelect], animationElementClassList = this._valueContainerElement.classList, isIncreasing = value > this._currentValue, hasChanged = valueFormatter(this._currentValue) !== valueFormatter(value), duration = options.text.counterDurationMs, transitionClass = isIncreasing ? 'connect-text-value-increasing' : 'connect-text-value-decreasing';
