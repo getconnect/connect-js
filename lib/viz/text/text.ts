@@ -65,8 +65,6 @@ class Text implements Common.Visualization {
         if (!hasChanged)
             return;
         
-        console.log('setting value: ' + value);
-        
         if (fullReload){
             this._counter.setValue(value);
         }else{
