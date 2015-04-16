@@ -36,18 +36,17 @@ class Text implements Common.Visualization {
         this._resultHandler = new ResultHandling.ResultHandler();
     }
 
-    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Api.Metadata, showLoader: boolean = true): void {        
+    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Api.Metadata, fullReload: boolean = true): void {        
         this._renderText(metadata);
 
         if (!this._checkMetaDataIsApplicable(metadata)){
             this._renderQueryNotApplicable();
             return;
         }        
-
-        this._resultHandler.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
+        ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
     }
 
-    private _loadData(results: Api.QueryResults, metadata: Api.Metadata): void {        
+    private _loadData(results: Api.QueryResults, metadata: Api.Metadata, fullReload: boolean): void {        
         var options = this._options,
             onlyResult = results.results[0],
             aliasOfSelect = metadata.selects[0],
@@ -63,15 +62,19 @@ class Text implements Common.Visualization {
         
         this._showTitle(metadata);
         this._currentValue = value;
+        this._counter = this._counter || new Counter(this._valueTextElement, duration, valueFormatter);
 
         if (!hasChanged)
             return;
         
-        animationElementClassList.add(transitionClass);
-        this._counter = this._counter || new Counter(this._valueTextElement, duration, valueFormatter);
-        this._counter.update(value, () => {
-            animationElementClassList.remove(transitionClass);
-        });
+        if (fullReload){
+            this._counter.setValue(value);
+        }else{
+            animationElementClassList.add(transitionClass);
+            this._counter.update(value, () => {
+                animationElementClassList.remove(transitionClass);
+            });           
+        }
     }
 
     public clear(): void{        
