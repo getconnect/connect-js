@@ -22,6 +22,7 @@ class Chart implements Common.Visualization {
     private _titleElement: HTMLElement;
     private _currentDataset: Dataset.ChartDataset;
     private _duration;
+    private _resultHandler: ResultHandling.ResultHandler;
     
     constructor(targetElement: string|HTMLElement, chartOptions: Config.VisualizationOptions) {     
         this._options = this._parseOptions(chartOptions);
@@ -31,6 +32,7 @@ class Chart implements Common.Visualization {
             fullReload: null,
             update: 300
         }
+        this._resultHandler = new ResultHandling.ResultHandler();
     }
 
     private _parseOptions(chartOptions: Config.VisualizationOptions): Config.VisualizationOptions{
@@ -74,7 +76,7 @@ class Chart implements Common.Visualization {
         var internalChartConfig;
         this._initializeFieldOptions(metadata);
         this._renderChart(metadata);
-        ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, fullReload);
+        this._resultHandler.handleResult(resultsPromise, metadata, this, this._loadData, fullReload);
     }
 
     private _loadData(results: Api.QueryResults, metadata: Api.Metadata, fullReload: boolean): void {

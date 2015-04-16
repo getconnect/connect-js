@@ -24,11 +24,13 @@ class Gauge implements Common.Visualization {
     private _titleElement: HTMLElement;
     private _currentDataset: Dataset.ChartDataset;
     private _duration;
+    private _resultHandler: ResultHandling.ResultHandler;
     
     constructor(targetElement: string|HTMLElement, gaugeOptions: Config.VisualizationOptions) {     
         this._options = this._parseOptions(gaugeOptions);
         this.targetElement = Dom.getElement(targetElement);
         this.loader = new Loader(this.targetElement);
+        this._resultHandler = new ResultHandling.ResultHandler();
         this._duration = {
             fullReload: null,
             update: 300
@@ -80,7 +82,7 @@ class Gauge implements Common.Visualization {
 
         this._initializeFieldOptions(parsedMetaData);
         this._renderGauge(parsedMetaData);
-        ResultHandling.handleResult(resultsPromise, parsedMetaData, this, this._loadData, fullReload);
+        ResultHandling.handleResult(resultsPromise, parsedMetaData, this, this._loadData, showLoader);
     }
 
     private _parseMetaData(metadata: Api.Metadata){

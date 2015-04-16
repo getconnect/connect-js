@@ -17,6 +17,7 @@ class Table implements Common.Visualization {
 	private _rendered: boolean;
     private _titleElement: HTMLElement;
     private _tableWrapper: HTMLElement;
+    private _resultHandler: ResultHandling.ResultHandler;
 
 	constructor(targetElement: string|HTMLElement, suppliedOptions: Config.VisualizationOptions) {
 	    var defaultTableOptions: Config.VisualizationOptions = { 
@@ -30,11 +31,12 @@ class Table implements Common.Visualization {
 	    this._options = _.extend(defaultTableOptions, suppliedOptions);
         this._options.intervals = _.extend(this._options.intervals, defaultIntervalOptions);
         this.loader = new Loader(this.targetElement);
+        this._resultHandler = new ResultHandling.ResultHandler();
 	}
 
 	public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Api.Metadata, fullReload: boolean = true) {
 		this._renderTable(metadata);
-        ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, fullReload);
+        this._resultHandler.handleResult(resultsPromise, metadata, this, this._loadData, fullReload);
     }
 
 	private _loadData(results: Api.QueryResults, metadata: Api.Metadata, fullReload: boolean) {

@@ -20,6 +20,7 @@ class Text implements Common.Visualization {
     private _titleElement: HTMLElement;
     private _counter: Counter;
     private _counterDuration: number;
+    private _resultHandler: ResultHandling.ResultHandler;
 
     constructor(targetElement: string|HTMLElement, textOptions: Config.VisualizationOptions) {
         this._options = _.extend({ 
@@ -32,6 +33,7 @@ class Text implements Common.Visualization {
         this.targetElement = Dom.getElement(targetElement);
         this.loader = new Loader(this.targetElement);
         this._currentValue = 0;
+        this._resultHandler = new ResultHandling.ResultHandler();
     }
 
     public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Api.Metadata, fullReload: boolean = true): void {        
@@ -41,7 +43,7 @@ class Text implements Common.Visualization {
             this._renderQueryNotApplicable();
             return;
         }        
-        ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, fullReload);
+        ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
     }
 
     private _loadData(results: Api.QueryResults, metadata: Api.Metadata, fullReload: boolean): void {        
