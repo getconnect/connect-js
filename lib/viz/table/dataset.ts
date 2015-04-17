@@ -27,11 +27,13 @@ export class TableDataset {
     public contentRows: ContentRow[];
 
     constructor(results: Api.QueryResults, options: Config.VisualizationOptions) {
-        this.headerRow = this._buildHeaderRow(results, options);
-        this.contentRows = this._buildContentRows(results, options);
+        var selects = results.selects();
+
+        this.headerRow = this._buildHeaderRow(results.metadata, selects, results.results, options);
+        this.contentRows = this._buildContentRows(results.metadata, selects, results.results, options);
     }
 
-    private _buildHeaderRow(results: Api.QueryResults, options: Config.VisualizationOptions) {
+    private _buildHeaderRow(metadata: Api.Metadata, selects: string[], results: Api.QueryResultItem[], options: Config.VisualizationOptions) {
         var isColoumnNumeric = (key: string): boolean => {
             if (metadata.interval) {
                 var firstIntervalWithDesiredCol = _(results).find((interval) => { 
@@ -57,7 +59,7 @@ export class TableDataset {
         var createSelectHeaderCell = _.partial(createHeaderCell, false);
 
         var groupHeaderCells = _(metadata.groups).map(key => createGroupedHeaderCell(key));
-        var selectHeaderCells = _(metadata.selects).map(key => createSelectHeaderCell(key));
+        var selectHeaderCells = _(selects).map(key => createSelectHeaderCell(key));
 
         if (metadata.interval) {
             var intervalHeader: HeaderCell = {
@@ -72,7 +74,7 @@ export class TableDataset {
         return _.union(groupHeaderCells, selectHeaderCells);
     }
 
-    private _buildContentRows(results: Api.QueryResults, options: Config.VisualizationOptions) {
+    private _buildContentRows(metadata: Api.Metadata, selects: string[], results: Api.QueryResultItem[], options: Config.VisualizationOptions) {
         var createContentCell = (isGrouped: boolean, result: Api.QueryResultItem, key: string): ContentCell => {
             var optionsForField: Config.FieldOption = options.fields[key];
             var rawValue = result[key];
@@ -116,7 +118,7 @@ export class TableDataset {
 
         var createRow = (rowResult: Api.QueryResultItem, intervalCell?: ContentCell): ContentRow  => {
             var groupedContentCells = _(metadata.groups).map(key => createGroupedContentCell(rowResult, key));
-            var selectContentCells = _(metadata.selects).map(key => createSelectContentCell(rowResult, key));
+            var selectContentCells = _(selects).map(key => createSelectContentCell(rowResult, key));
 
             if (intervalCell) {
                 return _.union([intervalCell], groupedContentCells, selectContentCells);

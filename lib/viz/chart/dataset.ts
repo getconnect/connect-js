@@ -16,8 +16,8 @@ module Dataset{
     }
 
     interface DatasetMapper {
-        mapLabels(results: Api.QueryResult):  SelectLabel[];
-        mapData(results: Api.QueryResult): any;
+        mapLabels(results: Api.QueryResults):  SelectLabel[];
+        mapData(results: Api.QueryResults): any;
     }
 
     function getGroupPath(result: Api.QueryResultItem, groups: string[], formatter: GroupValueFormatter): string {
@@ -26,7 +26,7 @@ module Dataset{
             .join(' / ');
     }
 
-    class ChartDataset {
+    export class ChartDataset {
         private _selectLabelFormatter: SelectLabelFormatter;
         private _groupValueFormatter: GroupValueFormatter;
 
@@ -34,20 +34,22 @@ module Dataset{
         private _data: any = [];
 
         constructor(results: Api.QueryResults, formatters: Formatters) {
-            var isGroupedInterval = metadata.interval && metadata.groups.length;
-                mapper = isGroupedInterval ? new GroupedIntervalDataset(results, formatters)
-                                           : new StandardDataset(results, formatters);
+            var metadata = results.metadata;
 
-            this._selectLabels = mapper.mapLabels(results);
-            this._data = mapper.mapData(results);
+            var isGroupedInterval = metadata.interval && metadata.groups.length,
+                mapper = isGroupedInterval ? new GroupedIntervalMapper(results, formatters)
+                                           : new StandardMapper(results, formatters);
+
+            this._selectLabels = mapper.mapLabels();
+            this._data = mapper.mapData();
         }
 
-        public getLabels(labels: SelectLabel[]){
-            return _.pluck(labels, 'label');
+        public getLabels(){
+            return _.pluck(this._selectLabels, 'label');
         }
 
-        public getSelect(selectLabels: SelectLabel[], label: string): string{
-            return _.find(selectLabels, (selectLabel) => selectLabel.label === label).select;
+        public getSelect(label: string): string{
+            return _.find(this._selectLabels, (selectLabel) => selectLabel.label === label).select;
         }
 
         public getData(): any{
@@ -58,31 +60,39 @@ module Dataset{
     class GroupedIntervalMapper implements DatasetMapper{
         private _selectLabelFormatter: SelectLabelFormatter;
         private _groupValueFormatter: GroupValueFormatter;
+        private _selects: string[];
+        private _metadata: Api.Metadata;
+        private _results: Api.QueryResultItem[];
 
-        constructor(formatters: Formatters) {
+        constructor(results: Api.QueryResults, formatters: Formatters) {
             this._selectLabelFormatter = formatters.selectLabelFormatter;
             this._groupValueFormatter = formatters.groupValueFormatter;
+            this._metadata = results.metadata;
+            this._selects = results.selects();
+            this._results = results.results;
         }
 
-        public mapLabels(results: Api.QueryResult): Dataset.SelectLabel[] {
-            var metadata = results.metadata;
+        public mapLabels(): Dataset.SelectLabel[] {
+            var metadata = this._metadata,
+                results = this._results;
 
             return _.chain(results)
                 .map(result => result['results'])
                 .flatten()
                 .map(result => {
-                    var groupPath = Dataset.getGroupPath(result, metadata.groups, this._groupValueFormatter);
-                    return _.map(metadata.selects, select => <SelectLabel>{
+                    var groupPath = getGroupPath(result, metadata.groups, this._groupValueFormatter);
+                    return _.map(this._selects, select => <SelectLabel>{
                         select: select,
-                        label: this._generateLabelForResult(result, select, groupPath)
+                        label: this._generateLabelForResult(metadata, result, select, groupPath)
                     });
                 })
                 .flatten()  
                 .value();        
         }
 
-        public mapData(results: Api.QueryResult): any {    
-            var metadata = results.metadata;
+        public mapData(): any {    
+            var metadata = this._metadata,
+                results = this._results;
 
             return _.chain(results)
                 .map(result => {
@@ -96,10 +106,13 @@ module Dataset{
         }
 
         private _mapResult(metadata: Api.Metadata, result: Api.QueryResultItem): any {        
-            return _.reduce<Api.QueryResultItem, any>(result.results, (mappedResult, intervalResult) => {
-                var groupPath = Dataset.getGroupPath(intervalResult, results.groups, this._groupValueFormatter);
+            var metadata = this._metadata,
+                results = this._results;
 
-                _.each(metadata.selects, select => {
+            return _.reduce<Api.QueryResultItem, any>(results, (mappedResult, intervalResult) => {
+                var groupPath = getGroupPath(intervalResult, metadata.groups, this._groupValueFormatter);
+
+                _.each(this._selects, select => {
                     var label = this._generateLabelForResult(metadata, mappedResult, select, groupPath);
                     mappedResult[label] = intervalResult[select];
                 });
@@ -109,28 +122,37 @@ module Dataset{
         }
 
         private _generateLabelForResult(metadata: Api.Metadata, result: Api.QueryResultItem, select: string, groupPath: string): string{
-            return metadata.selects.length > 1 ? groupPath + ' - ' + this._selectLabelFormatter(select) : groupPath;
+            return this._selects.length > 1 ? groupPath + ' - ' + this._selectLabelFormatter(select) : groupPath;
         }
     }
 
     class StandardMapper implements DatasetMapper {
         private _selectLabelFormatter: SelectLabelFormatter;
         private _groupValueFormatter: GroupValueFormatter;
-        
-        constructor(formatters: Formatters) {
+        private _selects: string[];
+        private _metadata: Api.Metadata;
+        private _results: Api.QueryResultItem[];
+
+        constructor(results: Api.QueryResults, formatters: Formatters) {
             this._selectLabelFormatter = formatters.selectLabelFormatter;
             this._groupValueFormatter = formatters.groupValueFormatter;
+            this._metadata = results.metadata;
+            this._selects = results.selects();
+            this._results = results.results;
         }
 
-        public mapLabels(results: Api.QueryResult): SelectLabel[] {
-            return _.map(results.metadata.selects, select => <SelectLabel>{
+        public mapLabels(): SelectLabel[] {
+            var metadata = this._metadata;
+
+            return _.map(this._selects, select => <SelectLabel>{
                 select: select,
                 label: this._selectLabelFormatter(select)
             });
         }
 
-        public mapData(results: Api.QueryResult): any {     
-            var metadata = results.metadata;
+        public mapData(): any {     
+            var metadata = this._metadata,
+                results = this._results;
 
             return _.map(results, result => {
                 var isGrouped = this._metadata.groups.length > 0,
@@ -148,10 +170,10 @@ module Dataset{
             });
         }
 
-        private _mapResult(metadata: Api.Metadata, result: Api.QueryResultItem): any{
+        private _mapResult(result: Api.QueryResultItem): any{
             var mappedResult = {},
-                origResult = metadata.interval ? result.results[0] : result;
-            _.each(metadata.selects, select => mappedResult[this._selectLabelFormatter(select)] = origResult[select]);
+                origResult = this._metadata.interval ? result.results[0] : result;
+            _.each(this._selects, select => mappedResult[this._selectLabelFormatter(select)] = origResult[select]);
             return mappedResult;
         }
     }    

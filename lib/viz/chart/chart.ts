@@ -72,11 +72,26 @@ class Chart implements Common.Visualization {
             dataset = this._buildDataset(results),
             keys = dataset.getLabels(),
             uniqueKeys = _.unique(keys),
+            metadata = results.metadata,            
+            dateFormat = null,
+            standardDateformatter = null,
+            customDateFormatter = null,          
+            timezone = options.timezone || metadata.timezone,
             colors = Palette.getSwatch(uniqueKeys, options.chart.colors),
             internalChartConfig = (<any>this._chart).internal.config,
             transitionDuration = fullReload ? this._duration.fullReload : this._duration.update;
             
         internalChartConfig.transition_duration = transitionDuration;
+
+        if(metadata.interval) {
+            dateFormat = options.intervals.formats[metadata.interval];
+            standardDateformatter = (value) => Formatters.formatDate(value, timezone, dateFormat);
+            customDateFormatter = options.intervals.valueFormatter;
+            internalChartConfig.axis_x_tick_format = customDateFormatter || standardDateformatter;
+            internalChartConfig.axis_x_type = 'timeseries';
+            internalChartConfig.data_xFormat = '%Y-%m-%dT%H:%M:%SZ';
+            internalChartConfig.data_xLocaltime = false;
+        }
      
         this._currentDataset = dataset;
         this._chart.load({
@@ -98,7 +113,7 @@ class Chart implements Common.Visualization {
     private _buildDataset(results: Api.QueryResults): Dataset.ChartDataset{
         var options = this._options,
             formatters = {        
-                selectLabelFormatter: select => (options.fields[select] || {}).label || select,
+                selectLabelFormatter: select => (options.fields[select] || Config.defaulField).label || select,
                 groupValueFormatter: (groupByName, groupValue) => this._formatGroupValue(groupByName, groupValue)
             };
 
@@ -118,7 +133,7 @@ class Chart implements Common.Visualization {
         var dataset = this._currentDataset,
             select = this._currentDataset.getSelect(label),
             options = this._options,
-            fieldOption = options.fields[select] || {},
+            fieldOption = options.fields[select] || Config.defaulField,
             valueFormatter = fieldOption.valueFormatter;
 
         if (valueFormatter){
@@ -129,7 +144,7 @@ class Chart implements Common.Visualization {
     }
 
     private _formatGroupValue(groupByName: string, groupValue: any){
-        var fieldOption = this._options.fields[groupByName] || {},
+        var fieldOption = this._options.fields[groupByName] || Config.defaulField,
             valueFormatter = fieldOption.valueFormatter;
 
         if (valueFormatter){
@@ -148,10 +163,6 @@ class Chart implements Common.Visualization {
             c3Element: HTMLElement = document.createElement('div'),
             rootElement = this.targetElement,
             titleElement = document.createElement('span'),
-            timezone = options.timezone || metadata.timezone,
-            dateFormat = null,
-            standardDateformatter = (value) => Formatters.formatDate(value, timezone, dateFormat),
-            customDateFormatter = options.intervals.valueFormatter,
             tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
             config = {
                 bindto: c3Element,
@@ -192,6 +203,7 @@ class Chart implements Common.Visualization {
             };
 
         this.clear();
+
         titleElement.className = 'connect-viz-title';
         c3Element.className = 'connect-viz-result'
         connectChartContainer.className = 'connect-viz connect-chart connect-chart-' + options.chart.type;
@@ -200,13 +212,6 @@ class Chart implements Common.Visualization {
         rootElement.appendChild(connectChartContainer);
         config[options.chart.type] = options[options.chart.type];
 
-        if(metadata.interval) {
-            dateFormat = options.intervals.formats[metadata.interval];
-            config.data['xFormat'] = '%Y-%m-%dT%H:%M:%SZ';
-            config.data['xLocaltime'] = false;
-            config.axis.x.type = 'timeseries';
-            config.axis.x.tick.format = customDateFormatter || standardDateformatter;
-        }
         this._rendered = true;
         this._titleElement = titleElement;
         this._showTitle();        

@@ -1,6 +1,4 @@
 import Config = require('../config');
-import GroupedIntervalDataset = require('./grouped-interval-dataset');
-import StandardDataset = require('./standard-dataset');
 import Dataset = require('./dataset');
 import Queries = require('../../core/queries/queries');
 import Api = require('../../core/api');
@@ -63,48 +61,56 @@ class Gauge implements Common.Visualization {
     }
 
     public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, fullReload: boolean = true): void {        
+        resultsPromise = resultsPromise.then((results) => {
+            var cloned = results.clone();
+            return this._loadMinMax(cloned);
+        });
+
         this._renderGauge();
         this._resultHandler.handleResult(resultsPromise, this, this._loadData, fullReload);
     }
 
-    private _parseMetaData(metadata: Api.Metadata){
-        var options = this._options,
-            typeOptions = options.gauge,
-            parsedMetaData = _.clone(metadata),
-            filteredSelected = _.without(metadata.selects, this._minSelectName, this._maxSelectName);
+    private _loadMinMax(results: Api.QueryResults){
+        var resultItems = results.results,
+            internalGaugeConfig = (<any>this._gauge).internal.config,
+            setMinProperty = this._minSelectName && resultItems.length,
+            setMaxProperty = this._maxSelectName && resultItems.length,
+            showLabelConfigProperty = 'gauge_label_show',
+            minConfigProperty = 'gauge_min',
+            resultItems = results.results,
+            maxConfigProperty = 'gauge_max';
 
-        parsedMetaData.selects = filteredSelected;
+        if (setMinProperty){
+            internalGaugeConfig[minConfigProperty] = resultItems[0][this._minSelectName];
+            internalGaugeConfig[showLabelConfigProperty] = true;
+            resultItems[0][this._minSelectName] = undefined;
+        }
 
-        return parsedMetaData;
+        if (setMaxProperty){
+            internalGaugeConfig[maxConfigProperty] = resultItems[0][this._maxSelectName];
+            internalGaugeConfig[showLabelConfigProperty] = true;
+            resultItems[0][this._maxSelectName] = undefined;
+        }
+
+        return results;
     }
 
     private _loadData(results: Api.QueryResults, fullReload: boolean): void {
         var options = this._options,
+            internalGaugeConfig = (<any>this._gauge).internal.config,
+            select = _.first(results.selects()),
             typeOptions = options.gauge,
             resultItems = results.results,
             dataset = this._buildDataset(results),
             keys = dataset.getLabels(),
             uniqueKeys = _.unique(keys),
             colors = Palette.getSwatch(uniqueKeys, options.gauge.color ? [options.gauge.color] : null),
-            setMinProperty = this._minSelectName && resultItems.length,
-            setMaxProperty = this._maxSelectName && resultItems.length,
-            minConfigProperty = 'gauge_min',
-            maxConfigProperty = 'gauge_max',
-            showLabelConfigProperty = 'gauge_label_show',
-            internalGaugeConfig = (<any>this._gauge).internal.config,
             transitionDuration = fullReload ? this._duration.fullReload : this._duration.update;
             
         internalGaugeConfig.transition_duration = transitionDuration;
-        internalGaugeConfig.gauge_label_format = transition_duration;
 
-        if (setMinProperty){
-            internalGaugeConfig[minConfigProperty] = resultItems[0][this._minSelectName];
-            internalGaugeConfig[showLabelConfigProperty] = true;
-        }
-
-        if (setMaxProperty){
-            internalGaugeConfig[maxConfigProperty] = resultItems[0][this._maxSelectName];
-            internalGaugeConfig[showLabelConfigProperty] = true;
+        if ((options.fields[select] || Config.defaulField).valueFormatter){
+            internalGaugeConfig.gauge_label_format = options.fields[select].valueFormatter;
         }
 
         this._currentDataset = dataset;
@@ -127,11 +133,11 @@ class Gauge implements Common.Visualization {
     private _buildDataset(results: Api.QueryResults): Dataset.ChartDataset{
         var options = this._options,
             formatters = {        
-                selectLabelFormatter: select => (options.fields[select] || {}).label || select,
+                selectLabelFormatter: select => (options.fields[select] || Config.defaulField).label || select,
                 groupValueFormatter: (groupByName, groupValue) => this._formatGroupValue(groupByName, groupValue)
             };
 
-        return new StandardDataset(results, formatters); 
+        return new Dataset.ChartDataset(results, formatters); 
     }
 
     private _showTitle(){
@@ -147,7 +153,7 @@ class Gauge implements Common.Visualization {
         var dataset = this._currentDataset,
             select = this._currentDataset.getSelect(label),
             options = this._options,
-            fieldOption = options.fields[select] || {},
+            fieldOption = options.fields[select] || Config.defaulField,
             valueFormatter = fieldOption.valueFormatter;
 
         if (valueFormatter){
@@ -158,7 +164,7 @@ class Gauge implements Common.Visualization {
     }
 
     private _formatGroupValue(groupByName: string, groupValue: any){
-        var fieldOption = this._options.fields[groupByName] || {},
+        var fieldOption = this._options.fields[groupByName] || Config.defaulField,
             valueFormatter = fieldOption.valueFormatter;
 
         if (valueFormatter){

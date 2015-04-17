@@ -1,5 +1,6 @@
 import request = require('superagent');
 import Q = require('q');
+import _ = require('underscore');
 
 module Api {    
     export interface Query {
@@ -12,13 +13,6 @@ module Api {
     }
 
     export interface Metadata {
-        groups: string[];
-        interval: string;
-        timezone: string | number;
-    }
-
-    export interface ResultMetadata : Metadata {
-        selects: string[];
         groups: string[];
         interval: string;
         timezone: string | number;
@@ -63,44 +57,26 @@ module Api {
     }
 
     export class QueryResults { 
-        private _metadata: ResultMetadata;
-        private _results: ResultMetadata;
+        public metadata: Metadata;
+        public results: QueryResultItem[];
 
         constructor(response: QueryResponse) {
-            var responseMetadata = response.metadata;
-
-            this._metadata = {
-                selects: this.parseReponseForSelects(response),
-                groups: responseMetadata.groups,
-                interval: responseMetadata.interval,
-                timezone: responseMetadata.timezone
-            };
-
-            this._results = response.results;
+            this.metadata = response.metadata;
+            this.results = response.results;
         }
 
-        get metadata(): ResultMetadata{
-            return this._metadata;
+        public selects(): string[]{
+            var results = !this.metadata.interval ? this.results : _.flatten(_.map(this.results, result => result.results));
+
+            return _.difference(_.keys(_.first(results)), this.metadata.groups.concat(['_count']));
         }
 
-        get results(): QueryResultItem[]{
-            return this._results;
-        }
-
-        public updateResults(results: QueryResultItem[], metadata?: Metadata): QueryResults{
+        public clone(): QueryResults{
             return new QueryResults({
-                results: results,
-                metadata: metadata || this._metadata
+                metadata: _.clone(this.metadata),
+                results: JSON.parse(JSON.stringify(this.results))
             });
-        }
-
-        private parseReponseForSelects(response: QueryResponse): string[]{
-            var firstResultItem,
-                metadata = response.metadata,
-                results = !metadata.interval ? response.results : _.chain(results).map(result => result.results).flatten().value();
-
-            return _.keys(_.first(results)).difference(metadata.groups.concat(['_count']));
-        }
+        }            
     }
 
     export type Promiser = () => Q.IPromise<Api.QueryResults>;
@@ -156,7 +132,7 @@ module Api {
                         return;
                     }
 
-                    deferred.resolve(res.body);
+                    deferred.resolve(new QueryResults(<QueryResponse>res.body));
                 });     
 
             return deferred.promise;

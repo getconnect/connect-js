@@ -40,7 +40,7 @@ class Table implements Common.Visualization {
     }
 
     private _loadData(results: Api.QueryResults, fullReload: boolean) {
-        var dataset = new Dataset.TableDataset(results.results, this._options);
+        var dataset = new Dataset.TableDataset(results, this._options);
         this._tableWrapper.innerHTML = TableRenderer.renderDataset(dataset);
         this._showTitle();
     }

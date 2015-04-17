@@ -44,8 +44,9 @@ class Text implements Common.Visualization {
     private _loadData(results: Api.QueryResults, fullReload: boolean): void {        
         var options = this._options,
             metadata = results.metadata,
+            selects = results.selects(),
             onlyResult = results.results[0],
-            aliasOfSelect = metadata.selects[0],
+            aliasOfSelect = selects[0],
             defaultFieldOption = { valueFormatter: (value) => value },
             fieldOption = options.fields[aliasOfSelect] || defaultFieldOption,
             valueFormatter = fieldOption.valueFormatter,
@@ -56,7 +57,7 @@ class Text implements Common.Visualization {
             duration = options.text.counterDurationMs,
             transitionClass = isIncreasing ? 'connect-text-value-increasing' : 'connect-text-value-decreasing';        
 
-        if (!this._checkMetaDataIsApplicable(metadata)){
+        if (!this._checkMetaDataIsApplicable(metadata, selects)){
             this._renderQueryNotApplicable();
             return;
         }        
@@ -82,8 +83,8 @@ class Text implements Common.Visualization {
         Dom.removeAllChildren(this.targetElement);
     }
 
-    private _checkMetaDataIsApplicable(metadata: Api.Metadata): boolean {
-        var exactlyOneSelect = metadata.selects.length === 1,
+    private _checkMetaDataIsApplicable(metadata: Api.Metadata, selects: string[]): boolean {
+        var exactlyOneSelect = selects.length === 1,
             noGroupBys = metadata.groups.length === 0,
             noInterval = metadata.interval == null;
 
@@ -93,7 +94,7 @@ class Text implements Common.Visualization {
     private _showTitle(){
         var options = this._options,
             title = options.title,
-            titleText = title && (<string>title).length > 0 ? title.toString(),
+            titleText = title && (<string>title).length > 0 ? title.toString() : '',
             showTitle = title !== false;
 
         this._titleElement.textContent = titleText;

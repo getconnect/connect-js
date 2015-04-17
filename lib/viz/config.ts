@@ -109,6 +109,11 @@ module Config {
         },
         bar: {}
     }
+
+    export var defaulField = {
+        label: undefined,
+        valueFormatter: undefined
+    }
 }
 
 export = Config;
