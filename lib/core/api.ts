@@ -79,7 +79,7 @@ module Api {
         }            
     }
 
-    export type Promiser = () => Q.IPromise<Api.QueryResults>;
+    export type QueryResultsFactory = () => Q.IPromise<Api.QueryResults>;
     
     export class Client {
         _baseUrl: string;

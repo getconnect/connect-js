@@ -6,11 +6,11 @@ import ErrorHandling = require('./error-handling');
 
 class DataVisualization{
     private _visualization: Common.Visualization;
-    private _promiser: Api.Promiser;
+    private _queryResultsFactory: Api.QueryResultsFactory;
     private _isLoading: boolean;
 
-    constructor(data: Queries.ConnectQuery|Api.Promiser, visualization: Common.Visualization) {
-        this._promiser = this.getPromiser(data);
+    constructor(data: Queries.ConnectQuery|Api.QueryResultsFactory, visualization: Common.Visualization) {
+        this._queryResultsFactory = this.getQueryResultsFactory(data);
         this._visualization = visualization;
         this._isLoading = false;
 
@@ -21,24 +21,25 @@ class DataVisualization{
         if (this._isLoading)
             return;
 
+
         this._isLoading = true;
 
         var targetElement = this._visualization.targetElement,
-            loadingTracker = this._promiser().then(
+            loadingTracker = this._queryResultsFactory().then(
                 (data) => { this._isLoading = false });
 
-        this._visualization.displayData(this._promiser(), reRender);
+        this._visualization.displayData(this._queryResultsFactory(), reRender);
     }
 
-    public update(data: Queries.ConnectQuery|Api.Promiser, reRender: boolean = true) {
+    public update(data: Queries.ConnectQuery|Api.QueryResultsFactory, reRender: boolean = true) {
         this._isLoading = false;
-        this._promiser = this.getPromiser(data);
+        this._queryResultsFactory = this.getQueryResultsFactory(data);
 
         this.refresh(reRender);
     }
 
-    private getPromiser(data: Queries.ConnectQuery|Api.Promiser) : Api.Promiser{
-        return (<Queries.ConnectQuery>data).execute ? () => (<Queries.ConnectQuery>data).execute() : <Api.Promiser>data
+    private getQueryResultsFactory(data: Queries.ConnectQuery|Api.QueryResultsFactory) : Api.QueryResultsFactory{
+        return (<Queries.ConnectQuery>data).execute ? () => (<Queries.ConnectQuery>data).execute() : <Api.QueryResultsFactory>data
     }
 }
 
