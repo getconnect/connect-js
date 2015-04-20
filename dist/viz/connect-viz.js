@@ -22,13 +22,15 @@ var Chart = (function () {
         this._options = this._parseOptions(chartOptions);
         this.targetElement = Dom.getElement(targetElement);
         this.loader = new Loader(this.targetElement);
-        this._duration = {
-            firstLoad: null,
-            reload: 300
+        this._transitionDuration = {
+            none: null,
+            some: 300
         };
+        this._resultHandler = new ResultHandling.ResultHandler();
     }
     Chart.prototype._parseOptions = function (chartOptions) {
         var defaultOptions = {
+            transitionOnReload: true,
             intervals: {},
             fields: {},
             chart: {
@@ -49,19 +51,16 @@ var Chart = (function () {
             fieldOptions[fieldName] = fieldOptions[fieldName] || {};
         });
     };
-    Chart.prototype.displayData = function (resultsPromise, metadata, showLoader) {
-        if (showLoader === void 0) { showLoader = true; }
+    Chart.prototype.displayData = function (resultsPromise, metadata, fullReload) {
+        if (fullReload === void 0) { fullReload = true; }
         var internalChartConfig;
-        if (this._rendered && showLoader) {
-            internalChartConfig = this._chart.internal.config;
-            internalChartConfig.transition_duration = this._duration.firstLoad;
-        }
         this._initializeFieldOptions(metadata);
         this._renderChart(metadata);
-        ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
+        this._resultHandler.handleResult(resultsPromise, metadata, this, this._loadData, fullReload);
     };
-    Chart.prototype._loadData = function (results, metadata) {
-        var options = this._options, type = options.chart.type, resultItems = results.results, typeOptions = options[type], dataset = this._buildDataset(resultItems, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = Palette.getSwatch(uniqueKeys, options.chart.colors), internalChartConfig = this._chart.internal.config;
+    Chart.prototype._loadData = function (results, metadata, fullReload) {
+        var options = this._options, type = options.chart.type, resultItems = results.results, typeOptions = options[type], dataset = this._buildDataset(resultItems, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = Palette.getSwatch(uniqueKeys, options.chart.colors), internalChartConfig = this._chart.internal.config, useTransition = this._chart.data().length && (options.transitionOnReload || !fullReload), transitionDuration = useTransition ? this._transitionDuration.some : this._transitionDuration.none;
+        internalChartConfig.transition_duration = transitionDuration;
         this._currentDataset = dataset;
         this._chart.load({
             json: dataset.getData(),
@@ -72,7 +71,6 @@ var Chart = (function () {
             colors: colors
         });
         this._showTitle();
-        internalChartConfig.transition_duration = this._duration.reload;
     };
     Chart.prototype.clear = function () {
         this._rendered = false;
@@ -135,7 +133,7 @@ var Chart = (function () {
                 }
             },
             transition: {
-                duration: this._duration.firstLoad
+                duration: this._transitionDuration.none
             },
             tooltip: {
                 format: {
@@ -202,9 +200,15 @@ var Gauge = (function () {
         this._options = this._parseOptions(gaugeOptions);
         this.targetElement = Dom.getElement(targetElement);
         this.loader = new Loader(this.targetElement);
+        this._resultHandler = new ResultHandling.ResultHandler();
+        this._transitionDuration = {
+            none: null,
+            some: 300
+        };
     }
     Gauge.prototype._parseOptions = function (gaugeOptions) {
         var defaultOptions = {
+            transitionOnReload: true,
             fields: {},
             gauge: {},
         }, defaultC3Options = Config.defaultC3Options, options = null, loadsMinMaxFromResult = null, minMaxFromResultsOptions = _.extend(Config.defaultC3Options.minMaxFromResults, defaultC3Options.gauge);
@@ -229,20 +233,21 @@ var Gauge = (function () {
         fieldOptions[firstSelect].valueFormatter = fieldOptions[firstSelect].valueFormatter || options.gauge.label.format;
         options.gauge.label.format = fieldOptions[firstSelect].valueFormatter;
     };
-    Gauge.prototype.displayData = function (resultsPromise, metadata, showLoader) {
-        if (showLoader === void 0) { showLoader = true; }
+    Gauge.prototype.displayData = function (resultsPromise, metadata, fullReload) {
+        if (fullReload === void 0) { fullReload = true; }
         var parsedMetaData = this._parseMetaData(metadata);
         this._initializeFieldOptions(parsedMetaData);
         this._renderGauge(parsedMetaData);
-        ResultHandling.handleResult(resultsPromise, parsedMetaData, this, this._loadData, showLoader);
+        this._resultHandler.handleResult(resultsPromise, parsedMetaData, this, this._loadData, fullReload);
     };
     Gauge.prototype._parseMetaData = function (metadata) {
         var options = this._options, typeOptions = options.gauge, parsedMetaData = _.clone(metadata), filteredSelected = _.without(metadata.selects, this._minSelectName, this._maxSelectName);
         parsedMetaData.selects = filteredSelected;
         return parsedMetaData;
     };
-    Gauge.prototype._loadData = function (results, metadata) {
-        var options = this._options, typeOptions = options.gauge, resultItems = results.results, dataset = this._buildDataset(resultItems, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = Palette.getSwatch(uniqueKeys, options.gauge.color ? [options.gauge.color] : null), setMinProperty = this._minSelectName && resultItems.length, setMaxProperty = this._maxSelectName && resultItems.length, minConfigProperty = 'gauge_min', maxConfigProperty = 'gauge_max', showLabelConfigProperty = 'gauge_label_show', internalGaugeConfig = this._gauge.internal.config;
+    Gauge.prototype._loadData = function (results, metadata, fullReload) {
+        var options = this._options, typeOptions = options.gauge, resultItems = results.results, dataset = this._buildDataset(resultItems, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = Palette.getSwatch(uniqueKeys, options.gauge.color ? [options.gauge.color] : null), setMinProperty = this._minSelectName && resultItems.length, setMaxProperty = this._maxSelectName && resultItems.length, minConfigProperty = 'gauge_min', maxConfigProperty = 'gauge_max', showLabelConfigProperty = 'gauge_label_show', internalGaugeConfig = this._gauge.internal.config, transitionDuration = !options.transitionOnReload && fullReload ? this._transitionDuration.none : this._transitionDuration.some;
+        internalGaugeConfig.transition_duration = transitionDuration;
         if (setMinProperty) {
             internalGaugeConfig[minConfigProperty] = resultItems[0][this._minSelectName];
             internalGaugeConfig[showLabelConfigProperty] = true;
@@ -303,6 +308,9 @@ var Gauge = (function () {
             data: {
                 json: [],
                 type: 'gauge'
+            },
+            transition: {
+                duration: this._transitionDuration.none
             },
             tooltip: {
                 format: {
@@ -700,37 +708,53 @@ module.exports = Palette;
 var ErrorHandling = require('./error-handling');
 var ResultHandling;
 (function (ResultHandling) {
-    function handleResult(resultsPromise, metadata, visualization, loadData, showLoader) {
-        var loader = visualization.loader, targetElement = visualization.targetElement, hideLoader = function () {
-            if (showLoader) {
-                loader.hide();
-            }
-        };
-        if (showLoader) {
-            ErrorHandling.clearError(targetElement);
-            loader.show();
+    var ResultHandler = (function () {
+        function ResultHandler() {
+            this._currentRequestCount = 0;
+            this._lastRequestProcessed = 0;
+            this._lastReloadTime = 0;
         }
-        resultsPromise.then(function (results) {
-            hideLoader();
-            try {
+        ResultHandler.prototype.handleResult = function (resultsPromise, metadata, visualization, loadData, fullReload) {
+            var _this = this;
+            var loader = visualization.loader, targetElement = visualization.targetElement, requestNumber, lastReloadTime;
+            if (fullReload || this._lastReloadTime === 0) {
                 ErrorHandling.clearError(targetElement);
-                if (results == null || results.results == null || !results.results.length) {
-                    ErrorHandling.displayFriendlyError(targetElement, 'noResults');
+                loader.show();
+                this._lastReloadTime = Date.now();
+                this._currentRequestCount = 0;
+                this._lastRequestProcessed = 0;
+            }
+            lastReloadTime = this._lastReloadTime;
+            requestNumber = this._currentRequestCount;
+            this._currentRequestCount++;
+            resultsPromise.then(function (results) {
+                if (lastReloadTime < _this._lastReloadTime)
                     return;
+                if (requestNumber < _this._lastRequestProcessed)
+                    return;
+                loader.hide();
+                _this._lastRequestProcessed = requestNumber;
+                try {
+                    ErrorHandling.clearError(targetElement);
+                    if (results == null || results.results == null || !results.results.length) {
+                        ErrorHandling.displayFriendlyError(targetElement, 'noResults');
+                        return;
+                    }
+                    loadData.call(visualization, results, metadata, fullReload);
                 }
-                loadData.call(visualization, results, metadata);
-            }
-            catch (error) {
-                ErrorHandling.logError(error);
-                ErrorHandling.displayFriendlyError(targetElement);
-            }
-        }, function (error) {
-            hideLoader();
-            ErrorHandling.clearError(targetElement);
-            ErrorHandling.handleError(targetElement, error);
-        });
-    }
-    ResultHandling.handleResult = handleResult;
+                catch (error) {
+                    ErrorHandling.logError(error);
+                    ErrorHandling.displayFriendlyError(targetElement);
+                }
+            }, function (error) {
+                loader.hide();
+                ErrorHandling.clearError(targetElement);
+                ErrorHandling.handleError(targetElement, error);
+            });
+        };
+        return ResultHandler;
+    })();
+    ResultHandling.ResultHandler = ResultHandler;
 })(ResultHandling || (ResultHandling = {}));
 module.exports = ResultHandling;
 
@@ -901,13 +925,14 @@ var Table = (function () {
         this._options = _.extend(defaultTableOptions, suppliedOptions);
         this._options.intervals = _.extend(this._options.intervals, defaultIntervalOptions);
         this.loader = new Loader(this.targetElement);
+        this._resultHandler = new ResultHandling.ResultHandler();
     }
-    Table.prototype.displayData = function (resultsPromise, metadata, showLoader) {
-        if (showLoader === void 0) { showLoader = true; }
+    Table.prototype.displayData = function (resultsPromise, metadata, fullReload) {
+        if (fullReload === void 0) { fullReload = true; }
         this._renderTable(metadata);
-        ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
+        this._resultHandler.handleResult(resultsPromise, metadata, this, this._loadData, fullReload);
     };
-    Table.prototype._loadData = function (results, metadata) {
+    Table.prototype._loadData = function (results, metadata, fullReload) {
         var dataset = new Dataset.TableDataset(metadata, this._options, results.results);
         this._tableWrapper.innerHTML = TableRenderer.renderDataset(dataset);
         this._showTitle();
@@ -1026,6 +1051,10 @@ var Counter = (function () {
         this.countDown = (this.startValue > this.endValue) ? true : false;
         this.animationId = requestAnimationFrame(function (timestamp) { return _this.count(timestamp, finished); });
     };
+    Counter.prototype.setValue = function (newValue) {
+        this.currentValue = newValue;
+        this.printCurrentValue();
+    };
     return Counter;
 })();
 module.exports = Counter;
@@ -1040,6 +1069,7 @@ var Counter = require('./counter');
 var Text = (function () {
     function Text(targetElement, textOptions) {
         this._options = _.extend({
+            transitionOnReload: true,
             text: {
                 counterDurationMs: 800
             },
@@ -1048,27 +1078,33 @@ var Text = (function () {
         this.targetElement = Dom.getElement(targetElement);
         this.loader = new Loader(this.targetElement);
         this._currentValue = 0;
+        this._resultHandler = new ResultHandling.ResultHandler();
     }
-    Text.prototype.displayData = function (resultsPromise, metadata, showLoader) {
-        if (showLoader === void 0) { showLoader = true; }
+    Text.prototype.displayData = function (resultsPromise, metadata, fullReload) {
+        if (fullReload === void 0) { fullReload = true; }
         this._renderText(metadata);
         if (!this._checkMetaDataIsApplicable(metadata)) {
             this._renderQueryNotApplicable();
             return;
         }
-        ResultHandling.handleResult(resultsPromise, metadata, this, this._loadData, showLoader);
+        this._resultHandler.handleResult(resultsPromise, metadata, this, this._loadData, fullReload);
     };
-    Text.prototype._loadData = function (results, metadata) {
+    Text.prototype._loadData = function (results, metadata, fullReload) {
         var options = this._options, onlyResult = results.results[0], aliasOfSelect = metadata.selects[0], defaultFieldOption = { valueFormatter: function (value) { return value; } }, fieldOption = options.fields[aliasOfSelect] || defaultFieldOption, valueFormatter = fieldOption.valueFormatter, value = onlyResult[aliasOfSelect], animationElementClassList = this._valueContainerElement.classList, isIncreasing = value > this._currentValue, hasChanged = valueFormatter(this._currentValue) !== valueFormatter(value), duration = options.text.counterDurationMs, transitionClass = isIncreasing ? 'connect-text-value-increasing' : 'connect-text-value-decreasing';
         this._showTitle(metadata);
-        if (!hasChanged)
-            return;
-        animationElementClassList.add(transitionClass);
         this._currentValue = value;
         this._counter = this._counter || new Counter(this._valueTextElement, duration, valueFormatter);
-        this._counter.update(value, function () {
-            animationElementClassList.remove(transitionClass);
-        });
+        if (!hasChanged)
+            return;
+        if (!options.transitionOnReload && fullReload) {
+            this._counter.setValue(value);
+        }
+        else {
+            animationElementClassList.add(transitionClass);
+            this._counter.update(value, function () {
+                animationElementClassList.remove(transitionClass);
+            });
+        }
     };
     Text.prototype.clear = function () {
         this._rendered = false;
