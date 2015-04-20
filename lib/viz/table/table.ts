@@ -64,23 +64,16 @@ class Table implements Common.Visualization {
             return;
             
         var options = this._options,
-            tableContainer: HTMLElement = document.createElement('div'),
-            tableWrapper = document.createElement('div'),
-            results = document.createElement('div'),
+            tableContainer = Dom.createElement('div', 'connect-viz', 'connect-table'),
+            tableWrapper = Dom.createElement('div', 'connect-table-wrapper'),
+            results = Dom.createElement('div', 'connect-viz-result'),
             rootElement = this.targetElement,
-            titleElement = document.createElement('span')
+            titleElement = Dom.createElement('span', 'connect-viz-title')
 
         this.clear();
-
-        tableContainer.className = 'connect-viz connect-table';
-        titleElement.className = 'connect-viz-title';
-        results.className = 'connect-viz-result';
-        tableWrapper.className = 'connect-table-wrapper';
-
         tableContainer.appendChild(titleElement);
         tableContainer.appendChild(results);
         results.appendChild(tableWrapper);
-
         rootElement.appendChild(tableContainer);
 
         this._rendered = true;
