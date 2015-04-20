@@ -19,16 +19,16 @@ class Chart implements Common.Visualization {
     private _rendered: boolean;
     private _titleElement: HTMLElement;
     private _currentDataset: Dataset.ChartDataset;
-    private _duration;
+    private _transitionDuration;
     private _resultHandler: ResultHandling.ResultHandler;
     
     constructor(targetElement: string|HTMLElement, chartOptions: Config.VisualizationOptions) {     
         this._options = this._parseOptions(chartOptions);
         this.targetElement = Dom.getElement(targetElement);
         this.loader = new Loader(this.targetElement);
-        this._duration = {
-            reRender: null,
-            update: 300
+        this._transitionDuration = {
+            none: null,
+            some: 300
         }
         this._resultHandler = new ResultHandling.ResultHandler();
     }
@@ -36,6 +36,7 @@ class Chart implements Common.Visualization {
     private _parseOptions(chartOptions: Config.VisualizationOptions): Config.VisualizationOptions{
 
         var defaultOptions: Config.VisualizationOptions = {
+                transitionOnReload: true,
                 intervals: {},
                 fields: {},
                 chart: {
@@ -79,8 +80,9 @@ class Chart implements Common.Visualization {
             timezone = options.timezone || metadata.timezone,
             colors = Palette.getSwatch(uniqueKeys, options.chart.colors),
             internalChartConfig = (<any>this._chart).internal.config,
-            transitionDuration = reRender ? this._duration.reRender : this._duration.update;
-            
+            useTransition = this._chart.data().length && (options.transitionOnReload || !reRender),
+            transitionDuration = useTransition ? this._transitionDuration.some : this._transitionDuration.none;
+ 
         internalChartConfig.transition_duration = transitionDuration;
 
         if(metadata.interval) {
@@ -191,7 +193,7 @@ class Chart implements Common.Visualization {
                     }
                 },
                 transition: {
-                    duration: this._duration.reRender
+                    duration: this._transitionDuration.none
                 },
                 tooltip: {
                     format: {

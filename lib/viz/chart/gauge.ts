@@ -21,7 +21,7 @@ class Gauge implements Common.Visualization {
     private _rendered: boolean;
     private _titleElement: HTMLElement;
     private _currentDataset: Dataset.ChartDataset;
-    private _duration;
+    private _transitionDuration;
     private _resultHandler: ResultHandling.ResultHandler;
     
     constructor(targetElement: string|HTMLElement, gaugeOptions: Config.VisualizationOptions) {     
@@ -29,15 +29,16 @@ class Gauge implements Common.Visualization {
         this.targetElement = Dom.getElement(targetElement);
         this.loader = new Loader(this.targetElement);
         this._resultHandler = new ResultHandling.ResultHandler();
-        this._duration = {
-            reRender: null,
-            update: 300
+        this._transitionDuration = {
+            none: null,
+            some: 300
         }
     }
 
     private _parseOptions(gaugeOptions: Config.VisualizationOptions): Config.VisualizationOptions{
 
         var defaultOptions: Config.VisualizationOptions = {
+                transitionOnReload: true,
                 fields: {},                
                 gauge: {},
             },
@@ -105,7 +106,7 @@ class Gauge implements Common.Visualization {
             keys = dataset.getLabels(),
             uniqueKeys = _.unique(keys),
             colors = Palette.getSwatch(uniqueKeys, options.gauge.color ? [options.gauge.color] : null),
-            transitionDuration = reRender ? this._duration.reRender : this._duration.update;
+            transitionDuration = !options.transitionOnReload && reRender ? this._transitionDuration.none : this._transitionDuration.some;
             
         internalGaugeConfig.transition_duration = transitionDuration;
 
@@ -193,7 +194,7 @@ class Gauge implements Common.Visualization {
                     type: 'gauge'
                 },
                 transition: {
-                    duration: this._duration.reRender
+                    duration: this._transitionDuration.none
                 },
                 tooltip: {
                     format: {

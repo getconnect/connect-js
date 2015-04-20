@@ -24,6 +24,7 @@ class Text implements Common.Visualization {
 
     constructor(targetElement: string|HTMLElement, textOptions: Config.VisualizationOptions) {
         this._options = _.extend({ 
+            transitionOnReload: true,
             text: {
                 counterDurationMs: 800
             },
@@ -68,7 +69,7 @@ class Text implements Common.Visualization {
         if (!hasChanged)
             return;
         
-        if (reRender){
+        if (!options.transitionOnReload && reRender){
             this._counter.setValue(value);
         }else{
             animationElementClassList.add(transitionClass);

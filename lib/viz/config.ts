@@ -39,6 +39,7 @@ module Config {
         table?: TableOptions;
         gauge?: GaugeOptions;
         chart?: ChartOptions;
+        transitionOnReload?: boolean;
     }
 
     export interface ChartOptions {
