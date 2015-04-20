@@ -14,10 +14,10 @@ class DataVisualization{
         this._visualization = visualization;
         this._isLoading = false;
 
-        this.refresh();
+        this.refresh(true);
     }
 
-    public refresh() {
+    public refresh(fullReload: boolean = false) {
         if (this._isLoading)
             return;
 
@@ -27,14 +27,14 @@ class DataVisualization{
             loadingTracker = this._promiser().then(
                 (data) => { this._isLoading = false });
 
-        this._visualization.displayData(this._promiser());
+        this._visualization.displayData(this._promiser(), false);
     }
 
     public update(data: Queries.ConnectQuery|Api.Promiser) {
         this._isLoading = false;
         this._promiser = this.getPromiser(data);
 
-        this.refresh();
+        this.refresh(true);
     }
 
     private getPromiser(data: Queries.ConnectQuery|Api.Promiser) : Api.Promiser{

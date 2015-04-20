@@ -36,12 +36,12 @@ class Text implements Common.Visualization {
         this._resultHandler = new ResultHandling.ResultHandler();
     }
 
-    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, fullReload: boolean = true): void {        
+    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, reRender: boolean = true): void {
         this._renderText();
-        this._resultHandler.handleResult(resultsPromise, this, this._loadData, fullReload);
+        this._resultHandler.handleResult(resultsPromise, this, this._loadData, reRender);
     }
 
-    private _loadData(results: Api.QueryResults, fullReload: boolean): void {        
+    private _loadData(results: Api.QueryResults, reRender: boolean): void {
         var options = this._options,
             metadata = results.metadata,
             selects = results.selects(),
@@ -68,7 +68,7 @@ class Text implements Common.Visualization {
         if (!hasChanged)
             return;
         
-        if (fullReload){
+        if (reRender){
             this._counter.setValue(value);
         }else{
             animationElementClassList.add(transitionClass);
@@ -78,7 +78,7 @@ class Text implements Common.Visualization {
         }
     }
 
-    public clear(): void{        
+    public clear(): void {
         this._rendered = false;
         Dom.removeAllChildren(this.targetElement);
     }
