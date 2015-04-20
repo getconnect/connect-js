@@ -27,14 +27,14 @@ class DataVisualization{
             loadingTracker = this._promiser().then(
                 (data) => { this._isLoading = false });
 
-        this._visualization.displayData(this._promiser(), false);
+        this._visualization.displayData(this._promiser(), reRender);
     }
 
-    public update(data: Queries.ConnectQuery|Api.Promiser) {
+    public update(data: Queries.ConnectQuery|Api.Promiser, reRender: boolean = true) {
         this._isLoading = false;
         this._promiser = this.getPromiser(data);
 
-        this.refresh(true);
+        this.refresh(reRender);
     }
 
     private getPromiser(data: Queries.ConnectQuery|Api.Promiser) : Api.Promiser{

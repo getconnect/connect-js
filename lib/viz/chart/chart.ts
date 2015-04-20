@@ -163,7 +163,7 @@ class Chart implements Common.Visualization {
         var options = this._options,
             chartTypeClass = 'connect-chart-' + options.chart.type,
             connectChartContainer = Dom.createElement('div', 'connect-viz', 'connect-chart', chartTypeClass),
-            c3Element = Dom.createElement('div'),
+            c3Element = Dom.createElement('div', 'connect-viz-result'),
             rootElement = this.targetElement,
             titleElement = Dom.createElement('span', 'connect-viz-title'),
             tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
