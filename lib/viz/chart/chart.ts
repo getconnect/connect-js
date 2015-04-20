@@ -27,7 +27,7 @@ class Chart implements Common.Visualization {
         this.targetElement = Dom.getElement(targetElement);
         this.loader = new Loader(this.targetElement);
         this._duration = {
-            fullReload: null,
+            reRender: null,
             update: 300
         }
         this._resultHandler = new ResultHandling.ResultHandler();
@@ -59,12 +59,12 @@ class Chart implements Common.Visualization {
 
     }
 
-    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, fullReload: boolean = true): void {
+    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, reRender: boolean = true): void {
         this._renderChart();
-        this._resultHandler.handleResult(resultsPromise, this, this._loadData, fullReload);
+        this._resultHandler.handleResult(resultsPromise, this, this._loadData, reRender);
     }
 
-    private _loadData(results: Api.QueryResults, fullReload: boolean): void {
+    private _loadData(results: Api.QueryResults, reRender: boolean): void {
         var options = this._options,
             type = options.chart.type,
             resultItems = results.results,
@@ -79,7 +79,7 @@ class Chart implements Common.Visualization {
             timezone = options.timezone || metadata.timezone,
             colors = Palette.getSwatch(uniqueKeys, options.chart.colors),
             internalChartConfig = (<any>this._chart).internal.config,
-            transitionDuration = fullReload ? this._duration.fullReload : this._duration.update;
+            transitionDuration = reRender ? this._duration.reRender : this._duration.update;
             
         internalChartConfig.transition_duration = transitionDuration;
 
@@ -191,7 +191,7 @@ class Chart implements Common.Visualization {
                     }
                 },
                 transition: {
-                    duration: this._duration.fullReload
+                    duration: this._duration.reRender
                 },
                 tooltip: {
                     format: {

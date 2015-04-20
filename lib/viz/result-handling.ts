@@ -5,7 +5,7 @@ import Loader = require('./loader');
 import ErrorHandling = require('./error-handling');
 
 module ResultHandling{
-    export type LoadDataFunction = (results: Api.QueryResults, fullReload: boolean) => void;
+    export type LoadDataFunction = (results: Api.QueryResults, reRender: boolean) => void;
 
     export class ResultHandler{
         private _lastReloadTime: number;
@@ -18,13 +18,13 @@ module ResultHandling{
             this._lastReloadTime = 0;
         }
 
-        handleResult(resultsPromise: Q.IPromise<Api.QueryResults>, visualization: Common.Visualization, loadData: LoadDataFunction, fullReload: boolean){
+        handleResult(resultsPromise: Q.IPromise<Api.QueryResults>, visualization: Common.Visualization, loadData: LoadDataFunction, reRender: boolean){
             var loader = visualization.loader,
                 targetElement = visualization.targetElement,   
                 requestNumber,
                 lastReloadTime;  
 
-            if (fullReload || this._lastReloadTime === 0){
+            if (reRender || this._lastReloadTime === 0){
                 ErrorHandling.clearError(targetElement);
                 loader.show();
                 this._lastReloadTime = Date.now();
@@ -51,7 +51,7 @@ module ResultHandling{
                         ErrorHandling.displayFriendlyError(targetElement, 'noResults');
                         return;
                     }
-                    loadData.call(visualization, results, fullReload);
+                    loadData.call(visualization, results, reRender);
                 }catch(error){
                     ErrorHandling.logError(error);
                     ErrorHandling.displayFriendlyError(targetElement);

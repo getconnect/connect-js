@@ -6,6 +6,6 @@ import Loader = require('./Loader');
 export interface Visualization{
     targetElement: HTMLElement;
     loader: Loader;
-    displayData(resultsPromise: Q.IPromise<Api.QueryResults>, fullReload?: boolean): void; 
+    displayData(resultsPromise: Q.IPromise<Api.QueryResults>, reRender?: boolean): void; 
     clear(): void;   
 }

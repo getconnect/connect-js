@@ -17,7 +17,7 @@ class DataVisualization{
         this.refresh(true);
     }
 
-    public refresh(fullReload: boolean = false) {
+    public refresh(reRender: boolean = false) {
         if (this._isLoading)
             return;
 

@@ -30,7 +30,7 @@ class Gauge implements Common.Visualization {
         this.loader = new Loader(this.targetElement);
         this._resultHandler = new ResultHandling.ResultHandler();
         this._duration = {
-            fullReload: null,
+            reRender: null,
             update: 300
         }
     }
@@ -60,14 +60,14 @@ class Gauge implements Common.Visualization {
         return options;
     }
 
-    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, fullReload: boolean = true): void {        
+    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, reRender: boolean = true): void {        
         resultsPromise = resultsPromise.then((results) => {
             var resultsCopy = results.clone();
             return this._loadMinMax(resultsCopy);
         });
 
         this._renderGauge();
-        this._resultHandler.handleResult(resultsPromise, this, this._loadData, fullReload);
+        this._resultHandler.handleResult(resultsPromise, this, this._loadData, reRender);
     }
 
     private _loadMinMax(results: Api.QueryResults){
@@ -95,7 +95,7 @@ class Gauge implements Common.Visualization {
         return results;
     }
 
-    private _loadData(results: Api.QueryResults, fullReload: boolean): void {
+    private _loadData(results: Api.QueryResults, reRender: boolean): void {
         var options = this._options,
             internalGaugeConfig = (<any>this._gauge).internal.config,
             select = _.first(results.selects()),
@@ -105,7 +105,7 @@ class Gauge implements Common.Visualization {
             keys = dataset.getLabels(),
             uniqueKeys = _.unique(keys),
             colors = Palette.getSwatch(uniqueKeys, options.gauge.color ? [options.gauge.color] : null),
-            transitionDuration = fullReload ? this._duration.fullReload : this._duration.update;
+            transitionDuration = reRender ? this._duration.reRender : this._duration.update;
             
         internalGaugeConfig.transition_duration = transitionDuration;
 
@@ -193,7 +193,7 @@ class Gauge implements Common.Visualization {
                     type: 'gauge'
                 },
                 transition: {
-                    duration: this._duration.fullReload
+                    duration: this._duration.reRender
                 },
                 tooltip: {
                     format: {
