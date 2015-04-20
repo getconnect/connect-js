@@ -1,4 +1,5 @@
-var queryResults = require('./query-results.js').salesByPayment;
+var connect = require('./connection.js');
+var salesByPaymentProvider = require('./query-results.js').salesByPayment;
 
 var fieldOptions = {
     'sellPriceTotal': {
@@ -14,7 +15,7 @@ var fieldOptions = {
     }
 }
 
-var bar = new Connect.Viz.Chart('#sales-by-payment-bar', {
+var bar = connect.chart(salesByPaymentProvider, '#sales-by-payment-bar', {
     title: 'Sales by Payment Type',
     chart: {
         type: 'bar',        
@@ -23,7 +24,7 @@ var bar = new Connect.Viz.Chart('#sales-by-payment-bar', {
     fields: fieldOptions,
 });
 
-var barNoLegend = new Connect.Viz.Chart('#sales-by-payment-bar-no-legend', {
+var barNoLegend = connect.chart(salesByPaymentProvider, '#sales-by-payment-bar-no-legend', {
     title: 'Sales by Payment Type (No Legend)',
     chart: {
         type: 'bar',
@@ -33,7 +34,7 @@ var barNoLegend = new Connect.Viz.Chart('#sales-by-payment-bar-no-legend', {
     showLegend: false,
 });
 
-var line = new Connect.Viz.Chart('#sales-by-payment-line', {
+var line = connect.chart(salesByPaymentProvider, '#sales-by-payment-line', {
     title: 'Sales by Payment Type',
     chart: {
         type: 'line',
@@ -42,15 +43,10 @@ var line = new Connect.Viz.Chart('#sales-by-payment-line', {
     fields: fieldOptions,
 });
 
-var table = new Connect.Viz.Table('#sales-by-payment-table', {
+var table = connect.table(salesByPaymentProvider, '#sales-by-payment-table', {
     title: 'Sales by Payment Type',
     fields: fieldOptions,
 });
-
-bar.displayData(queryResults.results, queryResults.metadata);
-barNoLegend.displayData(queryResults.results, queryResults.metadata);
-line.displayData(queryResults.results, queryResults.metadata);
-table.displayData(queryResults.results, queryResults.metadata);
 
 module.exports = {
     bar: bar,

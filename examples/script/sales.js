@@ -1,5 +1,6 @@
-var queryResults = require('./query-results.js').sales;
-var sellPriceResults = require('./query-results.js').salesSellPrice;
+var connect = require('./connection.js');
+var salesProvider = require('./query-results.js').sales;
+var sellPriceProvider = require('./query-results.js').salesSellPrice;
 
 var fieldOptions = {
     'sellPriceTotal': {
@@ -12,7 +13,7 @@ var fieldOptions = {
     }
 }
 
-var bar = new Connect.Viz.Chart('#sales-bar', {
+var bar = connect.chart(salesProvider, '#sales-bar', {
     title: 'Sales',
     chart: {
         type: 'bar',        
@@ -21,7 +22,7 @@ var bar = new Connect.Viz.Chart('#sales-bar', {
     fields: fieldOptions,
 });
 
-var line = new Connect.Viz.Chart('#sales-line', {
+var line = connect.chart(salesProvider, '#sales-line', {
     title: 'Sales',
     chart: {
         type: 'line',        
@@ -30,14 +31,10 @@ var line = new Connect.Viz.Chart('#sales-line', {
     fields: fieldOptions,
 });
 
-var text = new Connect.Viz.Text('#sales-text', {
+var text = connect.text(sellPriceProvider, '#sales-text', {
     title: 'Sales',
     fields: fieldOptions
 });
-
-bar.displayData(queryResults.results, queryResults.metadata);
-line.displayData(queryResults.results, queryResults.metadata);
-text.displayData(sellPriceResults.results, sellPriceResults.metadata);
 
 module.exports = {
     bar: bar,

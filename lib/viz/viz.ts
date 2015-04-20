@@ -8,8 +8,6 @@ import Text = require('./text/text');
 import Table = require('./table/table');
 
 module Viz {
-    
-    
     export class Visualizations{
         public chart(data: Queries.ConnectQuery|Api.Promiser, targetElement: string|HTMLElement, chartOptions: Config.VisualizationOptions){
             var chart = new Chart(targetElement, chartOptions);
@@ -30,7 +28,6 @@ module Viz {
             var gauge = new Gauge(targetElement, gaugeOptions);
             return new DataVisualization(data, gauge);
         }
-
     }
 }
 

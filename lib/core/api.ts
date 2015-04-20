@@ -131,8 +131,8 @@ module Api {
                         deferred.reject(res.error);
                         return;
                     }
-
-                    deferred.resolve(new QueryResults(<QueryResponse>res.body));
+                    var results = new QueryResults(<QueryResponse>res.body);
+                    deferred.resolve(results);
                 });     
 
             return deferred.promise;

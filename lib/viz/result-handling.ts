@@ -59,6 +59,7 @@ module ResultHandling{
             }, error => {
                 loader.hide();
                 ErrorHandling.clearError(targetElement);
+                ErrorHandling.logError(error);
                 ErrorHandling.handleError(targetElement, error);
             });     
         }    

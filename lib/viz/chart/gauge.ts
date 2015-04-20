@@ -62,8 +62,8 @@ class Gauge implements Common.Visualization {
 
     public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, fullReload: boolean = true): void {        
         resultsPromise = resultsPromise.then((results) => {
-            var cloned = results.clone();
-            return this._loadMinMax(cloned);
+            var resultsCopy = results.clone();
+            return this._loadMinMax(resultsCopy);
         });
 
         this._renderGauge();
@@ -83,13 +83,13 @@ class Gauge implements Common.Visualization {
         if (setMinProperty){
             internalGaugeConfig[minConfigProperty] = resultItems[0][this._minSelectName];
             internalGaugeConfig[showLabelConfigProperty] = true;
-            resultItems[0][this._minSelectName] = undefined;
+            delete resultItems[0][this._minSelectName];
         }
 
         if (setMaxProperty){
             internalGaugeConfig[maxConfigProperty] = resultItems[0][this._maxSelectName];
             internalGaugeConfig[showLabelConfigProperty] = true;
-            resultItems[0][this._maxSelectName] = undefined;
+            delete resultItems[0][this._maxSelectName];
         }
 
         return results;
@@ -179,10 +179,10 @@ class Gauge implements Common.Visualization {
             return;
             
         var options = this._options,
-            connectGaugeContainer: HTMLElement = document.createElement('div'),
-            c3Element: HTMLElement = document.createElement('div'),
+            connectGaugeContainer = Dom.createElement('div', 'connect-viz', 'connect-chart', 'connect-chart-gauge'),
+            c3Element = Dom.createElement('div', 'connect-viz-result'),
             rootElement = this.targetElement,
-            titleElement = document.createElement('span'),
+            titleElement = Dom.createElement('span', 'connect-viz-title'),
             dateFormat = null,
             tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
             config = {
@@ -203,9 +203,6 @@ class Gauge implements Common.Visualization {
             };
 
         this.clear();
-        titleElement.className = 'connect-viz-title';
-        c3Element.className = 'connect-viz-result'
-        connectGaugeContainer.className = 'connect-viz connect-chart connect-chart-gauge';
         connectGaugeContainer.appendChild(titleElement);
         connectGaugeContainer.appendChild(c3Element);
         rootElement.appendChild(connectGaugeContainer);

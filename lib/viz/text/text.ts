@@ -105,32 +105,25 @@ class Text implements Common.Visualization {
         if (this._rendered)
             return;
 
-        var container = document.createElement('div'),
-            label = document.createElement('span'),
+        var container = Dom.createElement('div', 'connect-viz', 'connect-text'),
+            label = Dom.createElement('span', 'connect-viz-title'),
             elementForWidget = this.targetElement,
-            spanForValues = document.createElement('span'),
-            valueTextElement = document.createElement('span'),
-            valueIncreaseIconElement = document.createElement('span'),
-            valueDecreaseIconElement = document.createElement('span'),
-            valueElement = document.createElement('div');
-
-        container.className = 'connect-viz connect-text';
-        label.className = 'connect-viz-title';
-        valueElement.className = 'connect-viz-result';
-        valueTextElement.className = 'connect-text-value'
-        valueIncreaseIconElement.className = 'connect-text-icon connect-text-icon-increase ion-arrow-up-b';
-        valueDecreaseIconElement.className = 'connect-text-icon connect-text-icon-decrease ion-arrow-down-b';
+            spanForValues = Dom.createElement('span'),
+            valueTextElement = Dom.createElement('span', 'connect-text-value'),
+            valueIncreaseIconElement = Dom.createElement('span', 'connect-text-icon', 'connect-text-icon-increase', 'ion-arrow-up-b'),
+            valueDecreaseIconElement = Dom.createElement('span', 'connect-text-icon', 'connect-text-icon-decrease', 'ion-arrow-down-b'),
+            result = Dom.createElement('div', 'connect-viz-result');
 
         this.clear();
         spanForValues.appendChild(valueIncreaseIconElement);
         spanForValues.appendChild(valueDecreaseIconElement);
         spanForValues.appendChild(valueTextElement);
-        valueElement.appendChild(spanForValues);
+        result.appendChild(spanForValues);
         container.appendChild(label);
-        container.appendChild(valueElement);
+        container.appendChild(result);
         elementForWidget.appendChild(container);
 
-        this._valueContainerElement = valueElement;
+        this._valueContainerElement = result;
         this._valueTextElement = valueTextElement;
         this._valueTextElement.innerHTML = '&nbsp;';
         this._titleElement = label;

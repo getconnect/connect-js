@@ -1,4 +1,5 @@
-var queryResults = require('./query-results.js').salesOver15Mins;
+var connect = require('./connection.js');
+var salesOver15MinsProvider = require('./query-results.js').salesOver15Mins;
 
 var fieldOptions = {
     'sellPriceTotal': {
@@ -11,7 +12,7 @@ var fieldOptions = {
     }
 }
 
-var bar = new Connect.Viz.Chart('#sales-over-15-mins-bar', {
+var bar = connect.chart(salesOver15MinsProvider, '#sales-over-15-mins-bar', {
     title: 'Sales Over 15 Minutes',    
     chart: {
         type: 'bar',        
@@ -20,7 +21,7 @@ var bar = new Connect.Viz.Chart('#sales-over-15-mins-bar', {
     fields: fieldOptions,
 });
 
-var line = new Connect.Viz.Chart('#sales-over-15-mins-line', {
+var line = connect.chart(salesOver15MinsProvider, '#sales-over-15-mins-line', {
     title: 'Sales Over 15 Minutes',
     chart: {
         type: 'line',        
@@ -29,7 +30,7 @@ var line = new Connect.Viz.Chart('#sales-over-15-mins-line', {
     fields: fieldOptions,
 });
 
-var spline = new Connect.Viz.Chart('#sales-over-15-mins-spline', {
+var spline = connect.chart(salesOver15MinsProvider, '#sales-over-15-mins-spline', {
     title: 'Sales Over 15 Minutes',
     chart: {
         type: 'spline',        
@@ -38,7 +39,7 @@ var spline = new Connect.Viz.Chart('#sales-over-15-mins-spline', {
     fields: fieldOptions,
 });
 
-var areaLine = new Connect.Viz.Chart('#sales-over-15-mins-area-line', {
+var areaLine = connect.chart(salesOver15MinsProvider, '#sales-over-15-mins-area-line', {
     title: 'Sales Over 15 Minutes',
     chart: {
         type: 'area',        
@@ -47,7 +48,7 @@ var areaLine = new Connect.Viz.Chart('#sales-over-15-mins-area-line', {
     fields: fieldOptions,
 });
 
-var areaSpline = new Connect.Viz.Chart('#sales-over-15-mins-area-spline', {
+var areaSpline = connect.chart(salesOver15MinsProvider, '#sales-over-15-mins-area-spline', {
     title: 'Sales Over 15 Minutes',    
     chart: {
         type: 'area-spline',        
@@ -57,7 +58,7 @@ var areaSpline = new Connect.Viz.Chart('#sales-over-15-mins-area-spline', {
 });
 
 
-var timezone = new Connect.Viz.Chart('#sales-over-15-mins-timezone', {
+var timezone = connect.chart(salesOver15MinsProvider, '#sales-over-15-mins-timezone', {
     title: 'Sales Over 15 Minutes in Asia/Tokyo Timezone',  
     chart: {
         type: 'line',        
@@ -68,21 +69,13 @@ var timezone = new Connect.Viz.Chart('#sales-over-15-mins-timezone', {
 });
 
 
-var table = new Connect.Viz.Table('#sales-over-15-mins-table', {
+var table = connect.table(salesOver15MinsProvider, '#sales-over-15-mins-table', {
     title: 'Sales Over 15 Minutes',
     fields: fieldOptions,
     intervalOptions: {
         label: 'Time'
     }
 });
-
-bar.displayData(queryResults.results, queryResults.metadata);
-line.displayData(queryResults.results, queryResults.metadata);
-spline.displayData(queryResults.results, queryResults.metadata);
-areaLine.displayData(queryResults.results, queryResults.metadata);
-areaSpline.displayData(queryResults.results, queryResults.metadata);
-timezone.displayData(queryResults.results, queryResults.metadata);
-table.displayData(queryResults.results, queryResults.metadata);
 
 module.exports = {
     bar: bar,

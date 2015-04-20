@@ -17,10 +17,6 @@ class DataVisualization{
         this.refresh();
     }
 
-    private getPromiser(data: Queries.ConnectQuery|Api.Promiser) : Api.Promiser{
-        return (<Queries.ConnectQuery>data).execute ? () => (<Queries.ConnectQuery>data).execute() : <Api.Promiser>data
-    }
-
     public refresh() {
         if (this._isLoading)
             return;
@@ -32,6 +28,17 @@ class DataVisualization{
                 (data) => { this._isLoading = false });
 
         this._visualization.displayData(this._promiser());
+    }
+
+    public update(data: Queries.ConnectQuery|Api.Promiser) {
+        this._isLoading = false;
+        this._promiser = this.getPromiser(data);
+
+        this.refresh();
+    }
+
+    private getPromiser(data: Queries.ConnectQuery|Api.Promiser) : Api.Promiser{
+        return (<Queries.ConnectQuery>data).execute ? () => (<Queries.ConnectQuery>data).execute() : <Api.Promiser>data
     }
 }
 

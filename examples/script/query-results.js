@@ -1,90 +1,61 @@
+var connect = require('./connection.js');
 var q = require('q');
 
 function createResponse(results, metadata){
-    return {
+    return new Connect.QueryResults({
         results: results,
         metadata: metadata
-    }
+    });
 }
 
 function empty(){
-    var metadata = {"selects":["sellPriceTotal"],"groups":[],"interval":null,"timezone":"UTC"};
-    var resultsPromise = q.fcall(function(){
+    var metadata = {"groups":[],"interval":null,"timezone":"UTC"};
+    return q.fcall(function(){
         return createResponse(null, metadata);
     });
-
-    return {
-        results: resultsPromise,
-        metadata: metadata
-    };
 }
 
 function sales(){
-    var metadata = {"selects":["sellPriceTotal","costPriceTotal"],"groups":[],"interval":null,"timezone":"UTC"};
-    var resultsPromise = q.fcall(function(){
+    var metadata = {"groups":[],"interval":null,"timezone":"UTC"};
+    return q.fcall(function(){
         return createResponse([{sellPriceTotal: 16.7793, costPriceTotal: 7.0553, _count: 2388740}], metadata);
     });
-
-    return {
-        results: resultsPromise,
-        metadata: metadata
-    };
 }
 
 function marketSharePercent(){
-    var metadata = {"selects":["share"],"groups":[],"interval":null,"timezone":"UTC"};
-    var resultsPromise = q.fcall(function(){
+    var metadata = {"groups":[],"interval":null,"timezone":"UTC"};
+    return q.fcall(function(){
         return createResponse([{share: 77.2345, _count: 1}], metadata);
     });
-
-    return {
-        results: resultsPromise,
-        metadata: metadata
-    };
 }
 
 function marketShareDollars(){
     var metadata = {"selects":["share", 'totalMarketValue'],"groups":[],"interval":null,"timezone":"UTC"}
-    var resultsPromise = q.fcall(function(){
+    return q.fcall(function(){
         return createResponse([{share: 22.2345, totalMarketValue: 27, _count: 1}], metadata);
     });
-
-    return {
-        results: resultsPromise,
-        metadata: metadata
-    };
 }
 
 function salesSellPrice(){
     var metadata = {"selects":["sellPriceTotal"],"groups":[],"interval":null,"timezone":"UTC"};
-    var resultsPromise = q.fcall(function(){
+    return q.fcall(function(){
         return createResponse([{sellPriceTotal: 100001.7793, _count: 2388740}], metadata);
     });
-
-    return {
-        results: resultsPromise,
-        metadata: metadata
-    };
 }
 
 function salesByPayment(){
     var metadata = {"selects":["sellPriceTotal","costPriceTotal"],"groups":["paymentType"],"interval":null,"timezone":"UTC"};
-    var resultsPromise = q.fcall(function(){
+    return q.fcall(function(){
         return createResponse([
         {"paymentType":"cash","sellPriceTotal":13.7793,"costPriceTotal":12.7793,"_count":1974313.0},
         {"paymentType":"card","sellPriceTotal":37.7793,"costPriceTotal":36.7793,"_count":336411.0}
         ], metadata);
     });
-
-    return {
-        results: resultsPromise,
-        metadata: metadata
-    };
 }
 
 function salesOver15Mins(){
-    var metadata = {"selects":["sellPriceTotal","costPriceTotal"],"groups":[],"interval":"minutely","timezone":"UTC"};
-    var resultsPromise = q.fcall(function(){
+    var metadata = {"groups":[],"interval":"minutely","timezone":"UTC"};
+    return q.fcall(function(){
         return createResponse([
         {"interval": {"start": "2015-03-04T00:00:00Z", "end": "2015-03-04T00:01:00Z"}, "results": [{sellPriceTotal: 22.7793, costPriceTotal: 7.0553, _count: 2388740}]},
         {"interval": {"start": "2015-03-04T00:01:00Z", "end": "2015-03-04T00:02:00Z"}, "results": [{sellPriceTotal: 2.7793, costPriceTotal: 4.0553, _count: 2388740}]},
@@ -104,16 +75,11 @@ function salesOver15Mins(){
         {"interval": {"start": "2015-03-04T00:15:00Z", "end": "2015-03-04T00:16:00Z"}, "results": [{sellPriceTotal: 5.7793, costPriceTotal: 1.0553, _count: 2388740}]}
         ], metadata);
     });
-
-    return {
-        results: resultsPromise,
-        metadata: metadata
-    };
 }
 
 function salesOver15MinsTimezone(){
-    var metadata = {"selects":["sellPriceTotal","costPriceTotal"],"groups":[],"interval":"minutely","timezone":"UTC"}
-    var resultsPromise = q.fcall(function(){
+    var metadata = {"groups":[],"interval":"minutely","timezone":"UTC"}
+    return q.fcall(function(){
         return createResponse([
         {"interval": {"start": "2015-03-04T00:00:00Z", "end": "2015-03-04T00:01:00Z"}, "results": [{sellPriceTotal: 22.7793, costPriceTotal: 7.0553, _count: 2388740}]},
         {"interval": {"start": "2015-03-04T00:01:00Z", "end": "2015-03-04T00:02:00Z"}, "results": [{sellPriceTotal: 2.7793, costPriceTotal: 4.0553, _count: 2388740}]},
@@ -141,8 +107,8 @@ function salesOver15MinsTimezone(){
 }
 
 function salesOver15MinsByPayment(){
-    var metadata = {"selects":["sellPriceTotal","costPriceTotal"],"groups":["paymentType"],"interval":"minutely","timezone":"UTC"};
-    var resultsPromise = q.fcall(function(){
+    var metadata = {"groups":["paymentType"],"interval":"minutely","timezone":"UTC"};
+    return q.fcall(function(){
         return createResponse([
         {"interval": {"start": "2015-03-04T00:00:00Z", "end": "2015-03-04T00:01:00Z"}, "results": [{paymentType: "cash", sellPriceTotal: 22.7793, costPriceTotal: 7.0553, _count: 2388740}, {paymentType: "card", sellPriceTotal: 11.7793, costPriceTotal: 7.0553, _count: 2388740}]},
         {"interval": {"start": "2015-03-04T00:01:00Z", "end": "2015-03-04T00:02:00Z"}, "results": [{paymentType: "cash", sellPriceTotal: 2.7793, costPriceTotal: 4.0553, _count: 2388740}, {paymentType: "card", sellPriceTotal: 3.7793, costPriceTotal: 6.0553, _count: 2388740}]},
@@ -162,18 +128,13 @@ function salesOver15MinsByPayment(){
         {"interval": {"start": "2015-03-04T00:15:00Z", "end": "2015-03-04T00:16:00Z"}, "results": [{paymentType: "cash", sellPriceTotal: 5.7793, costPriceTotal: 1.0553, _count: 2388740}, {paymentType: "card", sellPriceTotal: 12.7793, costPriceTotal: 2.0553, _count: 2388740}]}
         ], metadata);
     });
-
-    return {
-        results: resultsPromise,
-        metadata: metadata
-    };
 }
 
 
 
 function sellPriceOver15MinsByPayment(){
-    var metadata = {"selects":["sellPriceTotal"],"groups":["paymentType"],"interval":"minutely","timezone":"UTC"};
-    var resultsPromise = q.fcall(function(){
+    var metadata = {"groups":["paymentType"],"interval":"minutely","timezone":"UTC"};
+    return q.fcall(function(){
         return createResponse([
         {"interval": {"start": "2015-03-04T00:00:00Z", "end": "2015-03-04T00:01:00Z"}, "results": [{paymentType: "cash", sellPriceTotal: 22.7793, _count: 2388740}, {paymentType: "card", sellPriceTotal: 11.7793, costPriceTotal: 7.0553, _count: 2388740}]},
         {"interval": {"start": "2015-03-04T00:01:00Z", "end": "2015-03-04T00:02:00Z"}, "results": [{paymentType: "cash", sellPriceTotal: 2.7793, _count: 2388740}, {paymentType: "card", sellPriceTotal: 3.7793, costPriceTotal: 6.0553, _count: 2388740}]},
@@ -193,21 +154,16 @@ function sellPriceOver15MinsByPayment(){
         {"interval": {"start": "2015-03-04T00:15:00Z", "end": "2015-03-04T00:16:00Z"}, "results": [{paymentType: "cash", sellPriceTotal: 5.7793, _count: 2388740}, {paymentType: "card", sellPriceTotal: 12.7793, costPriceTotal: 2.0553, _count: 2388740}]}
         ], metadata);
     });
-
-    return {
-        results: resultsPromise,
-        metadata: metadata
-    };
 }
 
 module.exports = {
-    empty: empty(),
-    marketSharePercent: marketSharePercent(),
-    marketShareDollars: marketShareDollars(),
-    sales: sales(),
-    salesSellPrice: salesSellPrice(),
-    salesByPayment: salesByPayment(),
-    salesOver15Mins: salesOver15Mins(),
-    salesOver15MinsByPayment: salesOver15MinsByPayment(),
-    sellPriceOver15MinsByPayment: sellPriceOver15MinsByPayment()
+    empty: empty,
+    marketSharePercent: marketSharePercent,
+    marketShareDollars: marketShareDollars,
+    sales: sales,
+    salesSellPrice: salesSellPrice,
+    salesByPayment: salesByPayment,
+    salesOver15Mins: salesOver15Mins,
+    salesOver15MinsByPayment: salesOver15MinsByPayment,
+    sellPriceOver15MinsByPayment: sellPriceOver15MinsByPayment
 }

@@ -97,7 +97,7 @@ module Dataset{
             return _.chain(results)
                 .map(result => {
                     var start = result.interval.start,
-                        mappedResult = this._mapResult(metadata, result);
+                        mappedResult = this._mapResult(result);
                         mappedResult['_x'] = start;
 
                     return mappedResult;
@@ -105,11 +105,10 @@ module Dataset{
                 .value();
         }
 
-        private _mapResult(metadata: Api.Metadata, result: Api.QueryResultItem): any {        
-            var metadata = this._metadata,
-                results = this._results;
+        private _mapResult(result: Api.QueryResultItem): any {        
+            var metadata = this._metadata;
 
-            return _.reduce<Api.QueryResultItem, any>(results, (mappedResult, intervalResult) => {
+            return _.reduce<Api.QueryResultItem, any>(result.results, (mappedResult, intervalResult) => {
                 var groupPath = getGroupPath(intervalResult, metadata.groups, this._groupValueFormatter);
 
                 _.each(this._selects, select => {

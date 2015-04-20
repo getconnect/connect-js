@@ -159,10 +159,11 @@ class Chart implements Common.Visualization {
             return;
             
         var options = this._options,
-            connectChartContainer: HTMLElement = document.createElement('div'),
-            c3Element: HTMLElement = document.createElement('div'),
+            chartTypeClass = 'connect-chart-' + options.chart.type,
+            connectChartContainer = Dom.createElement('div', 'connect-viz', 'connect-chart', chartTypeClass),
+            c3Element = Dom.createElement('div'),
             rootElement = this.targetElement,
-            titleElement = document.createElement('span'),
+            titleElement = Dom.createElement('span', 'connect-viz-title'),
             tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
             config = {
                 bindto: c3Element,
@@ -203,10 +204,6 @@ class Chart implements Common.Visualization {
             };
 
         this.clear();
-
-        titleElement.className = 'connect-viz-title';
-        c3Element.className = 'connect-viz-result'
-        connectChartContainer.className = 'connect-viz connect-chart connect-chart-' + options.chart.type;
         connectChartContainer.appendChild(titleElement);
         connectChartContainer.appendChild(c3Element);
         rootElement.appendChild(connectChartContainer);
