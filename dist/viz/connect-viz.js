@@ -7,10 +7,9 @@ function applyMixins(targetClass, mixinClass) {
 }
 module.exports = applyMixins;
 
-},{"underscore":27}],2:[function(require,module,exports){
+},{"underscore":25}],2:[function(require,module,exports){
 var Config = require('../config');
-var GroupedIntervalDataset = require('./grouped-interval-dataset');
-var StandardDataset = require('./standard-dataset');
+var Dataset = require('./dataset');
 var _ = require('underscore');
 var Palette = require('../palette');
 var Loader = require('../loader');
@@ -45,22 +44,21 @@ var Chart = (function () {
         options[type] = _.extend(options[type] || {}, defaultC3Options[type]);
         return options;
     };
-    Chart.prototype._initializeFieldOptions = function (metadata) {
-        var fields = metadata.selects.concat(metadata.groups), options = this._options, fieldOptions = options.fields, type = options.chart.type;
-        _.each(fields, function (fieldName) {
-            fieldOptions[fieldName] = fieldOptions[fieldName] || {};
-        });
+    Chart.prototype.displayData = function (resultsPromise, reRender) {
+        if (reRender === void 0) { reRender = true; }
+        this._renderChart();
+        this._resultHandler.handleResult(resultsPromise, this, this._loadData, reRender);
     };
-    Chart.prototype.displayData = function (resultsPromise, metadata, fullReload) {
-        if (fullReload === void 0) { fullReload = true; }
-        var internalChartConfig;
-        this._initializeFieldOptions(metadata);
-        this._renderChart(metadata);
-        this._resultHandler.handleResult(resultsPromise, metadata, this, this._loadData, fullReload);
-    };
-    Chart.prototype._loadData = function (results, metadata, fullReload) {
-        var options = this._options, type = options.chart.type, resultItems = results.results, typeOptions = options[type], dataset = this._buildDataset(resultItems, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = Palette.getSwatch(uniqueKeys, options.chart.colors), internalChartConfig = this._chart.internal.config, useTransition = this._chart.data().length && (options.transitionOnReload || !fullReload), transitionDuration = useTransition ? this._transitionDuration.some : this._transitionDuration.none;
+    Chart.prototype._loadData = function (results, reRender) {
+        var options = this._options, type = options.chart.type, resultItems = results.results, typeOptions = options[type], dataset = this._buildDataset(results), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), metadata = results.metadata, dateFormat = null, standardDateformatter = null, customDateFormatter = null, timezone = options.timezone || metadata.timezone, colors = Palette.getSwatch(uniqueKeys, options.chart.colors), internalChartConfig = this._chart.internal.config, useTransition = this._chart.data().length && (options.transitionOnReload || !reRender), transitionDuration = useTransition ? this._transitionDuration.some : this._transitionDuration.none;
         internalChartConfig.transition_duration = transitionDuration;
+        if (metadata.interval) {
+            dateFormat = options.intervals.formats[metadata.interval];
+            standardDateformatter = function (value) { return Formatters.formatDate(value, timezone, dateFormat); };
+            customDateFormatter = options.intervals.valueFormatter;
+            internalChartConfig.axis_x_tick_format = customDateFormatter || standardDateformatter;
+            internalChartConfig.axis_x_type = 'timeseries';
+        }
         this._currentDataset = dataset;
         this._chart.load({
             json: dataset.getData(),
@@ -76,13 +74,13 @@ var Chart = (function () {
         this._rendered = false;
         Dom.removeAllChildren(this.targetElement);
     };
-    Chart.prototype._buildDataset = function (resultItems, metadata) {
+    Chart.prototype._buildDataset = function (results) {
         var _this = this;
         var options = this._options, formatters = {
-            selectLabelFormatter: function (select) { return options.fields[select] && options.fields[select].label ? options.fields[select].label : select; },
+            selectLabelFormatter: function (select) { return (options.fields[select] || Config.defaulField).label || select; },
             groupValueFormatter: function (groupByName, groupValue) { return _this._formatGroupValue(groupByName, groupValue); }
-        }, isGroupedInterval = metadata.interval && metadata.groups.length;
-        return isGroupedInterval ? new GroupedIntervalDataset(resultItems, metadata, formatters) : new StandardDataset(resultItems, metadata, formatters);
+        };
+        return new Dataset.ChartDataset(results, formatters);
     };
     Chart.prototype._showTitle = function () {
         var options = this._options, titleText = options.title ? options.title.toString() : '', showTitle = titleText.length > 0;
@@ -90,24 +88,24 @@ var Chart = (function () {
         this._titleElement.style.display = !showTitle ? 'none' : '';
     };
     Chart.prototype._formatValueForLabel = function (label, value) {
-        var dataset = this._currentDataset, select = this._currentDataset.getSelect(label), options = this._options, fieldOption = options.fields[select], valueFormatter = fieldOption.valueFormatter;
+        var dataset = this._currentDataset, select = this._currentDataset.getSelect(label), options = this._options, fieldOption = options.fields[select] || Config.defaulField, valueFormatter = fieldOption.valueFormatter;
         if (valueFormatter) {
             return valueFormatter(value);
         }
         return value;
     };
     Chart.prototype._formatGroupValue = function (groupByName, groupValue) {
-        var fieldOption = this._options.fields[groupByName], valueFormatter = fieldOption.valueFormatter;
+        var fieldOption = this._options.fields[groupByName] || Config.defaulField, valueFormatter = fieldOption.valueFormatter;
         if (valueFormatter) {
             return valueFormatter(groupValue);
         }
         return groupValue;
     };
-    Chart.prototype._renderChart = function (metadata) {
+    Chart.prototype._renderChart = function () {
         var _this = this;
         if (this._rendered)
             return;
-        var options = this._options, connectChartContainer = document.createElement('div'), c3Element = document.createElement('div'), rootElement = this.targetElement, titleElement = document.createElement('span'), timezone = options.timezone || metadata.timezone, dateFormat = null, standardDateformatter = function (value) { return Formatters.formatDate(value, timezone, dateFormat); }, customDateFormatter = options.intervals.valueFormatter, tooltipValueFormatter = function (value, ratio, id, index) { return _this._formatValueForLabel(id, value); }, config = {
+        var options = this._options, chartTypeClass = 'connect-chart-' + options.chart.type, connectChartContainer = Dom.createElement('div', 'connect-viz', 'connect-chart', chartTypeClass), c3Element = Dom.createElement('div', 'connect-viz-result'), rootElement = this.targetElement, titleElement = Dom.createElement('span', 'connect-viz-title'), tooltipValueFormatter = function (value, ratio, id, index) { return _this._formatValueForLabel(id, value); }, config = {
             bindto: c3Element,
             size: {
                 height: options.chart.height
@@ -145,20 +143,10 @@ var Chart = (function () {
             }
         };
         this.clear();
-        titleElement.className = 'connect-viz-title';
-        c3Element.className = 'connect-viz-result';
-        connectChartContainer.className = 'connect-viz connect-chart connect-chart-' + options.chart.type;
         connectChartContainer.appendChild(titleElement);
         connectChartContainer.appendChild(c3Element);
         rootElement.appendChild(connectChartContainer);
         config[options.chart.type] = options[options.chart.type];
-        if (metadata.interval) {
-            dateFormat = options.intervals.formats[metadata.interval];
-            config.data['xFormat'] = '%Y-%m-%dT%H:%M:%SZ';
-            config.data['xLocaltime'] = false;
-            config.axis.x.type = 'timeseries';
-            config.axis.x.tick.format = customDateFormatter || standardDateformatter;
-        }
         this._rendered = true;
         this._titleElement = titleElement;
         this._showTitle();
@@ -168,28 +156,123 @@ var Chart = (function () {
 })();
 module.exports = Chart;
 
-},{"../config":7,"../dom":9,"../formatters":11,"../loader":13,"../palette":14,"../result-handling":15,"./grouped-interval-dataset":5,"./standard-dataset":6,"underscore":27}],3:[function(require,module,exports){
+},{"../config":5,"../dom":7,"../formatters":9,"../loader":11,"../palette":12,"../result-handling":13,"./dataset":3,"underscore":25}],3:[function(require,module,exports){
 var _ = require('underscore');
 var Dataset;
 (function (Dataset) {
-    function getLabels(labels) {
-        return _.pluck(labels, 'label');
-    }
-    Dataset.getLabels = getLabels;
-    function getSelect(selectLabels, label) {
-        return _.find(selectLabels, function (selectLabel) { return selectLabel.label === label; }).select;
-    }
-    Dataset.getSelect = getSelect;
     function getGroupPath(result, groups, formatter) {
         return groups.map(function (group) { return formatter(group, result[group]); }).join(' / ');
     }
-    Dataset.getGroupPath = getGroupPath;
+    var ChartDataset = (function () {
+        function ChartDataset(results, formatters) {
+            this._selectLabels = [];
+            this._data = [];
+            var metadata = results.metadata;
+            var isGroupedInterval = metadata.interval && metadata.groups.length, mapper = isGroupedInterval ? new GroupedIntervalMapper(results, formatters) : new StandardMapper(results, formatters);
+            this._selectLabels = mapper.mapLabels();
+            this._data = mapper.mapData();
+        }
+        ChartDataset.prototype.getLabels = function () {
+            return _.pluck(this._selectLabels, 'label');
+        };
+        ChartDataset.prototype.getSelect = function (label) {
+            return _.find(this._selectLabels, function (selectLabel) { return selectLabel.label === label; }).select;
+        };
+        ChartDataset.prototype.getData = function () {
+            return this._data;
+        };
+        return ChartDataset;
+    })();
+    Dataset.ChartDataset = ChartDataset;
+    var GroupedIntervalMapper = (function () {
+        function GroupedIntervalMapper(results, formatters) {
+            this._selectLabelFormatter = formatters.selectLabelFormatter;
+            this._groupValueFormatter = formatters.groupValueFormatter;
+            this._metadata = results.metadata;
+            this._selects = results.selects();
+            this._results = results.results;
+        }
+        GroupedIntervalMapper.prototype.mapLabels = function () {
+            var _this = this;
+            var metadata = this._metadata, results = this._results;
+            return _.chain(results).map(function (result) { return result['results']; }).flatten().map(function (result) {
+                var groupPath = getGroupPath(result, metadata.groups, _this._groupValueFormatter);
+                return _.map(_this._selects, function (select) { return {
+                    select: select,
+                    label: _this._generateLabelForResult(metadata, result, select, groupPath)
+                }; });
+            }).flatten().value();
+        };
+        GroupedIntervalMapper.prototype.mapData = function () {
+            var _this = this;
+            var metadata = this._metadata, results = this._results;
+            return _.chain(results).map(function (result) {
+                var start = result.interval.start, mappedResult = _this._mapResult(result);
+                mappedResult['_x'] = start;
+                return mappedResult;
+            }).value();
+        };
+        GroupedIntervalMapper.prototype._mapResult = function (result) {
+            var _this = this;
+            var metadata = this._metadata;
+            return _.reduce(result.results, function (mappedResult, intervalResult) {
+                var groupPath = getGroupPath(intervalResult, metadata.groups, _this._groupValueFormatter);
+                _.each(_this._selects, function (select) {
+                    var label = _this._generateLabelForResult(metadata, mappedResult, select, groupPath);
+                    mappedResult[label] = intervalResult[select];
+                });
+                return mappedResult;
+            }, {});
+        };
+        GroupedIntervalMapper.prototype._generateLabelForResult = function (metadata, result, select, groupPath) {
+            return this._selects.length > 1 ? groupPath + ' - ' + this._selectLabelFormatter(select) : groupPath;
+        };
+        return GroupedIntervalMapper;
+    })();
+    var StandardMapper = (function () {
+        function StandardMapper(results, formatters) {
+            this._selectLabelFormatter = formatters.selectLabelFormatter;
+            this._groupValueFormatter = formatters.groupValueFormatter;
+            this._metadata = results.metadata;
+            this._selects = results.selects();
+            this._results = results.results;
+        }
+        StandardMapper.prototype.mapLabels = function () {
+            var _this = this;
+            var metadata = this._metadata;
+            return _.map(this._selects, function (select) { return {
+                select: select,
+                label: _this._selectLabelFormatter(select)
+            }; });
+        };
+        StandardMapper.prototype.mapData = function () {
+            var _this = this;
+            var metadata = this._metadata, results = this._results;
+            return _.map(results, function (result) {
+                var isGrouped = _this._metadata.groups.length > 0, interval = result['interval'], mappedResult = _this._mapResult(result), groupPath = getGroupPath(result, metadata.groups, _this._groupValueFormatter);
+                if (interval) {
+                    mappedResult['_x'] = interval['start'];
+                }
+                else {
+                    mappedResult['_x'] = isGrouped ? groupPath : ' ';
+                }
+                return mappedResult;
+            });
+        };
+        StandardMapper.prototype._mapResult = function (result) {
+            var _this = this;
+            var mappedResult = {}, origResult = this._metadata.interval ? result.results[0] : result;
+            _.each(this._selects, function (select) { return mappedResult[_this._selectLabelFormatter(select)] = origResult[select]; });
+            return mappedResult;
+        };
+        return StandardMapper;
+    })();
 })(Dataset || (Dataset = {}));
 module.exports = Dataset;
 
-},{"underscore":27}],4:[function(require,module,exports){
+},{"underscore":25}],4:[function(require,module,exports){
 var Config = require('../config');
-var StandardDataset = require('./standard-dataset');
+var Dataset = require('./dataset');
 var _ = require('underscore');
 var Palette = require('../palette');
 var Loader = require('../loader');
@@ -224,37 +307,35 @@ var Gauge = (function () {
         }
         return options;
     };
-    Gauge.prototype._initializeFieldOptions = function (metadata) {
-        var fields = metadata.selects.concat(metadata.groups), firstSelect = metadata.selects[0], options = this._options, fieldOptions = options.fields;
-        _.each(fields, function (fieldName) {
-            fieldOptions[fieldName] = fieldOptions[fieldName] || {};
+    Gauge.prototype.displayData = function (resultsPromise, reRender) {
+        var _this = this;
+        if (reRender === void 0) { reRender = true; }
+        resultsPromise = resultsPromise.then(function (results) {
+            var resultsCopy = results.clone();
+            return _this._loadMinMax(resultsCopy);
         });
-        options.gauge.label = _.clone(options.gauge.label);
-        fieldOptions[firstSelect].valueFormatter = fieldOptions[firstSelect].valueFormatter || options.gauge.label.format;
-        options.gauge.label.format = fieldOptions[firstSelect].valueFormatter;
+        this._renderGauge();
+        this._resultHandler.handleResult(resultsPromise, this, this._loadData, reRender);
     };
-    Gauge.prototype.displayData = function (resultsPromise, metadata, fullReload) {
-        if (fullReload === void 0) { fullReload = true; }
-        var parsedMetaData = this._parseMetaData(metadata);
-        this._initializeFieldOptions(parsedMetaData);
-        this._renderGauge(parsedMetaData);
-        this._resultHandler.handleResult(resultsPromise, parsedMetaData, this, this._loadData, fullReload);
-    };
-    Gauge.prototype._parseMetaData = function (metadata) {
-        var options = this._options, typeOptions = options.gauge, parsedMetaData = _.clone(metadata), filteredSelected = _.without(metadata.selects, this._minSelectName, this._maxSelectName);
-        parsedMetaData.selects = filteredSelected;
-        return parsedMetaData;
-    };
-    Gauge.prototype._loadData = function (results, metadata, fullReload) {
-        var options = this._options, typeOptions = options.gauge, resultItems = results.results, dataset = this._buildDataset(resultItems, metadata), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = Palette.getSwatch(uniqueKeys, options.gauge.color ? [options.gauge.color] : null), setMinProperty = this._minSelectName && resultItems.length, setMaxProperty = this._maxSelectName && resultItems.length, minConfigProperty = 'gauge_min', maxConfigProperty = 'gauge_max', showLabelConfigProperty = 'gauge_label_show', internalGaugeConfig = this._gauge.internal.config, transitionDuration = !options.transitionOnReload && fullReload ? this._transitionDuration.none : this._transitionDuration.some;
-        internalGaugeConfig.transition_duration = transitionDuration;
+    Gauge.prototype._loadMinMax = function (results) {
+        var resultItems = results.results, internalGaugeConfig = this._gauge.internal.config, setMinProperty = this._minSelectName && resultItems.length, setMaxProperty = this._maxSelectName && resultItems.length, showLabelConfigProperty = 'gauge_label_show', minConfigProperty = 'gauge_min', resultItems = results.results, maxConfigProperty = 'gauge_max';
         if (setMinProperty) {
             internalGaugeConfig[minConfigProperty] = resultItems[0][this._minSelectName];
             internalGaugeConfig[showLabelConfigProperty] = true;
+            delete resultItems[0][this._minSelectName];
         }
         if (setMaxProperty) {
             internalGaugeConfig[maxConfigProperty] = resultItems[0][this._maxSelectName];
             internalGaugeConfig[showLabelConfigProperty] = true;
+            delete resultItems[0][this._maxSelectName];
+        }
+        return results;
+    };
+    Gauge.prototype._loadData = function (results, reRender) {
+        var options = this._options, internalGaugeConfig = this._gauge.internal.config, select = _.first(results.selects()), typeOptions = options.gauge, resultItems = results.results, dataset = this._buildDataset(results), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = Palette.getSwatch(uniqueKeys, options.gauge.color ? [options.gauge.color] : null), transitionDuration = !options.transitionOnReload && reRender ? this._transitionDuration.none : this._transitionDuration.some;
+        internalGaugeConfig.transition_duration = transitionDuration;
+        if ((options.fields[select] || Config.defaulField).valueFormatter) {
+            internalGaugeConfig.gauge_label_format = options.fields[select].valueFormatter;
         }
         this._currentDataset = dataset;
         this._gauge.load({
@@ -271,13 +352,13 @@ var Gauge = (function () {
         this._rendered = false;
         Dom.removeAllChildren(this.targetElement);
     };
-    Gauge.prototype._buildDataset = function (resultItems, metadata) {
+    Gauge.prototype._buildDataset = function (results) {
         var _this = this;
         var options = this._options, formatters = {
-            selectLabelFormatter: function (select) { return options.fields[select] && options.fields[select].label ? options.fields[select].label : select; },
+            selectLabelFormatter: function (select) { return (options.fields[select] || Config.defaulField).label || select; },
             groupValueFormatter: function (groupByName, groupValue) { return _this._formatGroupValue(groupByName, groupValue); }
         };
-        return new StandardDataset(resultItems, metadata, formatters);
+        return new Dataset.ChartDataset(results, formatters);
     };
     Gauge.prototype._showTitle = function () {
         var options = this._options, titleText = options.title ? options.title.toString() : '', showTitle = titleText.length > 0;
@@ -285,24 +366,24 @@ var Gauge = (function () {
         this._titleElement.style.display = !showTitle ? 'none' : '';
     };
     Gauge.prototype._formatValueForLabel = function (label, value) {
-        var dataset = this._currentDataset, select = this._currentDataset.getSelect(label), options = this._options, fieldOption = options.fields[select], valueFormatter = fieldOption.valueFormatter;
+        var dataset = this._currentDataset, select = this._currentDataset.getSelect(label), options = this._options, fieldOption = options.fields[select] || Config.defaulField, valueFormatter = fieldOption.valueFormatter;
         if (valueFormatter) {
             return valueFormatter(value);
         }
         return value;
     };
     Gauge.prototype._formatGroupValue = function (groupByName, groupValue) {
-        var fieldOption = this._options.fields[groupByName], valueFormatter = fieldOption.valueFormatter;
+        var fieldOption = this._options.fields[groupByName] || Config.defaulField, valueFormatter = fieldOption.valueFormatter;
         if (valueFormatter) {
             return valueFormatter(groupValue);
         }
         return groupValue;
     };
-    Gauge.prototype._renderGauge = function (metadata) {
+    Gauge.prototype._renderGauge = function () {
         var _this = this;
         if (this._rendered)
             return;
-        var options = this._options, connectGaugeContainer = document.createElement('div'), c3Element = document.createElement('div'), rootElement = this.targetElement, titleElement = document.createElement('span'), timezone = options.timezone || metadata.timezone, dateFormat = null, tooltipValueFormatter = function (value, ratio, id, index) { return _this._formatValueForLabel(id, value); }, config = {
+        var options = this._options, connectGaugeContainer = Dom.createElement('div', 'connect-viz', 'connect-chart', 'connect-chart-gauge'), c3Element = Dom.createElement('div', 'connect-viz-result'), rootElement = this.targetElement, titleElement = Dom.createElement('span', 'connect-viz-title'), dateFormat = null, tooltipValueFormatter = function (value, ratio, id, index) { return _this._formatValueForLabel(id, value); }, config = {
             bindto: c3Element,
             padding: options.gauge.padding,
             data: {
@@ -319,9 +400,6 @@ var Gauge = (function () {
             }
         };
         this.clear();
-        titleElement.className = 'connect-viz-title';
-        c3Element.className = 'connect-viz-result';
-        connectGaugeContainer.className = 'connect-viz connect-chart connect-chart-gauge';
         connectGaugeContainer.appendChild(titleElement);
         connectGaugeContainer.appendChild(c3Element);
         rootElement.appendChild(connectGaugeContainer);
@@ -335,117 +413,7 @@ var Gauge = (function () {
 })();
 module.exports = Gauge;
 
-},{"../config":7,"../dom":9,"../loader":13,"../palette":14,"../result-handling":15,"./standard-dataset":6,"underscore":27}],5:[function(require,module,exports){
-var Dataset = require('./dataset');
-var _ = require('underscore');
-var GroupedIntervalDataset = (function () {
-    function GroupedIntervalDataset(results, metadata, formatters) {
-        this._selectLabels = [];
-        this._data = [];
-        this._metadata = metadata;
-        this._selectLabelFormatter = formatters.selectLabelFormatter;
-        this._groupValueFormatter = formatters.groupValueFormatter;
-        this._selectLabels = this._mapLabels(results);
-        this._data = this._mapData(results);
-    }
-    GroupedIntervalDataset.prototype.getLabels = function () {
-        return Dataset.getLabels(this._selectLabels);
-    };
-    GroupedIntervalDataset.prototype.getSelect = function (label) {
-        return Dataset.getSelect(this._selectLabels, label);
-    };
-    GroupedIntervalDataset.prototype.getData = function () {
-        return this._data;
-    };
-    GroupedIntervalDataset.prototype._mapLabels = function (results) {
-        var _this = this;
-        return _.chain(results).map(function (result) { return result['results']; }).flatten().map(function (result) {
-            var groupPath = Dataset.getGroupPath(result, _this._metadata.groups, _this._groupValueFormatter);
-            return _.map(_this._metadata.selects, function (select) { return {
-                select: select,
-                label: _this._generateLabelForResult(result, select, groupPath)
-            }; });
-        }).flatten().value();
-    };
-    GroupedIntervalDataset.prototype._mapData = function (results) {
-        var _this = this;
-        return _.chain(results).map(function (result) {
-            var start = result.interval.start, mappedResult = _this._mapResult(result);
-            mappedResult['_x'] = start;
-            return mappedResult;
-        }).value();
-    };
-    GroupedIntervalDataset.prototype._mapResult = function (result) {
-        var _this = this;
-        return _.reduce(result.results, function (mappedResult, intervalResult) {
-            var groupPath = Dataset.getGroupPath(intervalResult, _this._metadata.groups, _this._groupValueFormatter);
-            _.each(_this._metadata.selects, function (select) {
-                var label = _this._generateLabelForResult(mappedResult, select, groupPath);
-                mappedResult[label] = intervalResult[select];
-            });
-            return mappedResult;
-        }, {});
-    };
-    GroupedIntervalDataset.prototype._generateLabelForResult = function (result, select, groupPath) {
-        return this._metadata.selects.length > 1 ? groupPath + ' - ' + this._selectLabelFormatter(select) : groupPath;
-    };
-    return GroupedIntervalDataset;
-})();
-module.exports = GroupedIntervalDataset;
-
-},{"./dataset":3,"underscore":27}],6:[function(require,module,exports){
-var Dataset = require('./dataset');
-var _ = require('underscore');
-var StandardDataset = (function () {
-    function StandardDataset(results, metadata, formatters) {
-        this._selectLabels = [];
-        this._data = [];
-        this._metadata = metadata;
-        this._selectLabelFormatter = formatters.selectLabelFormatter;
-        this._groupValueFormatter = formatters.groupValueFormatter;
-        this._selectLabels = this._mapLabels(results);
-        this._data = this._mapData(results);
-    }
-    StandardDataset.prototype.getLabels = function () {
-        return Dataset.getLabels(this._selectLabels);
-    };
-    StandardDataset.prototype.getSelect = function (label) {
-        return Dataset.getSelect(this._selectLabels, label);
-    };
-    StandardDataset.prototype.getData = function () {
-        return this._data;
-    };
-    StandardDataset.prototype._mapLabels = function (results) {
-        var _this = this;
-        return _.map(this._metadata.selects, function (select) { return {
-            select: select,
-            label: _this._selectLabelFormatter(select)
-        }; });
-    };
-    StandardDataset.prototype._mapData = function (results) {
-        var _this = this;
-        return _.map(results, function (result) {
-            var isGrouped = _this._metadata.groups.length > 0, interval = result['interval'], mappedResult = _this._mapResult(result), groupPath = Dataset.getGroupPath(result, _this._metadata.groups, _this._groupValueFormatter);
-            if (interval) {
-                mappedResult['_x'] = interval['start'];
-            }
-            else {
-                mappedResult['_x'] = isGrouped ? groupPath : ' ';
-            }
-            return mappedResult;
-        });
-    };
-    StandardDataset.prototype._mapResult = function (result) {
-        var _this = this;
-        var mappedResult = {}, origResult = this._metadata.interval ? result.results[0] : result;
-        _.each(this._metadata.selects, function (select) { return mappedResult[_this._selectLabelFormatter(select)] = origResult[select]; });
-        return mappedResult;
-    };
-    return StandardDataset;
-})();
-module.exports = StandardDataset;
-
-},{"./dataset":3,"underscore":27}],7:[function(require,module,exports){
+},{"../config":5,"../dom":7,"../loader":11,"../palette":12,"../result-handling":13,"./dataset":3,"underscore":25}],5:[function(require,module,exports){
 var Config;
 (function (Config) {
     Config.defaultTimeSeriesFormats = {
@@ -481,34 +449,46 @@ var Config;
         },
         bar: {}
     };
+    Config.defaulField = {
+        label: undefined,
+        valueFormatter: undefined
+    };
 })(Config || (Config = {}));
 module.exports = Config;
 
-},{}],8:[function(require,module,exports){
-var ErrorHandling = require('./error-handling');
+},{}],6:[function(require,module,exports){
 var DataVisualization = (function () {
-    function DataVisualization(query, visualization) {
-        this._query = query;
+    function DataVisualization(data, visualization) {
+        this._queryResultsFactory = this.getQueryResultsFactory(data);
         this._visualization = visualization;
         this._isLoading = false;
-        this.refresh();
+        this.refresh(true);
     }
-    DataVisualization.prototype.refresh = function () {
+    DataVisualization.prototype.refresh = function (reRender) {
         var _this = this;
+        if (reRender === void 0) { reRender = false; }
         if (this._isLoading)
             return;
         this._isLoading = true;
-        var targetElement = this._visualization.targetElement, qryPromise = this._query.execute(), loadingTracker = qryPromise.then(function (data) {
+        var targetElement = this._visualization.targetElement, loadingTracker = this._queryResultsFactory().then(function (data) {
             _this._isLoading = false;
         });
-        ErrorHandling.clearError(targetElement);
-        this._visualization.displayData(qryPromise, this._query.metadata());
+        this._visualization.displayData(this._queryResultsFactory(), reRender);
+    };
+    DataVisualization.prototype.update = function (data, reRender) {
+        if (reRender === void 0) { reRender = true; }
+        this._isLoading = false;
+        this._queryResultsFactory = this.getQueryResultsFactory(data);
+        this.refresh(reRender);
+    };
+    DataVisualization.prototype.getQueryResultsFactory = function (data) {
+        return data.execute ? function () { return data.execute(); } : data;
     };
     return DataVisualization;
 })();
 module.exports = DataVisualization;
 
-},{"./error-handling":10}],9:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 var _ = require('underscore');
 function getElement(selector) {
     if (_.isString(selector))
@@ -524,8 +504,20 @@ function removeAllChildren(targetElement) {
         elementToClear.removeChild(elementToClear.firstChild);
 }
 exports.removeAllChildren = removeAllChildren;
+function createElement(tag) {
+    var classNames = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+        classNames[_i - 1] = arguments[_i];
+    }
+    var element = document.createElement(tag);
+    _.each(classNames, function (className) {
+        element.classList.add(className);
+    });
+    return element;
+}
+exports.createElement = createElement;
 
-},{"underscore":27}],10:[function(require,module,exports){
+},{"underscore":25}],8:[function(require,module,exports){
 var ErrorHandling;
 (function (ErrorHandling) {
     var errorTypes = {
@@ -598,7 +590,7 @@ var ErrorHandling;
 })(ErrorHandling || (ErrorHandling = {}));
 module.exports = ErrorHandling;
 
-},{}],11:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 var moment = require('moment-timezone');
 var _ = require('underscore');
 function formatDate(dateToFormat, timezone, format) {
@@ -613,7 +605,7 @@ function formatDate(dateToFormat, timezone, format) {
 }
 exports.formatDate = formatDate;
 
-},{"moment-timezone":24,"underscore":27}],12:[function(require,module,exports){
+},{"moment-timezone":22,"underscore":25}],10:[function(require,module,exports){
 (function (global){
 var Viz = require('./viz');
 var applyMixins = require('./apply-mixins');
@@ -646,7 +638,7 @@ else if (typeof global !== 'undefined') {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./apply-mixins":1,"./viz":21,"tipi-connect":22}],13:[function(require,module,exports){
+},{"./apply-mixins":1,"./viz":19,"tipi-connect":20}],11:[function(require,module,exports){
 var Loader = (function () {
     function Loader(targetElement) {
         this._vizSelector = '.connect-viz';
@@ -689,7 +681,7 @@ var Loader = (function () {
 })();
 module.exports = Loader;
 
-},{}],14:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 var _ = require('underscore');
 var Palette;
 (function (Palette) {
@@ -704,7 +696,7 @@ var Palette;
 })(Palette || (Palette = {}));
 module.exports = Palette;
 
-},{"underscore":27}],15:[function(require,module,exports){
+},{"underscore":25}],13:[function(require,module,exports){
 var ErrorHandling = require('./error-handling');
 var ResultHandling;
 (function (ResultHandling) {
@@ -714,10 +706,10 @@ var ResultHandling;
             this._lastRequestProcessed = 0;
             this._lastReloadTime = 0;
         }
-        ResultHandler.prototype.handleResult = function (resultsPromise, metadata, visualization, loadData, fullReload) {
+        ResultHandler.prototype.handleResult = function (resultsPromise, visualization, loadData, reRender) {
             var _this = this;
             var loader = visualization.loader, targetElement = visualization.targetElement, requestNumber, lastReloadTime;
-            if (fullReload || this._lastReloadTime === 0) {
+            if (reRender || this._lastReloadTime === 0) {
                 ErrorHandling.clearError(targetElement);
                 loader.show();
                 this._lastReloadTime = Date.now();
@@ -740,7 +732,7 @@ var ResultHandling;
                         ErrorHandling.displayFriendlyError(targetElement, 'noResults');
                         return;
                     }
-                    loadData.call(visualization, results, metadata, fullReload);
+                    loadData.call(visualization, results, reRender);
                 }
                 catch (error) {
                     ErrorHandling.logError(error);
@@ -749,6 +741,7 @@ var ResultHandling;
             }, function (error) {
                 loader.hide();
                 ErrorHandling.clearError(targetElement);
+                ErrorHandling.logError(error);
                 ErrorHandling.handleError(targetElement, error);
             });
         };
@@ -758,15 +751,16 @@ var ResultHandling;
 })(ResultHandling || (ResultHandling = {}));
 module.exports = ResultHandling;
 
-},{"./error-handling":10}],16:[function(require,module,exports){
+},{"./error-handling":8}],14:[function(require,module,exports){
 var _ = require('underscore');
 var Formatters = require('../formatters');
 var TableDataset = (function () {
-    function TableDataset(metadata, options, results) {
-        this.headerRow = this._buildHeaderRow(metadata, options, results);
-        this.contentRows = this._buildContentRows(metadata, options, results);
+    function TableDataset(results, options) {
+        var selects = results.selects();
+        this.headerRow = this._buildHeaderRow(results.metadata, selects, results.results, options);
+        this.contentRows = this._buildContentRows(results.metadata, selects, results.results, options);
     }
-    TableDataset.prototype._buildHeaderRow = function (metadata, options, results) {
+    TableDataset.prototype._buildHeaderRow = function (metadata, selects, results, options) {
         var isColoumnNumeric = function (key) {
             if (metadata.interval) {
                 var firstIntervalWithDesiredCol = _(results).find(function (interval) {
@@ -789,7 +783,7 @@ var TableDataset = (function () {
         var createGroupedHeaderCell = _.partial(createHeaderCell, true);
         var createSelectHeaderCell = _.partial(createHeaderCell, false);
         var groupHeaderCells = _(metadata.groups).map(function (key) { return createGroupedHeaderCell(key); });
-        var selectHeaderCells = _(metadata.selects).map(function (key) { return createSelectHeaderCell(key); });
+        var selectHeaderCells = _(selects).map(function (key) { return createSelectHeaderCell(key); });
         if (metadata.interval) {
             var intervalHeader = {
                 isGrouped: false,
@@ -801,7 +795,7 @@ var TableDataset = (function () {
         }
         return _.union(groupHeaderCells, selectHeaderCells);
     };
-    TableDataset.prototype._buildContentRows = function (metadata, options, results) {
+    TableDataset.prototype._buildContentRows = function (metadata, selects, results, options) {
         var createContentCell = function (isGrouped, result, key) {
             var optionsForField = options.fields[key];
             var rawValue = result[key];
@@ -816,9 +810,8 @@ var TableDataset = (function () {
             };
         };
         var createIntervalCell = function (result) {
-            var serverTimeFormat = d3.time.format('%Y-%m-%dT%H:%M:%SZ');
-            var startDate = serverTimeFormat.parse(result.interval.start);
-            var endDate = serverTimeFormat.parse(result.interval.end);
+            var startDate = result.interval.start;
+            var endDate = result.interval.end;
             var defaultFormat = function (start, end) {
                 var timeFormat = options.intervals.formats[metadata.interval];
                 var timezone = options.timezone || metadata.timezone;
@@ -826,7 +819,7 @@ var TableDataset = (function () {
                 var endDate = Formatters.formatDate(end, timezone, timeFormat);
                 return startDate + ' - ' + endDate;
             };
-            var intervalFormatter = options.intervals.valueFormatter ? options.intervals.valueFormatter : defaultFormat;
+            var intervalFormatter = options.intervals.valueFormatter || defaultFormat;
             return {
                 isGrouped: false,
                 rawValue: result.interval,
@@ -839,7 +832,7 @@ var TableDataset = (function () {
         var createSelectContentCell = _.partial(createContentCell, false);
         var createRow = function (rowResult, intervalCell) {
             var groupedContentCells = _(metadata.groups).map(function (key) { return createGroupedContentCell(rowResult, key); });
-            var selectContentCells = _(metadata.selects).map(function (key) { return createSelectContentCell(rowResult, key); });
+            var selectContentCells = _(selects).map(function (key) { return createSelectContentCell(rowResult, key); });
             if (intervalCell) {
                 return _.union([intervalCell], groupedContentCells, selectContentCells);
             }
@@ -859,7 +852,7 @@ var TableDataset = (function () {
 })();
 exports.TableDataset = TableDataset;
 
-},{"../formatters":11,"underscore":27}],17:[function(require,module,exports){
+},{"../formatters":9,"underscore":25}],15:[function(require,module,exports){
 var _ = require('underscore');
 function renderDataset(dataset) {
     return template()({
@@ -869,43 +862,43 @@ function renderDataset(dataset) {
 exports.renderDataset = renderDataset;
 function template() {
     return _.template('\
-		<div class="header-background"> </div>\
-		<div class="connect-table-scrolling-inner">\
-			<table cellspacing="0">\
-				<thead>\
-					<tr>\
-						<% _(data.headerRow).each(function(headerCell) { %>\
-							<% if (headerCell.isInterval) { %>\
-								<th class="isInterval"><span><%= headerCell.title %></span><%= headerCell.title %></th>\
-							<% } else if (headerCell.isGrouped) { %>\
-								<th class="isGrouped<% if (headerCell.isNumeric) { %> isNumeric <% } %>"><span><%= headerCell.title %></span><%= headerCell.title %></th>\
-							<% } else { %>\
-								<th <% if (headerCell.isNumeric) { %> class="isNumeric" <% } %>><span><%= headerCell.title %></span><%= headerCell.title %></th>\
-							<% } %>\
-						<% }) %>\
-					</tr>\
-				</thead>\
-				<tbody>\
-					<% _(data.contentRows).each(function(row) { %>\
-						<tr>\
-							<% _(row).each(function(cell) { %>\
-								<% if (cell.isInterval) { %>\
-									<th class="isInterval"><%= cell.displayedValue %></th>\
-								<% } else if (cell.isGrouped) { %>\
-									<th class="isGrouped <% if (cell.isNumeric) { %> isNumeric <% } %>"><%= cell.displayedValue %></th>\
-								<% } else { %>\
-									<td <% if (cell.isNumeric) { %> class="isNumeric" <% } %>><%= cell.displayedValue %></td>\
-								<% } %>\
-							<% }) %>\
-						</tr>\
-					<% }) %>\
-				</tbody>\
-			</table>\
-		</div>\
-	');
+        <div class="header-background"> </div>\
+        <div class="connect-table-scrolling-inner">\
+            <table cellspacing="0">\
+                <thead>\
+                    <tr>\
+                        <% _(data.headerRow).each(function(headerCell) { %>\
+                            <% if (headerCell.isInterval) { %>\
+                                <th class="isInterval"><span><%= headerCell.title %></span><%= headerCell.title %></th>\
+                            <% } else if (headerCell.isGrouped) { %>\
+                                <th class="isGrouped<% if (headerCell.isNumeric) { %> isNumeric <% } %>"><span><%= headerCell.title %></span><%= headerCell.title %></th>\
+                            <% } else { %>\
+                                <th <% if (headerCell.isNumeric) { %> class="isNumeric" <% } %>><span><%= headerCell.title %></span><%= headerCell.title %></th>\
+                            <% } %>\
+                        <% }) %>\
+                    </tr>\
+                </thead>\
+                <tbody>\
+                    <% _(data.contentRows).each(function(row) { %>\
+                        <tr>\
+                            <% _(row).each(function(cell) { %>\
+                                <% if (cell.isInterval) { %>\
+                                    <th class="isInterval"><%= cell.displayedValue %></th>\
+                                <% } else if (cell.isGrouped) { %>\
+                                    <th class="isGrouped <% if (cell.isNumeric) { %> isNumeric <% } %>"><%= cell.displayedValue %></th>\
+                                <% } else { %>\
+                                    <td <% if (cell.isNumeric) { %> class="isNumeric" <% } %>><%= cell.displayedValue %></td>\
+                                <% } %>\
+                            <% }) %>\
+                        </tr>\
+                    <% }) %>\
+                </tbody>\
+            </table>\
+        </div>\
+    ');
 }
 
-},{"underscore":27}],18:[function(require,module,exports){
+},{"underscore":25}],16:[function(require,module,exports){
 var _ = require('underscore');
 var Config = require('../config');
 var Dataset = require('./dataset');
@@ -927,13 +920,13 @@ var Table = (function () {
         this.loader = new Loader(this.targetElement);
         this._resultHandler = new ResultHandling.ResultHandler();
     }
-    Table.prototype.displayData = function (resultsPromise, metadata, fullReload) {
-        if (fullReload === void 0) { fullReload = true; }
-        this._renderTable(metadata);
-        this._resultHandler.handleResult(resultsPromise, metadata, this, this._loadData, fullReload);
+    Table.prototype.displayData = function (resultsPromise, reRender) {
+        if (reRender === void 0) { reRender = true; }
+        this._renderTable();
+        this._resultHandler.handleResult(resultsPromise, this, this._loadData, reRender);
     };
-    Table.prototype._loadData = function (results, metadata, fullReload) {
-        var dataset = new Dataset.TableDataset(metadata, this._options, results.results);
+    Table.prototype._loadData = function (results, reRender) {
+        var dataset = new Dataset.TableDataset(results, this._options);
         this._tableWrapper.innerHTML = TableRenderer.renderDataset(dataset);
         this._showTitle();
     };
@@ -946,15 +939,11 @@ var Table = (function () {
         this._titleElement.textContent = titleText;
         this._titleElement.style.display = !showTitle ? 'none' : '';
     };
-    Table.prototype._renderTable = function (metadata) {
+    Table.prototype._renderTable = function () {
         if (this._rendered)
             return;
-        var options = this._options, tableContainer = document.createElement('div'), tableWrapper = document.createElement('div'), results = document.createElement('div'), rootElement = this.targetElement, titleElement = document.createElement('span');
+        var options = this._options, tableContainer = Dom.createElement('div', 'connect-viz', 'connect-table'), tableWrapper = Dom.createElement('div', 'connect-table-wrapper'), results = Dom.createElement('div', 'connect-viz-result'), rootElement = this.targetElement, titleElement = Dom.createElement('span', 'connect-viz-title');
         this.clear();
-        tableContainer.className = 'connect-viz connect-table';
-        titleElement.className = 'connect-viz-title';
-        results.className = 'connect-viz-result';
-        tableWrapper.className = 'connect-table-wrapper';
         tableContainer.appendChild(titleElement);
         tableContainer.appendChild(results);
         results.appendChild(tableWrapper);
@@ -968,7 +957,7 @@ var Table = (function () {
 })();
 module.exports = Table;
 
-},{"../config":7,"../dom":9,"../loader":13,"../result-handling":15,"./dataset":16,"./renderer":17,"underscore":27}],19:[function(require,module,exports){
+},{"../config":5,"../dom":7,"../loader":11,"../result-handling":13,"./dataset":14,"./renderer":15,"underscore":25}],17:[function(require,module,exports){
 //Adapted from https://github.com/inorganik/countUp.js
 var lastTime = 0;
 var vendors = ['webkit', 'moz', 'ms', 'o'];
@@ -1059,7 +1048,7 @@ var Counter = (function () {
 })();
 module.exports = Counter;
 
-},{}],20:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 var ErrorHandling = require('../error-handling');
 var _ = require('underscore');
 var Loader = require('../loader');
@@ -1080,23 +1069,22 @@ var Text = (function () {
         this._currentValue = 0;
         this._resultHandler = new ResultHandling.ResultHandler();
     }
-    Text.prototype.displayData = function (resultsPromise, metadata, fullReload) {
-        if (fullReload === void 0) { fullReload = true; }
-        this._renderText(metadata);
-        if (!this._checkMetaDataIsApplicable(metadata)) {
+    Text.prototype.displayData = function (resultsPromise, reRender) {
+        if (reRender === void 0) { reRender = true; }
+        this._renderText();
+        this._resultHandler.handleResult(resultsPromise, this, this._loadData, reRender);
+    };
+    Text.prototype._loadData = function (results, reRender) {
+        var options = this._options, metadata = results.metadata, selects = results.selects(), onlyResult = results.results[0], aliasOfSelect = selects[0], defaultFieldOption = { valueFormatter: function (value) { return value; } }, fieldOption = options.fields[aliasOfSelect] || defaultFieldOption, valueFormatter = fieldOption.valueFormatter, value = onlyResult[aliasOfSelect], animationElementClassList = this._valueContainerElement.classList, isIncreasing = value > this._currentValue, hasChanged = valueFormatter(this._currentValue) !== valueFormatter(value), duration = options.text.counterDurationMs, transitionClass = isIncreasing ? 'connect-text-value-increasing' : 'connect-text-value-decreasing';
+        if (!this._checkMetaDataIsApplicable(metadata, selects)) {
             this._renderQueryNotApplicable();
             return;
         }
-        this._resultHandler.handleResult(resultsPromise, metadata, this, this._loadData, fullReload);
-    };
-    Text.prototype._loadData = function (results, metadata, fullReload) {
-        var options = this._options, onlyResult = results.results[0], aliasOfSelect = metadata.selects[0], defaultFieldOption = { valueFormatter: function (value) { return value; } }, fieldOption = options.fields[aliasOfSelect] || defaultFieldOption, valueFormatter = fieldOption.valueFormatter, value = onlyResult[aliasOfSelect], animationElementClassList = this._valueContainerElement.classList, isIncreasing = value > this._currentValue, hasChanged = valueFormatter(this._currentValue) !== valueFormatter(value), duration = options.text.counterDurationMs, transitionClass = isIncreasing ? 'connect-text-value-increasing' : 'connect-text-value-decreasing';
-        this._showTitle(metadata);
         this._currentValue = value;
         this._counter = this._counter || new Counter(this._valueTextElement, duration, valueFormatter);
         if (!hasChanged)
             return;
-        if (!options.transitionOnReload && fullReload) {
+        if (!options.transitionOnReload && reRender) {
             this._counter.setValue(value);
         }
         else {
@@ -1110,38 +1098,32 @@ var Text = (function () {
         this._rendered = false;
         Dom.removeAllChildren(this.targetElement);
     };
-    Text.prototype._checkMetaDataIsApplicable = function (metadata) {
-        var exactlyOneSelect = metadata.selects.length === 1, noGroupBys = metadata.groups.length === 0, noInterval = metadata.interval == null;
+    Text.prototype._checkMetaDataIsApplicable = function (metadata, selects) {
+        var exactlyOneSelect = selects.length === 1, noGroupBys = metadata.groups.length === 0, noInterval = metadata.interval == null;
         return exactlyOneSelect && noGroupBys && noInterval;
     };
-    Text.prototype._showTitle = function (metadata) {
-        var options = this._options, aliasOfSelect = metadata.selects[0], title = options.title, titleText = title && title.length > 0 ? title.toString() : aliasOfSelect, showTitle = title !== false;
+    Text.prototype._showTitle = function () {
+        var options = this._options, title = options.title, titleText = title && title.length > 0 ? title.toString() : '', showTitle = title !== false;
         this._titleElement.textContent = titleText;
         this._titleElement.style.display = !showTitle ? 'none' : '';
     };
-    Text.prototype._renderText = function (metadata) {
+    Text.prototype._renderText = function () {
         if (this._rendered)
             return;
-        var container = document.createElement('div'), label = document.createElement('span'), elementForWidget = this.targetElement, spanForValues = document.createElement('span'), valueTextElement = document.createElement('span'), valueIncreaseIconElement = document.createElement('span'), valueDecreaseIconElement = document.createElement('span'), valueElement = document.createElement('div');
-        container.className = 'connect-viz connect-text';
-        label.className = 'connect-viz-title';
-        valueElement.className = 'connect-viz-result';
-        valueTextElement.className = 'connect-text-value';
-        valueIncreaseIconElement.className = 'connect-text-icon connect-text-icon-increase ion-arrow-up-b';
-        valueDecreaseIconElement.className = 'connect-text-icon connect-text-icon-decrease ion-arrow-down-b';
+        var container = Dom.createElement('div', 'connect-viz', 'connect-text'), label = Dom.createElement('span', 'connect-viz-title'), elementForWidget = this.targetElement, spanForValues = Dom.createElement('span'), valueTextElement = Dom.createElement('span', 'connect-text-value'), valueIncreaseIconElement = Dom.createElement('span', 'connect-text-icon', 'connect-text-icon-increase', 'ion-arrow-up-b'), valueDecreaseIconElement = Dom.createElement('span', 'connect-text-icon', 'connect-text-icon-decrease', 'ion-arrow-down-b'), result = Dom.createElement('div', 'connect-viz-result');
         this.clear();
         spanForValues.appendChild(valueIncreaseIconElement);
         spanForValues.appendChild(valueDecreaseIconElement);
         spanForValues.appendChild(valueTextElement);
-        valueElement.appendChild(spanForValues);
+        result.appendChild(spanForValues);
         container.appendChild(label);
-        container.appendChild(valueElement);
+        container.appendChild(result);
         elementForWidget.appendChild(container);
-        this._valueContainerElement = valueElement;
+        this._valueContainerElement = result;
         this._valueTextElement = valueTextElement;
         this._valueTextElement.innerHTML = '&nbsp;';
         this._titleElement = label;
-        this._showTitle(metadata);
+        this._showTitle();
         this._rendered = true;
     };
     Text.prototype._renderQueryNotApplicable = function () {
@@ -1152,32 +1134,32 @@ var Text = (function () {
 })();
 module.exports = Text;
 
-},{"../dom":9,"../error-handling":10,"../loader":13,"../result-handling":15,"./counter":19,"underscore":27}],21:[function(require,module,exports){
+},{"../dom":7,"../error-handling":8,"../loader":11,"../result-handling":13,"./counter":17,"underscore":25}],19:[function(require,module,exports){
+var DataVisualization = require('./data-visualization');
+var Chart = require('./chart/chart');
+var Gauge = require('./chart/gauge');
+var Text = require('./text/text');
+var Table = require('./table/table');
 var Viz;
 (function (Viz) {
-    Viz.DataVisualization = require('./data-visualization');
-    Viz.Chart = require('./chart/chart');
-    Viz.Gauge = require('./chart/gauge');
-    Viz.Text = require('./text/text');
-    Viz.Table = require('./table/table');
     var Visualizations = (function () {
         function Visualizations() {
         }
-        Visualizations.prototype.chart = function (query, targetElement, chartOptions) {
-            var chart = new Viz.Chart(targetElement, chartOptions);
-            return new Viz.DataVisualization(query, chart);
+        Visualizations.prototype.chart = function (data, targetElement, chartOptions) {
+            var chart = new Chart(targetElement, chartOptions);
+            return new DataVisualization(data, chart);
         };
-        Visualizations.prototype.text = function (query, targetElement, textOptions) {
-            var text = new Viz.Text(targetElement, textOptions);
-            return new Viz.DataVisualization(query, text);
+        Visualizations.prototype.text = function (data, targetElement, textOptions) {
+            var text = new Text(targetElement, textOptions);
+            return new DataVisualization(data, text);
         };
-        Visualizations.prototype.table = function (query, targetElement, tableOptions) {
-            var table = new Viz.Table(targetElement, tableOptions);
-            return new Viz.DataVisualization(query, table);
+        Visualizations.prototype.table = function (data, targetElement, tableOptions) {
+            var table = new Table(targetElement, tableOptions);
+            return new DataVisualization(data, table);
         };
-        Visualizations.prototype.gauge = function (query, targetElement, chartOptions) {
-            var chart = new Viz.Gauge(targetElement, chartOptions);
-            return new Viz.DataVisualization(query, chart);
+        Visualizations.prototype.gauge = function (data, targetElement, gaugeOptions) {
+            var gauge = new Gauge(targetElement, gaugeOptions);
+            return new DataVisualization(data, gauge);
         };
         return Visualizations;
     })();
@@ -1185,11 +1167,11 @@ var Viz;
 })(Viz || (Viz = {}));
 module.exports = Viz;
 
-},{"./chart/chart":2,"./chart/gauge":4,"./data-visualization":8,"./table/table":18,"./text/text":20}],22:[function(require,module,exports){
+},{"./chart/chart":2,"./chart/gauge":4,"./data-visualization":6,"./table/table":16,"./text/text":18}],20:[function(require,module,exports){
 
-},{}],23:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 module.exports={
-	"version": "2015a",
+	"version": "2014j",
 	"zones": [
 		"Africa/Abidjan|LMT GMT|g.8 0|01|-2ldXH.Q",
 		"Africa/Accra|LMT GMT GHST|.Q 0 -k|012121212121212121212121212121212121212121212121|-26BbX.8 6tzX.8 MnE 1BAk MnE 1BAk MnE 1BAk MnE 1C0k MnE 1BAk MnE 1BAk MnE 1BAk MnE 1C0k MnE 1BAk MnE 1BAk MnE 1BAk MnE 1C0k MnE 1BAk MnE 1BAk MnE 1BAk MnE 1C0k MnE 1BAk MnE 1BAk MnE 1BAk MnE 1C0k MnE 1BAk MnE 1BAk MnE",
@@ -1240,7 +1222,7 @@ module.exports={
 		"America/Boise|PST PDT MST MWT MPT MDT|80 70 70 60 60 60|0101023425252525252525252525252525252525252525252525252525252525252525252525252525252525252525252525252525252525252525252525252525252525252525252525252|-261q0 1nX0 11B0 1nX0 8C10 JCL0 8x20 ix0 QwN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1fz0 1cN0 1cL0 1cN0 1cL0 Dd0 1Kn0 LB0 1BX0 1cN0 1fz0 1a10 1fz0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1fz0 1a10 1fz0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0",
 		"America/Cambridge_Bay|zzz MST MWT MPT MDDT MDT CST CDT EST|0 70 60 60 50 60 60 50 50|0123141515151515151515151515151515151515151515678651515151515151515151515151515151515151515151515151515151515151515151515151|-21Jc0 RO90 8x20 ix0 LCL0 1fA0 zgO0 1cL0 1cN0 1cL0 1cN0 1fz0 1a10 1fz0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11A0 1nX0 2K0 WQ0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0",
 		"America/Campo_Grande|LMT AMT AMST|3C.s 40 30|012121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212|-2glwl.w HdLl.w 1cc0 1e10 1bX0 Ezd0 So0 1vA0 Mn0 1BB0 ML0 1BB0 zX0 qe10 xb0 2ep0 nz0 1C10 zX0 1C10 LX0 1C10 Mn0 H210 Rb0 1tB0 IL0 1Fd0 FX0 1EN0 FX0 1HB0 Lz0 1EN0 Lz0 1C10 IL0 1HB0 Db0 1HB0 On0 1zd0 On0 1zd0 Lz0 1zd0 Rb0 1wN0 Wn0 1tB0 Rb0 1tB0 WL0 1tB0 Rb0 1zd0 On0 1HB0 FX0 1C10 Lz0 1Ip0 HX0 1zd0 On0 1HB0 IL0 1wp0 On0 1C10 Lz0 1C10 On0 1zd0 On0 1zd0 Rb0 1zd0 Lz0 1C10 Lz0 1C10 On0 1zd0 On0 1zd0 On0 1zd0 On0 1C10 Lz0 1C10 Lz0 1C10 On0 1zd0 On0 1zd0 Rb0 1wp0 On0 1C10 Lz0 1C10 On0 1zd0 On0 1zd0 On0 1zd0 On0 1C10 Lz0 1C10 Lz0 1C10 Lz0 1C10 On0 1zd0 Rb0 1wp0 On0 1C10 Lz0 1C10 On0 1zd0",
-		"America/Cancun|LMT CST EST EDT CDT|5L.4 60 50 40 50|0123232341414141414141414141414141414141412|-1UQG0 2q2o0 yLB0 1lb0 14p0 1lb0 14p0 Lz0 xB0 14p0 1nX0 11B0 1nX0 1fB0 WL0 1fB0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 Dd0",
+		"America/Cancun|LMT CST EST EDT CDT|5L.4 60 50 40 50|0123232341414141414141414141414141414141414141414141414141414141414141414141414141414141|-1UQG0 2q2o0 yLB0 1lb0 14p0 1lb0 14p0 Lz0 xB0 14p0 1nX0 11B0 1nX0 1fB0 WL0 1fB0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0",
 		"America/Caracas|CMT VET VET|4r.E 4u 40|0121|-2kV7w.k 28KM2.k 1IwOu",
 		"America/Cayenne|LMT GFT GFT|3t.k 40 30|012|-2mrwu.E 2gWou.E",
 		"America/Cayman|KMT EST|57.b 50|01|-2l1uQ.N",
@@ -1325,7 +1307,7 @@ module.exports={
 		"America/Resolute|zzz CST CDDT CDT EST|0 60 40 50 50|012131313131313131313131313131313131313131313431313131313431313131313131313131313131313131313131313131313131313131313131|-SnA0 GWS0 1fA0 zgO0 1cL0 1cN0 1cL0 1cN0 1fz0 1a10 1fz0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0",
 		"America/Santa_Isabel|LMT MST PST PDT PWT PPT|7D.s 70 80 70 70 70|012123245232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232|-1UQE0 4PX0 8mM0 8lc0 SN0 1cL0 pHB0 83r0 zI0 5O10 1Rz0 cOP0 11z0 1o10 11z0 1qN0 11z0 1o10 11z0 1o10 11z0 1o10 11z0 1o10 11z0 BUp0 1fz0 1a10 1fz0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1fz0 1a10 1fz0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0",
 		"America/Santarem|LMT AMT AMST BRT|3C.M 40 30 30|0121212121212121212121212121213|-2glwl.c HdLl.c 1cc0 1e10 1bX0 Ezd0 So0 1vA0 Mn0 1BB0 ML0 1BB0 zX0 qe10 xb0 2ep0 nz0 1C10 zX0 1C10 LX0 1C10 Mn0 H210 Rb0 1tB0 IL0 1Fd0 FX0 NBd0",
-		"America/Santiago|SMT CLT CLT CLST CLST CLT|4G.K 50 40 40 30 30|010203131313131313124242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424245|-2q5Th.e fNch.e 5gLG.K 21bh.e jRAG.K 1pbh.e 11d0 1oL0 11d0 1oL0 11d0 1oL0 11d0 1pb0 11d0 nHX0 op0 9UK0 1Je0 Qen0 WL0 1zd0 On0 1ip0 11z0 1o10 11z0 1qN0 WL0 1ld0 14n0 1qN0 WL0 1qN0 11z0 1o10 11z0 1o10 11z0 1qN0 WL0 1qN0 WL0 1qN0 11z0 1o10 11z0 1o10 11z0 1o10 11z0 1qN0 WL0 1qN0 WL0 1qN0 1cL0 1cN0 11z0 1ld0 14n0 1qN0 11z0 1cN0 19X0 1qN0 11z0 1o10 11z0 1o10 11z0 1o10 11z0 1qN0 WL0 1qN0 17b0 1ip0 11z0 1ip0 1fz0 1fB0 11z0 1qN0 WL0 1qN0 WL0 1qN0 WL0 1qN0 11z0 1o10 11z0 1o10 11z0 1qN0 WL0 1qN0 17b0 1ip0 11z0 1o10 19X0 1fB0 1nX0 G10 1EL0 Op0 1zb0 Rd0 1wn0 Rd0 1wn0",
+		"America/Santiago|SMT CLT CLT CLST CLST|4G.K 50 40 40 30|010203131313131313124242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424|-2q5Th.e fNch.e 5gLG.K 21bh.e jRAG.K 1pbh.e 11d0 1oL0 11d0 1oL0 11d0 1oL0 11d0 1pb0 11d0 nHX0 op0 9UK0 1Je0 Qen0 WL0 1zd0 On0 1ip0 11z0 1o10 11z0 1qN0 WL0 1ld0 14n0 1qN0 WL0 1qN0 11z0 1o10 11z0 1o10 11z0 1qN0 WL0 1qN0 WL0 1qN0 11z0 1o10 11z0 1o10 11z0 1o10 11z0 1qN0 WL0 1qN0 WL0 1qN0 1cL0 1cN0 11z0 1ld0 14n0 1qN0 11z0 1cN0 19X0 1qN0 11z0 1o10 11z0 1o10 11z0 1o10 11z0 1qN0 WL0 1qN0 17b0 1ip0 11z0 1ip0 1fz0 1fB0 11z0 1qN0 WL0 1qN0 WL0 1qN0 WL0 1qN0 11z0 1o10 11z0 1o10 11z0 1qN0 WL0 1qN0 17b0 1ip0 11z0 1o10 19X0 1fB0 1nX0 G10 1EL0 Op0 1zb0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1zb0 Op0 1zb0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1zb0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1zb0 Op0 1zb0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1zb0 Op0 1zb0 Rd0 1wn0 Rd0",
 		"America/Santo_Domingo|SDMT EST EDT EHDT AST|4E 50 40 4u 40|01213131313131414|-1ttjk 1lJMk Mn0 6sp0 Lbu 1Cou yLu 1RAu wLu 1QMu xzu 1Q0u xXu 1PAu 13jB0 e00",
 		"America/Sao_Paulo|LMT BRT BRST|36.s 30 20|012121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212|-2glwR.w HdKR.w 1cc0 1e10 1bX0 Ezd0 So0 1vA0 Mn0 1BB0 ML0 1BB0 zX0 pTd0 PX0 2ep0 nz0 1C10 zX0 1C10 LX0 1C10 Mn0 H210 Rb0 1tB0 IL0 1Fd0 FX0 1EN0 FX0 1HB0 Lz0 1EN0 Lz0 1C10 IL0 1HB0 Db0 1HB0 On0 1zd0 On0 1zd0 Lz0 1zd0 Rb0 1wN0 Wn0 1tB0 Rb0 1tB0 WL0 1tB0 Rb0 1zd0 On0 1HB0 FX0 1C10 Lz0 1Ip0 HX0 1zd0 On0 1HB0 IL0 1wp0 On0 1C10 Lz0 1C10 On0 1zd0 On0 1zd0 Rb0 1zd0 Lz0 1C10 Lz0 1C10 On0 1zd0 On0 1zd0 On0 1zd0 On0 1C10 Lz0 1C10 Lz0 1C10 On0 1zd0 On0 1zd0 Rb0 1wp0 On0 1C10 Lz0 1C10 On0 1zd0 On0 1zd0 On0 1zd0 On0 1C10 Lz0 1C10 Lz0 1C10 Lz0 1C10 On0 1zd0 Rb0 1wp0 On0 1C10 Lz0 1C10 On0 1zd0",
 		"America/Scoresbysund|LMT CGT CGST EGST EGT|1r.Q 20 10 0 10|0121343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434|-2a5Ww.8 2z5ew.8 1a00 1cK0 1cL0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00",
@@ -1347,13 +1329,13 @@ module.exports={
 		"Antarctica/Macquarie|AEST AEDT zzz MIST|-a0 -b0 0 -b0|0102010101010101010101010101010101010101010101010101010101010101010101010101010101010101013|-29E80 19X0 4SL0 1ayy0 Lvs0 1cM0 1o00 Rc0 1wo0 Rc0 1wo0 U00 1wo0 LA0 1C00 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Rc0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 11A0 1qM0 WM0 1qM0 Oo0 1zc0 Oo0 1zc0 Oo0 1wo0 WM0 1tA0 WM0 1tA0 U00 1tA0 U00 1tA0 11A0 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1cM0 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 11A0 1o00 1io0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1cM0 1cM0 1a00 1io0 1cM0 1cM0 1cM0 1cM0 1cM0",
 		"Antarctica/Mawson|zzz MAWT MAWT|0 -60 -50|012|-CEo0 2fyk0",
 		"Antarctica/McMurdo|NZMT NZST NZST NZDT|-bu -cu -c0 -d0|01020202020202020202020202023232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323232323|-1GCVu Lz0 1tB0 11zu 1o0u 11zu 1o0u 11zu 1o0u 14nu 1lcu 14nu 1lcu 1lbu 11Au 1nXu 11Au 1nXu 11Au 1nXu 11Au 1nXu 11Au 1qLu WMu 1qLu 11Au 1n1bu IM0 1C00 Rc0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Rc0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Rc0 1zc0 Oo0 1qM0 14o0 1lc0 14o0 1lc0 14o0 1lc0 17c0 1io0 17c0 1io0 17c0 1io0 17c0 1lc0 14o0 1lc0 14o0 1lc0 17c0 1io0 17c0 1io0 17c0 1lc0 14o0 1lc0 14o0 1lc0 17c0 1io0 17c0 1io0 17c0 1io0 17c0 1io0 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1cM0 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1cM0 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1io0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1cM0 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1a00 1fA0 1cM0 1fA0 1a00 1fA0 1a00",
-		"Antarctica/Palmer|zzz ARST ART ART ARST CLT CLST CLT|0 30 40 30 20 40 30 30|012121212123435656565656565656565656565656565656565656565656565656565656565656567|-cao0 nD0 1vd0 SL0 1vd0 17z0 1cN0 1fz0 1cN0 1cL0 1cN0 asn0 Db0 jsN0 14N0 11z0 1o10 11z0 1qN0 WL0 1qN0 WL0 1qN0 1cL0 1cN0 11z0 1ld0 14n0 1qN0 11z0 1cN0 19X0 1qN0 11z0 1o10 11z0 1o10 11z0 1o10 11z0 1qN0 WL0 1qN0 17b0 1ip0 11z0 1ip0 1fz0 1fB0 11z0 1qN0 WL0 1qN0 WL0 1qN0 WL0 1qN0 11z0 1o10 11z0 1o10 11z0 1qN0 WL0 1qN0 17b0 1ip0 11z0 1o10 19X0 1fB0 1nX0 G10 1EL0 Op0 1zb0 Rd0 1wn0 Rd0 1wn0",
+		"Antarctica/Palmer|zzz ARST ART ART ARST CLT CLST|0 30 40 30 20 40 30|012121212123435656565656565656565656565656565656565656565656565656565656565656565656565656565656565656565656565656565656565656|-cao0 nD0 1vd0 SL0 1vd0 17z0 1cN0 1fz0 1cN0 1cL0 1cN0 asn0 Db0 jsN0 14N0 11z0 1o10 11z0 1qN0 WL0 1qN0 WL0 1qN0 1cL0 1cN0 11z0 1ld0 14n0 1qN0 11z0 1cN0 19X0 1qN0 11z0 1o10 11z0 1o10 11z0 1o10 11z0 1qN0 WL0 1qN0 17b0 1ip0 11z0 1ip0 1fz0 1fB0 11z0 1qN0 WL0 1qN0 WL0 1qN0 WL0 1qN0 11z0 1o10 11z0 1o10 11z0 1qN0 WL0 1qN0 17b0 1ip0 11z0 1o10 19X0 1fB0 1nX0 G10 1EL0 Op0 1zb0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1zb0 Op0 1zb0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1zb0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1zb0 Op0 1zb0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1zb0 Op0 1zb0 Rd0 1wn0 Rd0",
 		"Antarctica/Rothera|zzz ROTT|0 30|01|gOo0",
 		"Antarctica/Syowa|zzz SYOT|0 -30|01|-vs00",
 		"Antarctica/Troll|zzz UTC CEST|0 0 -20|01212121212121212121212121212121212121212121212121212121212121212121|1puo0 hd0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00",
 		"Antarctica/Vostok|zzz VOST|0 -60|01|-tjA0",
 		"Arctic/Longyearbyen|CET CEST|-10 -20|010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010|-2awM0 Qm0 W6o0 5pf0 WM0 1fA0 1cM0 1cM0 1cM0 1cM0 wJc0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1qM0 WM0 zpc0 1a00 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00",
-		"Asia/Aden|LMT AST|-36.Q -30|01|-TvD6.Q",
+		"Asia/Aden|LMT AST|-2X.S -30|01|-MG2X.S",
 		"Asia/Almaty|LMT ALMT ALMT ALMST|-57.M -50 -60 -70|0123232323232323232323232323232323232323232323232|-1Pc57.M eUo7.M 23CL0 1db0 1cN0 1db0 1cN0 1db0 1dd0 1cO0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 3Cl0 1cL0 1cQ0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0",
 		"Asia/Amman|LMT EET EEST|-2n.I -20 -30|0121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121|-1yW2n.I 1HiMn.I KL0 1oN0 11b0 1oN0 11b0 1pd0 1dz0 1cp0 11b0 1op0 11b0 fO10 1db0 1e10 1cL0 1cN0 1cL0 1cN0 1fz0 1pd0 10n0 1ld0 14n0 1hB0 15b0 1ip0 19X0 1cN0 1cL0 1cN0 17b0 1ld0 14o0 1lc0 17c0 1io0 17c0 1io0 17c0 1So0 y00 1fc0 1dc0 1co0 1dc0 1cM0 1cM0 1cM0 1o00 11A0 1lc0 17c0 1cM0 1cM0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 4bX0 Dd0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0",
 		"Asia/Anadyr|LMT ANAT ANAT ANAST ANAST ANAST ANAT|-bN.U -c0 -d0 -e0 -d0 -c0 -b0|01232414141414141414141561414141414141414141414141414141414141561|-1PcbN.U eUnN.U 23CL0 1db0 1cN0 1dc0 1cN0 1db0 1dd0 1cO0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cN0 IM0 rU0 1cL0 1cQ0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qN0 WM0",
@@ -1361,7 +1343,7 @@ module.exports={
 		"Asia/Aqtobe|LMT AKTT AKTT AKTST AKTT AQTT AQTST|-3M.E -40 -50 -60 -60 -50 -60|01234323232323232323232565656565656565656565656565|-1Pc3M.E eUnM.E 23CL0 1db0 1cM0 1dc0 1cN0 1db0 1dd0 1cO0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 2UK0 Fz0 1cL0 1cQ0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0",
 		"Asia/Ashgabat|LMT ASHT ASHT ASHST ASHST TMT TMT|-3R.w -40 -50 -60 -50 -40 -50|012323232323232323232324156|-1Pc3R.w eUnR.w 23CL0 1db0 1cN0 1db0 1cN0 1db0 1dd0 1cO0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cN0 ba0 xC0",
 		"Asia/Baghdad|BMT AST ADT|-2V.A -30 -40|012121212121212121212121212121212121212121212121212121|-26BeV.A 2ACnV.A 11b0 1cp0 1dz0 1dd0 1db0 1cN0 1cp0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1de0 1dc0 1dc0 1dc0 1cM0 1dc0 1cM0 1dc0 1cM0 1dc0 1dc0 1dc0 1cM0 1dc0 1cM0 1dc0 1cM0 1dc0 1dc0 1dc0 1cM0 1dc0 1cM0 1dc0 1cM0 1dc0 1dc0 1dc0 1cM0 1dc0 1cM0 1dc0 1cM0 1dc0",
-		"Asia/Bahrain|LMT GST AST|-3q.8 -40 -30|012|-21Jfq.8 27BXq.8",
+		"Asia/Bahrain|LMT GST AST|-3m.k -40 -30|012|-21Jfm.k 27BXm.k",
 		"Asia/Baku|LMT BAKT BAKT BAKST BAKST AZST AZT AZT AZST|-3j.o -30 -40 -50 -40 -40 -30 -40 -50|0123232323232323232323245657878787878787878787878787878787878787878787878787878787878787878787878787878787878787|-1Pc3j.o 1jUoj.o WCL0 1db0 1cN0 1db0 1cN0 1db0 1dd0 1cO0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 10K0 c30 1cJ0 1cL0 8wu0 1o00 11z0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00",
 		"Asia/Bangkok|BMT ICT|-6G.4 -70|01|-218SG.4",
 		"Asia/Beirut|EET EEST|-20 -30|010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010|-21aq0 1on0 1410 1db0 19B0 1in0 1ip0 WL0 1lQp0 11b0 1oN0 11b0 1oN0 11b0 1pd0 11b0 1oN0 11b0 q6N0 En0 1oN0 11b0 1oN0 11b0 1oN0 11b0 1pd0 11b0 1oN0 11b0 1op0 11b0 dA10 17b0 1iN0 17b0 1iN0 17b0 1iN0 17b0 1vB0 SL0 1mp0 13z0 1iN0 17b0 1iN0 17b0 1jd0 12n0 1a10 1cL0 1cN0 1cL0 1cN0 1cL0 1fB0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1qL0 WN0 1qL0 WN0 1qL0 11B0 1nX0 11B0 1nX0 11B0 1qL0 WN0 1qL0 WN0 1qL0 WN0 1qL0 11B0 1nX0 11B0 1nX0 11B0 1qL0 WN0 1qL0 WN0 1qL0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1qL0 WN0 1qL0 WN0 1qL0 11B0 1nX0 11B0 1nX0 11B0 1qL0 WN0 1qL0 WN0 1qL0 11B0 1nX0 11B0 1nX0 11B0 1nX0 11B0 1qL0 WN0 1qL0 WN0 1qL0 11B0 1nX0 11B0 1nX0 11B0 1qL0 WN0 1qL0 WN0 1qL0 WN0 1qL0 11B0 1nX0 11B0 1nX0",
@@ -1396,10 +1378,12 @@ module.exports={
 		"Asia/Krasnoyarsk|LMT KRAT KRAT KRAST KRAST KRAT|-6b.q -60 -70 -80 -70 -80|012323232323232323232324123232323232323232323232323232323232323252|-21Hib.q prAb.q 23CL0 1db0 1cN0 1db0 1cN0 1db0 1dd0 1cO0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cN0 IM0 rU0 1cL0 1cQ0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 8Hz0",
 		"Asia/Kuala_Lumpur|SMT MALT MALST MALT MALT JST MYT|-6T.p -70 -7k -7k -7u -90 -80|01234546|-2Bg6T.p 17anT.p 7hXE dM00 17bO 8Fyu 1so1u",
 		"Asia/Kuching|LMT BORT BORT BORTST JST MYT|-7l.k -7u -80 -8k -90 -80|01232323232323232425|-1KITl.k gDbP.k 6ynu AnE 1O0k AnE 1NAk AnE 1NAk AnE 1NAk AnE 1O0k AnE 1NAk AnE pAk 8Fz0 1so10",
+		"Asia/Kuwait|LMT AST|-3b.U -30|01|-MG3b.U",
 		"Asia/Macao|LMT MOT MOST CST|-7y.k -80 -90 -80|0121212121212121212121212121212121212121213|-2le7y.k 1XO34.k 1wn0 Rd0 1wn0 R9u 1wqu U10 1tz0 TVu 1tz0 17gu 1cL0 1cN0 1fz0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cJu 1cL0 1cN0 1fz0 1cN0 1cOu 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cJu 1cL0 1cN0 1fz0 1cN0 1cL0 KEp0",
 		"Asia/Magadan|LMT MAGT MAGT MAGST MAGST MAGT|-a3.c -a0 -b0 -c0 -b0 -c0|012323232323232323232324123232323232323232323232323232323232323251|-1Pca3.c eUo3.c 23CL0 1db0 1cN0 1db0 1cN0 1db0 1dd0 1cO0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cN0 IM0 rU0 1cL0 1cQ0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 8Hz0",
 		"Asia/Makassar|LMT MMT WITA JST|-7V.A -7V.A -80 -90|01232|-21JjV.A vfc0 myLV.A 8ML0",
 		"Asia/Manila|PHT PHST JST|-80 -90 -90|010201010|-1kJI0 AL0 cK10 65X0 mXB0 vX0 VK10 1db0",
+		"Asia/Muscat|LMT GST|-3S.o -40|01|-21JfS.o",
 		"Asia/Nicosia|LMT EET EEST|-2d.s -20 -30|01212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121|-1Vc2d.s 2a3cd.s 1cL0 1qp0 Xz0 19B0 19X0 1fB0 1db0 1cp0 1cL0 1fB0 19X0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1fz0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1fz0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 1fB0 1cL0 1cN0 1cL0 1cN0 1o30 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00",
 		"Asia/Novokuznetsk|LMT KRAT KRAT KRAST KRAST NOVST NOVT NOVT|-5M.M -60 -70 -80 -70 -70 -60 -70|012323232323232323232324123232323232323232323232323232323232325672|-1PctM.M eULM.M 23CL0 1db0 1cN0 1db0 1cN0 1db0 1dd0 1cO0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cN0 IM0 rU0 1cL0 1cQ0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qN0 WM0 8Hz0",
 		"Asia/Novosibirsk|LMT NOVT NOVT NOVST NOVST|-5v.E -60 -70 -80 -70|0123232323232323232323241232341414141414141414141414141414141414121|-21Qnv.E pAFv.E 23CL0 1db0 1cN0 1db0 1cN0 1db0 1dd0 1cO0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cN0 IM0 rU0 1cL0 1cQ0 ml0 Os0 1cM0 1cM0 1cM0 1cM0 1fA0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 8Hz0",
@@ -1407,8 +1391,10 @@ module.exports={
 		"Asia/Oral|LMT URAT URAT URAST URAT URAST ORAT ORAST ORAT|-3p.o -40 -50 -60 -60 -50 -40 -50 -50|012343232323232323251516767676767676767676767676768|-1Pc3p.o eUnp.o 23CL0 1db0 1cM0 1dc0 1cN0 1db0 1dd0 1cO0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cN0 1cM0 1fA0 2UK0 Fz0 1cL0 1cQ0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 RW0",
 		"Asia/Pontianak|LMT PMT WIB JST WIB WITA WIB|-7h.k -7h.k -7u -90 -80 -80 -70|012324256|-2ua7h.k XE00 munL.k 8Rau 6kpu 4PXu xhcu Wqnu",
 		"Asia/Pyongyang|LMT KST JCST JST KST|-8n -8u -90 -90 -90|01234|-2um8n 97XR 12FXu jdA0",
+		"Asia/Qatar|LMT GST AST|-3q.8 -40 -30|012|-21Jfq.8 27BXq.8",
 		"Asia/Qyzylorda|LMT KIZT KIZT KIZST KIZT QYZT QYZT QYZST|-4l.Q -40 -50 -60 -60 -50 -60 -70|012343232323232323232325676767676767676767676767676|-1Pc4l.Q eUol.Q 23CL0 1db0 1cM0 1dc0 1cN0 1db0 1dd0 1cO0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 2UK0 dC0 rU0 1cL0 1cQ0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0",
 		"Asia/Rangoon|RMT BURT JST MMT|-6o.E -6u -90 -6u|0123|-21Jio.E SmnS.E 7j9u",
+		"Asia/Riyadh|LMT AST|-36.Q -30|01|-TvD6.Q",
 		"Asia/Sakhalin|LMT JCST JST SAKT SAKST SAKST SAKT|-9u.M -90 -90 -b0 -c0 -b0 -a0|0123434343434343434343435634343434343565656565656565656565656565636|-2AGVu.M 1iaMu.M je00 1qFa0 1db0 1cN0 1db0 1cN0 1db0 1dd0 1cO0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cN0 IM0 rU0 1cL0 1cQ0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1o00 11A0 1o10 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 8Hz0",
 		"Asia/Samarkand|LMT SAMT SAMT SAMST TAST UZST UZT|-4r.R -40 -50 -60 -60 -60 -50|01234323232323232323232356|-1Pc4r.R eUor.R 23CL0 1db0 1cM0 1dc0 1cN0 1db0 1dd0 1cO0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 11x0 bf0",
 		"Asia/Seoul|LMT KST JCST JST KST KDT KDT|-8r.Q -8u -90 -90 -90 -9u -a0|01234151515151515146464|-2um8r.Q 97XV.Q 12FXu jjA0 kKo0 2I0u OL0 1FB0 Rb0 1qN0 TX0 1tB0 TX0 1tB0 TX0 1tB0 TX0 2ap0 12FBu 11A0 1o00 11A0",
@@ -1432,7 +1418,7 @@ module.exports={
 		"Atlantic/Cape_Verde|LMT CVT CVST CVT|1y.4 20 10 10|01213|-2xomp.U 1qOMp.U 7zX0 1djf0",
 		"Atlantic/Faeroe|LMT WET WEST|r.4 0 -10|01212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121212121|-2uSnw.U 2Wgow.U 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00",
 		"Atlantic/Madeira|FMT MADT MADST MADMT WET WEST|17.A 10 0 -10 0 -10|01212121212121212121212121212121212121212121232123212321232121212121212121212121212121212121212121454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454545454|-2ldWQ.o aPWQ.o Sp0 LX0 1vc0 Tc0 1uM0 SM0 1vc0 Tc0 1vc0 SM0 1vc0 6600 1co0 3E00 17c0 1fA0 1a00 1io0 1a00 1io0 17c0 3I00 17c0 1cM0 1cM0 3Fc0 1cM0 1a00 1fA0 1io0 17c0 1cM0 1cM0 1a00 1fA0 1io0 1qM0 Dc0 1tA0 1cM0 1dc0 1400 gL0 IM0 s10 U00 dX0 Rc0 pd0 Rc0 gL0 Oo0 pd0 Rc0 gL0 Oo0 pd0 14o0 1cM0 1cP0 1cM0 1cM0 1cM0 1cM0 1cM0 3Co0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 qIl0 1cM0 1fA0 1cM0 1cM0 1cN0 1cL0 1cN0 1cM0 1cM0 1cM0 1cM0 1cN0 1cL0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00",
-		"Atlantic/Reykjavik|LMT IST ISST GMT|1s 10 0 0|012121212121212121212121212121212121212121212121212121212121212121213|-2uWmw mfaw 1Bd0 ML0 1LB0 Cn0 1LB0 3fX0 C10 HrX0 1cO0 LB0 1EL0 LA0 1C00 Oo0 1wo0 Rc0 1wo0 Rc0 1wo0 Rc0 1zc0 Oo0 1zc0 14o0 1lc0 14o0 1lc0 14o0 1o00 11A0 1lc0 14o0 1o00 14o0 1lc0 14o0 1lc0 14o0 1lc0 14o0 1lc0 14o0 1o00 14o0 1lc0 14o0 1lc0 14o0 1lc0 14o0 1lc0 14o0 1lc0 14o0 1o00 14o0 1lc0 14o0 1lc0 14o0 1lc0 14o0 1lc0 14o0 1o00 14o0",
+		"Atlantic/Reykjavik|RMT IST ISST GMT|1r.M 10 0 0|01212121212121212121212121212121212121212121212121212121212121213|-2uWmw.c mfaw.c 1Bd0 ML0 1LB0 NLX0 1pe0 zd0 1EL0 LA0 1C00 Oo0 1wo0 Rc0 1wo0 Rc0 1wo0 Rc0 1zc0 Oo0 1zc0 14o0 1lc0 14o0 1lc0 14o0 1o00 11A0 1lc0 14o0 1o00 14o0 1lc0 14o0 1lc0 14o0 1lc0 14o0 1lc0 14o0 1o00 14o0 1lc0 14o0 1lc0 14o0 1lc0 14o0 1lc0 14o0 1lc0 14o0 1o00 14o0 1lc0 14o0 1lc0 14o0 1lc0 14o0 1lc0 14o0 1o00 14o0",
 		"Atlantic/South_Georgia|GST|20|0|",
 		"Atlantic/Stanley|SMT FKT FKST FKT FKST|3P.o 40 30 30 20|0121212121212134343212121212121212121212121212121212121212121212121212|-2kJw8.A 12bA8.A 19X0 1fB0 19X0 1ip0 19X0 1fB0 19X0 1fB0 19X0 1fB0 Cn0 1Cc10 WL0 1qL0 U10 1tz0 U10 1qM0 WN0 1qL0 WN0 1qL0 WN0 1qL0 WN0 1tz0 U10 1tz0 WN0 1qL0 WN0 1qL0 WN0 1qL0 WN0 1qL0 WN0 1tz0 WN0 1qL0 WN0 1qL0 WN0 1qL0 WN0 1qL0 WN0 1qN0 U10 1wn0 Rd0 1wn0 U10 1tz0 U10 1tz0 U10 1tz0 U10 1tz0 U10 1wn0 U10 1tz0 U10 1tz0 U10",
 		"Australia/ACT|AEST AEDT|-a0 -b0|0101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101|-293lX xcX 10jd0 yL0 1cN0 1cL0 1fB0 19X0 17c10 LA0 1C00 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Rc0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 14o0 1o00 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 U00 1qM0 WM0 1tA0 WM0 1tA0 U00 1tA0 Oo0 1zc0 Oo0 1zc0 Oo0 1zc0 Rc0 1zc0 Oo0 1zc0 Oo0 1zc0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 11A0 1o00 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 11A0 1o00 WM0 1qM0 14o0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0",
@@ -1449,7 +1435,7 @@ module.exports={
 		"Australia/Perth|AWST AWDT|-80 -90|0101010101010101010|-293jX xcX 10jd0 yL0 1cN0 1cL0 1gSp0 Oo0 l5A0 Oo0 iJA0 G00 zU00 IM0 1qM0 11A0 1o00 11A0",
 		"CET|CET CEST|-10 -20|01010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010|-2aFe0 11d0 1iO0 11A0 1o00 11A0 Qrc0 6i00 WM0 1fA0 1cM0 1cM0 1cM0 16M0 1gMM0 1a00 1fA0 1cM0 1cM0 1cM0 1fA0 1a00 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00",
 		"CST6CDT|CST CDT CWT CPT|60 50 50 50|010102301010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010|-261s0 1nX0 11B0 1nX0 SgN0 8x30 iw0 QwN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1fz0 1cN0 1cL0 1cN0 1cL0 s10 1Vz0 LB0 1BX0 1cN0 1fz0 1a10 1fz0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1fz0 1a10 1fz0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0",
-		"Chile/EasterIsland|EMT EASST EAST EASST EAST EAST|7h.s 60 70 50 60 50|0121212121212121212121212121212134343434343434343434343434343434343434343434343434343434343434343435|-1uSgG.w nHUG.w op0 9UK0 RXB0 WL0 1zd0 On0 1ip0 11z0 1o10 11z0 1qN0 WL0 1ld0 14n0 1qN0 WL0 1qN0 11z0 1o10 11z0 1o10 11z0 1qN0 WL0 1qN0 WL0 1qN0 11z0 1o10 11b0 o0 1o10 11z0 1o10 11z0 1qN0 WL0 1qN0 WL0 1qN0 1cL0 1cN0 11z0 1ld0 14n0 1qN0 11z0 1cN0 19X0 1qN0 11z0 1o10 11z0 1o10 11z0 1o10 11z0 1qN0 WL0 1qN0 17b0 1ip0 11z0 1ip0 1fz0 1fB0 11z0 1qN0 WL0 1qN0 WL0 1qN0 WL0 1qN0 11z0 1o10 11z0 1o10 11z0 1qN0 WL0 1qN0 17b0 1ip0 11z0 1o10 19X0 1fB0 1nX0 G10 1EL0 Op0 1zb0 Rd0 1wn0 Rd0 1wn0",
+		"Chile/EasterIsland|EMT EASST EAST EAST EASST|7h.s 60 70 60 50|012121212121212121212121212121213434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434343434|-1uSgG.w nHUG.w op0 9UK0 RXB0 WL0 1zd0 On0 1ip0 11z0 1o10 11z0 1qN0 WL0 1ld0 14n0 1qN0 WL0 1qN0 11z0 1o10 11z0 1o10 11z0 1qN0 WL0 1qN0 WL0 1qN0 11z0 1o10 11z0 1o10 11z0 1o10 11z0 1qN0 WL0 1qN0 WL0 1qN0 1cL0 1cN0 11z0 1ld0 14n0 1qN0 11z0 1cN0 19X0 1qN0 11z0 1o10 11z0 1o10 11z0 1o10 11z0 1qN0 WL0 1qN0 17b0 1ip0 11z0 1ip0 1fz0 1fB0 11z0 1qN0 WL0 1qN0 WL0 1qN0 WL0 1qN0 11z0 1o10 11z0 1o10 11z0 1qN0 WL0 1qN0 17b0 1ip0 11z0 1o10 19X0 1fB0 1nX0 G10 1EL0 Op0 1zb0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1zb0 Op0 1zb0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1zb0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1zb0 Op0 1zb0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1wn0 Rd0 1zb0 Op0 1zb0 Rd0 1wn0 Rd0",
 		"EET|EET EEST|-20 -30|010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010|hDB0 1a00 1fA0 1cM0 1cM0 1cM0 1fA0 1a00 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1cM0 1fA0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00 11A0 1qM0 WM0 1qM0 WM0 1qM0 WM0 1qM0 11A0 1o00 11A0 1o00",
 		"EST|EST|50|0|",
 		"EST5EDT|EST EDT EWT EPT|50 40 40 40|010102301010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010|-261t0 1nX0 11B0 1nX0 SgN0 8x40 iv0 QwN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1fz0 1cN0 1cL0 1cN0 1cL0 s10 1Vz0 LB0 1BX0 1cN0 1fz0 1a10 1fz0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 1cN0 1fz0 1a10 1fz0 1cN0 1cL0 1cN0 1cL0 1cN0 1cL0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 14p0 1lb0 14p0 1lb0 14p0 1nX0 11B0 1nX0 11B0 1nX0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Rd0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0 Op0 1zb0",
@@ -1684,10 +1670,7 @@ module.exports={
 		"Antarctica/McMurdo|Pacific/Auckland",
 		"Arctic/Longyearbyen|Atlantic/Jan_Mayen",
 		"Arctic/Longyearbyen|Europe/Oslo",
-		"Asia/Aden|Asia/Kuwait",
-		"Asia/Aden|Asia/Riyadh",
 		"Asia/Ashgabat|Asia/Ashkhabad",
-		"Asia/Bahrain|Asia/Qatar",
 		"Asia/Bangkok|Asia/Phnom_Penh",
 		"Asia/Bangkok|Asia/Vientiane",
 		"Asia/Calcutta|Asia/Kolkata",
@@ -1696,7 +1679,6 @@ module.exports={
 		"Asia/Chongqing|Asia/Shanghai",
 		"Asia/Chongqing|PRC",
 		"Asia/Dacca|Asia/Dhaka",
-		"Asia/Dubai|Asia/Muscat",
 		"Asia/Ho_Chi_Minh|Asia/Saigon",
 		"Asia/Hong_Kong|Hongkong",
 		"Asia/Istanbul|Europe/Istanbul",
@@ -1777,13 +1759,13 @@ module.exports={
 		"Pacific/Pohnpei|Pacific/Ponape"
 	]
 }
-},{}],24:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 var moment = module.exports = require("./moment-timezone");
 moment.tz.load(require('./data/packed/latest.json'));
 
-},{"./data/packed/latest.json":23,"./moment-timezone":25}],25:[function(require,module,exports){
+},{"./data/packed/latest.json":21,"./moment-timezone":23}],23:[function(require,module,exports){
 //! moment-timezone.js
-//! version : 0.3.1
+//! version : 0.3.0
 //! author : Tim Wood
 //! license : MIT
 //! github.com/moment/moment-timezone
@@ -1805,7 +1787,7 @@ moment.tz.load(require('./data/packed/latest.json'));
 	// Do not load moment-timezone a second time.
 	if (moment.tz !== undefined) { return moment; }
 
-	var VERSION = "0.3.1",
+	var VERSION = "0.3.0",
 		zones = {},
 		links = {},
 
@@ -2201,7 +2183,7 @@ moment.tz.load(require('./data/packed/latest.json'));
 	return moment;
 }));
 
-},{"moment":26}],26:[function(require,module,exports){
+},{"moment":24}],24:[function(require,module,exports){
 //! moment.js
 //! version : 2.10.2
 //! authors : Tim Wood, Iskren Chernev, Moment.js contributors
@@ -5285,10 +5267,10 @@ moment.tz.load(require('./data/packed/latest.json'));
     return _moment;
 
 }));
-},{}],27:[function(require,module,exports){
-//     Underscore.js 1.8.3
+},{}],25:[function(require,module,exports){
+//     Underscore.js 1.7.0
 //     http://underscorejs.org
-//     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+//     (c) 2009-2014 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 //     Underscore may be freely distributed under the MIT license.
 
 (function() {
@@ -5309,6 +5291,7 @@ moment.tz.load(require('./data/packed/latest.json'));
   var
     push             = ArrayProto.push,
     slice            = ArrayProto.slice,
+    concat           = ArrayProto.concat,
     toString         = ObjProto.toString,
     hasOwnProperty   = ObjProto.hasOwnProperty;
 
@@ -5317,11 +5300,7 @@ moment.tz.load(require('./data/packed/latest.json'));
   var
     nativeIsArray      = Array.isArray,
     nativeKeys         = Object.keys,
-    nativeBind         = FuncProto.bind,
-    nativeCreate       = Object.create;
-
-  // Naked function reference for surrogate-prototype-swapping.
-  var Ctor = function(){};
+    nativeBind         = FuncProto.bind;
 
   // Create a safe reference to the Underscore object for use below.
   var _ = function(obj) {
@@ -5343,12 +5322,12 @@ moment.tz.load(require('./data/packed/latest.json'));
   }
 
   // Current version.
-  _.VERSION = '1.8.3';
+  _.VERSION = '1.7.0';
 
   // Internal function that returns an efficient (for current engines) version
   // of the passed-in callback, to be repeatedly applied in other Underscore
   // functions.
-  var optimizeCb = function(func, context, argCount) {
+  var createCallback = function(func, context, argCount) {
     if (context === void 0) return func;
     switch (argCount == null ? 3 : argCount) {
       case 1: return function(value) {
@@ -5372,59 +5351,11 @@ moment.tz.load(require('./data/packed/latest.json'));
   // A mostly-internal function to generate callbacks that can be applied
   // to each element in a collection, returning the desired result — either
   // identity, an arbitrary callback, a property matcher, or a property accessor.
-  var cb = function(value, context, argCount) {
+  _.iteratee = function(value, context, argCount) {
     if (value == null) return _.identity;
-    if (_.isFunction(value)) return optimizeCb(value, context, argCount);
-    if (_.isObject(value)) return _.matcher(value);
+    if (_.isFunction(value)) return createCallback(value, context, argCount);
+    if (_.isObject(value)) return _.matches(value);
     return _.property(value);
-  };
-  _.iteratee = function(value, context) {
-    return cb(value, context, Infinity);
-  };
-
-  // An internal function for creating assigner functions.
-  var createAssigner = function(keysFunc, undefinedOnly) {
-    return function(obj) {
-      var length = arguments.length;
-      if (length < 2 || obj == null) return obj;
-      for (var index = 1; index < length; index++) {
-        var source = arguments[index],
-            keys = keysFunc(source),
-            l = keys.length;
-        for (var i = 0; i < l; i++) {
-          var key = keys[i];
-          if (!undefinedOnly || obj[key] === void 0) obj[key] = source[key];
-        }
-      }
-      return obj;
-    };
-  };
-
-  // An internal function for creating a new object that inherits from another.
-  var baseCreate = function(prototype) {
-    if (!_.isObject(prototype)) return {};
-    if (nativeCreate) return nativeCreate(prototype);
-    Ctor.prototype = prototype;
-    var result = new Ctor;
-    Ctor.prototype = null;
-    return result;
-  };
-
-  var property = function(key) {
-    return function(obj) {
-      return obj == null ? void 0 : obj[key];
-    };
-  };
-
-  // Helper for collection methods to determine whether a collection
-  // should be iterated as an array or as an object
-  // Related: http://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength
-  // Avoids a very nasty iOS 8 JIT bug on ARM-64. #2094
-  var MAX_ARRAY_INDEX = Math.pow(2, 53) - 1;
-  var getLength = property('length');
-  var isArrayLike = function(collection) {
-    var length = getLength(collection);
-    return typeof length == 'number' && length >= 0 && length <= MAX_ARRAY_INDEX;
   };
 
   // Collection Functions
@@ -5434,10 +5365,11 @@ moment.tz.load(require('./data/packed/latest.json'));
   // Handles raw objects in addition to array-likes. Treats all
   // sparse array-likes as if they were dense.
   _.each = _.forEach = function(obj, iteratee, context) {
-    iteratee = optimizeCb(iteratee, context);
-    var i, length;
-    if (isArrayLike(obj)) {
-      for (i = 0, length = obj.length; i < length; i++) {
+    if (obj == null) return obj;
+    iteratee = createCallback(iteratee, context);
+    var i, length = obj.length;
+    if (length === +length) {
+      for (i = 0; i < length; i++) {
         iteratee(obj[i], i, obj);
       }
     } else {
@@ -5451,66 +5383,77 @@ moment.tz.load(require('./data/packed/latest.json'));
 
   // Return the results of applying the iteratee to each element.
   _.map = _.collect = function(obj, iteratee, context) {
-    iteratee = cb(iteratee, context);
-    var keys = !isArrayLike(obj) && _.keys(obj),
+    if (obj == null) return [];
+    iteratee = _.iteratee(iteratee, context);
+    var keys = obj.length !== +obj.length && _.keys(obj),
         length = (keys || obj).length,
-        results = Array(length);
+        results = Array(length),
+        currentKey;
     for (var index = 0; index < length; index++) {
-      var currentKey = keys ? keys[index] : index;
+      currentKey = keys ? keys[index] : index;
       results[index] = iteratee(obj[currentKey], currentKey, obj);
     }
     return results;
   };
 
-  // Create a reducing function iterating left or right.
-  function createReduce(dir) {
-    // Optimized iterator function as using arguments.length
-    // in the main function will deoptimize the, see #1991.
-    function iterator(obj, iteratee, memo, keys, index, length) {
-      for (; index >= 0 && index < length; index += dir) {
-        var currentKey = keys ? keys[index] : index;
-        memo = iteratee(memo, obj[currentKey], currentKey, obj);
-      }
-      return memo;
-    }
-
-    return function(obj, iteratee, memo, context) {
-      iteratee = optimizeCb(iteratee, context, 4);
-      var keys = !isArrayLike(obj) && _.keys(obj),
-          length = (keys || obj).length,
-          index = dir > 0 ? 0 : length - 1;
-      // Determine the initial value if none is provided.
-      if (arguments.length < 3) {
-        memo = obj[keys ? keys[index] : index];
-        index += dir;
-      }
-      return iterator(obj, iteratee, memo, keys, index, length);
-    };
-  }
+  var reduceError = 'Reduce of empty array with no initial value';
 
   // **Reduce** builds up a single result from a list of values, aka `inject`,
   // or `foldl`.
-  _.reduce = _.foldl = _.inject = createReduce(1);
+  _.reduce = _.foldl = _.inject = function(obj, iteratee, memo, context) {
+    if (obj == null) obj = [];
+    iteratee = createCallback(iteratee, context, 4);
+    var keys = obj.length !== +obj.length && _.keys(obj),
+        length = (keys || obj).length,
+        index = 0, currentKey;
+    if (arguments.length < 3) {
+      if (!length) throw new TypeError(reduceError);
+      memo = obj[keys ? keys[index++] : index++];
+    }
+    for (; index < length; index++) {
+      currentKey = keys ? keys[index] : index;
+      memo = iteratee(memo, obj[currentKey], currentKey, obj);
+    }
+    return memo;
+  };
 
   // The right-associative version of reduce, also known as `foldr`.
-  _.reduceRight = _.foldr = createReduce(-1);
+  _.reduceRight = _.foldr = function(obj, iteratee, memo, context) {
+    if (obj == null) obj = [];
+    iteratee = createCallback(iteratee, context, 4);
+    var keys = obj.length !== + obj.length && _.keys(obj),
+        index = (keys || obj).length,
+        currentKey;
+    if (arguments.length < 3) {
+      if (!index) throw new TypeError(reduceError);
+      memo = obj[keys ? keys[--index] : --index];
+    }
+    while (index--) {
+      currentKey = keys ? keys[index] : index;
+      memo = iteratee(memo, obj[currentKey], currentKey, obj);
+    }
+    return memo;
+  };
 
   // Return the first value which passes a truth test. Aliased as `detect`.
   _.find = _.detect = function(obj, predicate, context) {
-    var key;
-    if (isArrayLike(obj)) {
-      key = _.findIndex(obj, predicate, context);
-    } else {
-      key = _.findKey(obj, predicate, context);
-    }
-    if (key !== void 0 && key !== -1) return obj[key];
+    var result;
+    predicate = _.iteratee(predicate, context);
+    _.some(obj, function(value, index, list) {
+      if (predicate(value, index, list)) {
+        result = value;
+        return true;
+      }
+    });
+    return result;
   };
 
   // Return all the elements that pass a truth test.
   // Aliased as `select`.
   _.filter = _.select = function(obj, predicate, context) {
     var results = [];
-    predicate = cb(predicate, context);
+    if (obj == null) return results;
+    predicate = _.iteratee(predicate, context);
     _.each(obj, function(value, index, list) {
       if (predicate(value, index, list)) results.push(value);
     });
@@ -5519,17 +5462,19 @@ moment.tz.load(require('./data/packed/latest.json'));
 
   // Return all the elements for which a truth test fails.
   _.reject = function(obj, predicate, context) {
-    return _.filter(obj, _.negate(cb(predicate)), context);
+    return _.filter(obj, _.negate(_.iteratee(predicate)), context);
   };
 
   // Determine whether all of the elements match a truth test.
   // Aliased as `all`.
   _.every = _.all = function(obj, predicate, context) {
-    predicate = cb(predicate, context);
-    var keys = !isArrayLike(obj) && _.keys(obj),
-        length = (keys || obj).length;
-    for (var index = 0; index < length; index++) {
-      var currentKey = keys ? keys[index] : index;
+    if (obj == null) return true;
+    predicate = _.iteratee(predicate, context);
+    var keys = obj.length !== +obj.length && _.keys(obj),
+        length = (keys || obj).length,
+        index, currentKey;
+    for (index = 0; index < length; index++) {
+      currentKey = keys ? keys[index] : index;
       if (!predicate(obj[currentKey], currentKey, obj)) return false;
     }
     return true;
@@ -5538,22 +5483,24 @@ moment.tz.load(require('./data/packed/latest.json'));
   // Determine if at least one element in the object matches a truth test.
   // Aliased as `any`.
   _.some = _.any = function(obj, predicate, context) {
-    predicate = cb(predicate, context);
-    var keys = !isArrayLike(obj) && _.keys(obj),
-        length = (keys || obj).length;
-    for (var index = 0; index < length; index++) {
-      var currentKey = keys ? keys[index] : index;
+    if (obj == null) return false;
+    predicate = _.iteratee(predicate, context);
+    var keys = obj.length !== +obj.length && _.keys(obj),
+        length = (keys || obj).length,
+        index, currentKey;
+    for (index = 0; index < length; index++) {
+      currentKey = keys ? keys[index] : index;
       if (predicate(obj[currentKey], currentKey, obj)) return true;
     }
     return false;
   };
 
-  // Determine if the array or object contains a given item (using `===`).
-  // Aliased as `includes` and `include`.
-  _.contains = _.includes = _.include = function(obj, item, fromIndex, guard) {
-    if (!isArrayLike(obj)) obj = _.values(obj);
-    if (typeof fromIndex != 'number' || guard) fromIndex = 0;
-    return _.indexOf(obj, item, fromIndex) >= 0;
+  // Determine if the array or object contains a given value (using `===`).
+  // Aliased as `include`.
+  _.contains = _.include = function(obj, target) {
+    if (obj == null) return false;
+    if (obj.length !== +obj.length) obj = _.values(obj);
+    return _.indexOf(obj, target) >= 0;
   };
 
   // Invoke a method (with arguments) on every item in a collection.
@@ -5561,8 +5508,7 @@ moment.tz.load(require('./data/packed/latest.json'));
     var args = slice.call(arguments, 2);
     var isFunc = _.isFunction(method);
     return _.map(obj, function(value) {
-      var func = isFunc ? method : value[method];
-      return func == null ? func : func.apply(value, args);
+      return (isFunc ? method : value[method]).apply(value, args);
     });
   };
 
@@ -5574,13 +5520,13 @@ moment.tz.load(require('./data/packed/latest.json'));
   // Convenience version of a common use case of `filter`: selecting only objects
   // containing specific `key:value` pairs.
   _.where = function(obj, attrs) {
-    return _.filter(obj, _.matcher(attrs));
+    return _.filter(obj, _.matches(attrs));
   };
 
   // Convenience version of a common use case of `find`: getting the first object
   // containing specific `key:value` pairs.
   _.findWhere = function(obj, attrs) {
-    return _.find(obj, _.matcher(attrs));
+    return _.find(obj, _.matches(attrs));
   };
 
   // Return the maximum element (or element-based computation).
@@ -5588,7 +5534,7 @@ moment.tz.load(require('./data/packed/latest.json'));
     var result = -Infinity, lastComputed = -Infinity,
         value, computed;
     if (iteratee == null && obj != null) {
-      obj = isArrayLike(obj) ? obj : _.values(obj);
+      obj = obj.length === +obj.length ? obj : _.values(obj);
       for (var i = 0, length = obj.length; i < length; i++) {
         value = obj[i];
         if (value > result) {
@@ -5596,7 +5542,7 @@ moment.tz.load(require('./data/packed/latest.json'));
         }
       }
     } else {
-      iteratee = cb(iteratee, context);
+      iteratee = _.iteratee(iteratee, context);
       _.each(obj, function(value, index, list) {
         computed = iteratee(value, index, list);
         if (computed > lastComputed || computed === -Infinity && result === -Infinity) {
@@ -5613,7 +5559,7 @@ moment.tz.load(require('./data/packed/latest.json'));
     var result = Infinity, lastComputed = Infinity,
         value, computed;
     if (iteratee == null && obj != null) {
-      obj = isArrayLike(obj) ? obj : _.values(obj);
+      obj = obj.length === +obj.length ? obj : _.values(obj);
       for (var i = 0, length = obj.length; i < length; i++) {
         value = obj[i];
         if (value < result) {
@@ -5621,7 +5567,7 @@ moment.tz.load(require('./data/packed/latest.json'));
         }
       }
     } else {
-      iteratee = cb(iteratee, context);
+      iteratee = _.iteratee(iteratee, context);
       _.each(obj, function(value, index, list) {
         computed = iteratee(value, index, list);
         if (computed < lastComputed || computed === Infinity && result === Infinity) {
@@ -5636,7 +5582,7 @@ moment.tz.load(require('./data/packed/latest.json'));
   // Shuffle a collection, using the modern version of the
   // [Fisher-Yates shuffle](http://en.wikipedia.org/wiki/Fisher–Yates_shuffle).
   _.shuffle = function(obj) {
-    var set = isArrayLike(obj) ? obj : _.values(obj);
+    var set = obj && obj.length === +obj.length ? obj : _.values(obj);
     var length = set.length;
     var shuffled = Array(length);
     for (var index = 0, rand; index < length; index++) {
@@ -5652,7 +5598,7 @@ moment.tz.load(require('./data/packed/latest.json'));
   // The internal `guard` argument allows it to work with `map`.
   _.sample = function(obj, n, guard) {
     if (n == null || guard) {
-      if (!isArrayLike(obj)) obj = _.values(obj);
+      if (obj.length !== +obj.length) obj = _.values(obj);
       return obj[_.random(obj.length - 1)];
     }
     return _.shuffle(obj).slice(0, Math.max(0, n));
@@ -5660,7 +5606,7 @@ moment.tz.load(require('./data/packed/latest.json'));
 
   // Sort the object's values by a criterion produced by an iteratee.
   _.sortBy = function(obj, iteratee, context) {
-    iteratee = cb(iteratee, context);
+    iteratee = _.iteratee(iteratee, context);
     return _.pluck(_.map(obj, function(value, index, list) {
       return {
         value: value,
@@ -5682,7 +5628,7 @@ moment.tz.load(require('./data/packed/latest.json'));
   var group = function(behavior) {
     return function(obj, iteratee, context) {
       var result = {};
-      iteratee = cb(iteratee, context);
+      iteratee = _.iteratee(iteratee, context);
       _.each(obj, function(value, index) {
         var key = iteratee(value, index, obj);
         behavior(result, value, key);
@@ -5710,24 +5656,37 @@ moment.tz.load(require('./data/packed/latest.json'));
     if (_.has(result, key)) result[key]++; else result[key] = 1;
   });
 
+  // Use a comparator function to figure out the smallest index at which
+  // an object should be inserted so as to maintain order. Uses binary search.
+  _.sortedIndex = function(array, obj, iteratee, context) {
+    iteratee = _.iteratee(iteratee, context, 1);
+    var value = iteratee(obj);
+    var low = 0, high = array.length;
+    while (low < high) {
+      var mid = low + high >>> 1;
+      if (iteratee(array[mid]) < value) low = mid + 1; else high = mid;
+    }
+    return low;
+  };
+
   // Safely create a real, live array from anything iterable.
   _.toArray = function(obj) {
     if (!obj) return [];
     if (_.isArray(obj)) return slice.call(obj);
-    if (isArrayLike(obj)) return _.map(obj, _.identity);
+    if (obj.length === +obj.length) return _.map(obj, _.identity);
     return _.values(obj);
   };
 
   // Return the number of elements in an object.
   _.size = function(obj) {
     if (obj == null) return 0;
-    return isArrayLike(obj) ? obj.length : _.keys(obj).length;
+    return obj.length === +obj.length ? obj.length : _.keys(obj).length;
   };
 
   // Split a collection into two arrays: one whose elements all satisfy the given
   // predicate, and one whose elements all do not satisfy the predicate.
   _.partition = function(obj, predicate, context) {
-    predicate = cb(predicate, context);
+    predicate = _.iteratee(predicate, context);
     var pass = [], fail = [];
     _.each(obj, function(value, key, obj) {
       (predicate(value, key, obj) ? pass : fail).push(value);
@@ -5744,27 +5703,30 @@ moment.tz.load(require('./data/packed/latest.json'));
   _.first = _.head = _.take = function(array, n, guard) {
     if (array == null) return void 0;
     if (n == null || guard) return array[0];
-    return _.initial(array, array.length - n);
+    if (n < 0) return [];
+    return slice.call(array, 0, n);
   };
 
   // Returns everything but the last entry of the array. Especially useful on
   // the arguments object. Passing **n** will return all the values in
-  // the array, excluding the last N.
+  // the array, excluding the last N. The **guard** check allows it to work with
+  // `_.map`.
   _.initial = function(array, n, guard) {
     return slice.call(array, 0, Math.max(0, array.length - (n == null || guard ? 1 : n)));
   };
 
   // Get the last element of an array. Passing **n** will return the last N
-  // values in the array.
+  // values in the array. The **guard** check allows it to work with `_.map`.
   _.last = function(array, n, guard) {
     if (array == null) return void 0;
     if (n == null || guard) return array[array.length - 1];
-    return _.rest(array, Math.max(0, array.length - n));
+    return slice.call(array, Math.max(array.length - n, 0));
   };
 
   // Returns everything but the first entry of the array. Aliased as `tail` and `drop`.
   // Especially useful on the arguments object. Passing an **n** will return
-  // the rest N values in the array.
+  // the rest N values in the array. The **guard**
+  // check allows it to work with `_.map`.
   _.rest = _.tail = _.drop = function(array, n, guard) {
     return slice.call(array, n == null || guard ? 1 : n);
   };
@@ -5775,20 +5737,18 @@ moment.tz.load(require('./data/packed/latest.json'));
   };
 
   // Internal implementation of a recursive `flatten` function.
-  var flatten = function(input, shallow, strict, startIndex) {
-    var output = [], idx = 0;
-    for (var i = startIndex || 0, length = getLength(input); i < length; i++) {
+  var flatten = function(input, shallow, strict, output) {
+    if (shallow && _.every(input, _.isArray)) {
+      return concat.apply(output, input);
+    }
+    for (var i = 0, length = input.length; i < length; i++) {
       var value = input[i];
-      if (isArrayLike(value) && (_.isArray(value) || _.isArguments(value))) {
-        //flatten current level of array or arguments object
-        if (!shallow) value = flatten(value, shallow, strict);
-        var j = 0, len = value.length;
-        output.length += len;
-        while (j < len) {
-          output[idx++] = value[j++];
-        }
-      } else if (!strict) {
-        output[idx++] = value;
+      if (!_.isArray(value) && !_.isArguments(value)) {
+        if (!strict) output.push(value);
+      } else if (shallow) {
+        push.apply(output, value);
+      } else {
+        flatten(value, shallow, strict, output);
       }
     }
     return output;
@@ -5796,7 +5756,7 @@ moment.tz.load(require('./data/packed/latest.json'));
 
   // Flatten out an array, either recursively (by default), or just one level.
   _.flatten = function(array, shallow) {
-    return flatten(array, shallow, false);
+    return flatten(array, shallow, false, []);
   };
 
   // Return a version of the array that does not contain the specified value(s).
@@ -5808,26 +5768,27 @@ moment.tz.load(require('./data/packed/latest.json'));
   // been sorted, you have the option of using a faster algorithm.
   // Aliased as `unique`.
   _.uniq = _.unique = function(array, isSorted, iteratee, context) {
+    if (array == null) return [];
     if (!_.isBoolean(isSorted)) {
       context = iteratee;
       iteratee = isSorted;
       isSorted = false;
     }
-    if (iteratee != null) iteratee = cb(iteratee, context);
+    if (iteratee != null) iteratee = _.iteratee(iteratee, context);
     var result = [];
     var seen = [];
-    for (var i = 0, length = getLength(array); i < length; i++) {
-      var value = array[i],
-          computed = iteratee ? iteratee(value, i, array) : value;
+    for (var i = 0, length = array.length; i < length; i++) {
+      var value = array[i];
       if (isSorted) {
-        if (!i || seen !== computed) result.push(value);
-        seen = computed;
+        if (!i || seen !== value) result.push(value);
+        seen = value;
       } else if (iteratee) {
-        if (!_.contains(seen, computed)) {
+        var computed = iteratee(value, i, array);
+        if (_.indexOf(seen, computed) < 0) {
           seen.push(computed);
           result.push(value);
         }
-      } else if (!_.contains(result, value)) {
+      } else if (_.indexOf(result, value) < 0) {
         result.push(value);
       }
     }
@@ -5837,15 +5798,16 @@ moment.tz.load(require('./data/packed/latest.json'));
   // Produce an array that contains the union: each distinct element from all of
   // the passed-in arrays.
   _.union = function() {
-    return _.uniq(flatten(arguments, true, true));
+    return _.uniq(flatten(arguments, true, true, []));
   };
 
   // Produce an array that contains every item shared between all the
   // passed-in arrays.
   _.intersection = function(array) {
+    if (array == null) return [];
     var result = [];
     var argsLength = arguments.length;
-    for (var i = 0, length = getLength(array); i < length; i++) {
+    for (var i = 0, length = array.length; i < length; i++) {
       var item = array[i];
       if (_.contains(result, item)) continue;
       for (var j = 1; j < argsLength; j++) {
@@ -5859,7 +5821,7 @@ moment.tz.load(require('./data/packed/latest.json'));
   // Take the difference between one array and a number of other arrays.
   // Only the elements present in just the first array will remain.
   _.difference = function(array) {
-    var rest = flatten(arguments, true, true, 1);
+    var rest = flatten(slice.call(arguments, 1), true, true, []);
     return _.filter(array, function(value){
       return !_.contains(rest, value);
     });
@@ -5867,28 +5829,23 @@ moment.tz.load(require('./data/packed/latest.json'));
 
   // Zip together multiple lists into a single array -- elements that share
   // an index go together.
-  _.zip = function() {
-    return _.unzip(arguments);
-  };
-
-  // Complement of _.zip. Unzip accepts an array of arrays and groups
-  // each array's elements on shared indices
-  _.unzip = function(array) {
-    var length = array && _.max(array, getLength).length || 0;
-    var result = Array(length);
-
-    for (var index = 0; index < length; index++) {
-      result[index] = _.pluck(array, index);
+  _.zip = function(array) {
+    if (array == null) return [];
+    var length = _.max(arguments, 'length').length;
+    var results = Array(length);
+    for (var i = 0; i < length; i++) {
+      results[i] = _.pluck(arguments, i);
     }
-    return result;
+    return results;
   };
 
   // Converts lists into objects. Pass either a single array of `[key, value]`
   // pairs, or two parallel arrays of the same length -- one of keys, and one of
   // the corresponding values.
   _.object = function(list, values) {
+    if (list == null) return {};
     var result = {};
-    for (var i = 0, length = getLength(list); i < length; i++) {
+    for (var i = 0, length = list.length; i < length; i++) {
       if (values) {
         result[list[i]] = values[i];
       } else {
@@ -5898,73 +5855,40 @@ moment.tz.load(require('./data/packed/latest.json'));
     return result;
   };
 
-  // Generator function to create the findIndex and findLastIndex functions
-  function createPredicateIndexFinder(dir) {
-    return function(array, predicate, context) {
-      predicate = cb(predicate, context);
-      var length = getLength(array);
-      var index = dir > 0 ? 0 : length - 1;
-      for (; index >= 0 && index < length; index += dir) {
-        if (predicate(array[index], index, array)) return index;
-      }
-      return -1;
-    };
-  }
-
-  // Returns the first index on an array-like that passes a predicate test
-  _.findIndex = createPredicateIndexFinder(1);
-  _.findLastIndex = createPredicateIndexFinder(-1);
-
-  // Use a comparator function to figure out the smallest index at which
-  // an object should be inserted so as to maintain order. Uses binary search.
-  _.sortedIndex = function(array, obj, iteratee, context) {
-    iteratee = cb(iteratee, context, 1);
-    var value = iteratee(obj);
-    var low = 0, high = getLength(array);
-    while (low < high) {
-      var mid = Math.floor((low + high) / 2);
-      if (iteratee(array[mid]) < value) low = mid + 1; else high = mid;
-    }
-    return low;
-  };
-
-  // Generator function to create the indexOf and lastIndexOf functions
-  function createIndexFinder(dir, predicateFind, sortedIndex) {
-    return function(array, item, idx) {
-      var i = 0, length = getLength(array);
-      if (typeof idx == 'number') {
-        if (dir > 0) {
-            i = idx >= 0 ? idx : Math.max(idx + length, i);
-        } else {
-            length = idx >= 0 ? Math.min(idx + 1, length) : idx + length + 1;
-        }
-      } else if (sortedIndex && idx && length) {
-        idx = sortedIndex(array, item);
-        return array[idx] === item ? idx : -1;
-      }
-      if (item !== item) {
-        idx = predicateFind(slice.call(array, i, length), _.isNaN);
-        return idx >= 0 ? idx + i : -1;
-      }
-      for (idx = dir > 0 ? i : length - 1; idx >= 0 && idx < length; idx += dir) {
-        if (array[idx] === item) return idx;
-      }
-      return -1;
-    };
-  }
-
   // Return the position of the first occurrence of an item in an array,
   // or -1 if the item is not included in the array.
   // If the array is large and already in sort order, pass `true`
   // for **isSorted** to use binary search.
-  _.indexOf = createIndexFinder(1, _.findIndex, _.sortedIndex);
-  _.lastIndexOf = createIndexFinder(-1, _.findLastIndex);
+  _.indexOf = function(array, item, isSorted) {
+    if (array == null) return -1;
+    var i = 0, length = array.length;
+    if (isSorted) {
+      if (typeof isSorted == 'number') {
+        i = isSorted < 0 ? Math.max(0, length + isSorted) : isSorted;
+      } else {
+        i = _.sortedIndex(array, item);
+        return array[i] === item ? i : -1;
+      }
+    }
+    for (; i < length; i++) if (array[i] === item) return i;
+    return -1;
+  };
+
+  _.lastIndexOf = function(array, item, from) {
+    if (array == null) return -1;
+    var idx = array.length;
+    if (typeof from == 'number') {
+      idx = from < 0 ? idx + from + 1 : Math.min(idx, from + 1);
+    }
+    while (--idx >= 0) if (array[idx] === item) return idx;
+    return -1;
+  };
 
   // Generate an integer Array containing an arithmetic progression. A port of
   // the native Python `range()` function. See
   // [the Python documentation](http://docs.python.org/library/functions.html#range).
   _.range = function(start, stop, step) {
-    if (stop == null) {
+    if (arguments.length <= 1) {
       stop = start || 0;
       start = 0;
     }
@@ -5983,25 +5907,25 @@ moment.tz.load(require('./data/packed/latest.json'));
   // Function (ahem) Functions
   // ------------------
 
-  // Determines whether to execute a function as a constructor
-  // or a normal function with the provided arguments
-  var executeBound = function(sourceFunc, boundFunc, context, callingContext, args) {
-    if (!(callingContext instanceof boundFunc)) return sourceFunc.apply(context, args);
-    var self = baseCreate(sourceFunc.prototype);
-    var result = sourceFunc.apply(self, args);
-    if (_.isObject(result)) return result;
-    return self;
-  };
+  // Reusable constructor function for prototype setting.
+  var Ctor = function(){};
 
   // Create a function bound to a given object (assigning `this`, and arguments,
   // optionally). Delegates to **ECMAScript 5**'s native `Function.bind` if
   // available.
   _.bind = function(func, context) {
+    var args, bound;
     if (nativeBind && func.bind === nativeBind) return nativeBind.apply(func, slice.call(arguments, 1));
     if (!_.isFunction(func)) throw new TypeError('Bind must be called on a function');
-    var args = slice.call(arguments, 2);
-    var bound = function() {
-      return executeBound(func, bound, context, this, args.concat(slice.call(arguments)));
+    args = slice.call(arguments, 2);
+    bound = function() {
+      if (!(this instanceof bound)) return func.apply(context, args.concat(slice.call(arguments)));
+      Ctor.prototype = func.prototype;
+      var self = new Ctor;
+      Ctor.prototype = null;
+      var result = func.apply(self, args.concat(slice.call(arguments)));
+      if (_.isObject(result)) return result;
+      return self;
     };
     return bound;
   };
@@ -6011,16 +5935,15 @@ moment.tz.load(require('./data/packed/latest.json'));
   // as a placeholder, allowing any combination of arguments to be pre-filled.
   _.partial = function(func) {
     var boundArgs = slice.call(arguments, 1);
-    var bound = function() {
-      var position = 0, length = boundArgs.length;
-      var args = Array(length);
-      for (var i = 0; i < length; i++) {
-        args[i] = boundArgs[i] === _ ? arguments[position++] : boundArgs[i];
+    return function() {
+      var position = 0;
+      var args = boundArgs.slice();
+      for (var i = 0, length = args.length; i < length; i++) {
+        if (args[i] === _) args[i] = arguments[position++];
       }
       while (position < arguments.length) args.push(arguments[position++]);
-      return executeBound(func, bound, this, this, args);
+      return func.apply(this, args);
     };
-    return bound;
   };
 
   // Bind a number of an object's methods to that object. Remaining arguments
@@ -6040,7 +5963,7 @@ moment.tz.load(require('./data/packed/latest.json'));
   _.memoize = function(func, hasher) {
     var memoize = function(key) {
       var cache = memoize.cache;
-      var address = '' + (hasher ? hasher.apply(this, arguments) : key);
+      var address = hasher ? hasher.apply(this, arguments) : key;
       if (!_.has(cache, address)) cache[address] = func.apply(this, arguments);
       return cache[address];
     };
@@ -6059,7 +5982,9 @@ moment.tz.load(require('./data/packed/latest.json'));
 
   // Defers a function, scheduling it to run after the current call stack has
   // cleared.
-  _.defer = _.partial(_.delay, _, 1);
+  _.defer = function(func) {
+    return _.delay.apply(_, [func, 1].concat(slice.call(arguments, 1)));
+  };
 
   // Returns a function, that, when invoked, will only be triggered at most once
   // during a given window of time. Normally, the throttled function will run
@@ -6084,10 +6009,8 @@ moment.tz.load(require('./data/packed/latest.json'));
       context = this;
       args = arguments;
       if (remaining <= 0 || remaining > wait) {
-        if (timeout) {
-          clearTimeout(timeout);
-          timeout = null;
-        }
+        clearTimeout(timeout);
+        timeout = null;
         previous = now;
         result = func.apply(context, args);
         if (!timeout) context = args = null;
@@ -6108,7 +6031,7 @@ moment.tz.load(require('./data/packed/latest.json'));
     var later = function() {
       var last = _.now() - timestamp;
 
-      if (last < wait && last >= 0) {
+      if (last < wait && last > 0) {
         timeout = setTimeout(later, wait - last);
       } else {
         timeout = null;
@@ -6161,7 +6084,7 @@ moment.tz.load(require('./data/packed/latest.json'));
     };
   };
 
-  // Returns a function that will only be executed on and after the Nth call.
+  // Returns a function that will only be executed after being called N times.
   _.after = function(times, func) {
     return function() {
       if (--times < 1) {
@@ -6170,14 +6093,15 @@ moment.tz.load(require('./data/packed/latest.json'));
     };
   };
 
-  // Returns a function that will only be executed up to (but not including) the Nth call.
+  // Returns a function that will only be executed before being called N times.
   _.before = function(times, func) {
     var memo;
     return function() {
       if (--times > 0) {
         memo = func.apply(this, arguments);
+      } else {
+        func = null;
       }
-      if (times <= 1) func = null;
       return memo;
     };
   };
@@ -6189,47 +6113,13 @@ moment.tz.load(require('./data/packed/latest.json'));
   // Object Functions
   // ----------------
 
-  // Keys in IE < 9 that won't be iterated by `for key in ...` and thus missed.
-  var hasEnumBug = !{toString: null}.propertyIsEnumerable('toString');
-  var nonEnumerableProps = ['valueOf', 'isPrototypeOf', 'toString',
-                      'propertyIsEnumerable', 'hasOwnProperty', 'toLocaleString'];
-
-  function collectNonEnumProps(obj, keys) {
-    var nonEnumIdx = nonEnumerableProps.length;
-    var constructor = obj.constructor;
-    var proto = (_.isFunction(constructor) && constructor.prototype) || ObjProto;
-
-    // Constructor is a special case.
-    var prop = 'constructor';
-    if (_.has(obj, prop) && !_.contains(keys, prop)) keys.push(prop);
-
-    while (nonEnumIdx--) {
-      prop = nonEnumerableProps[nonEnumIdx];
-      if (prop in obj && obj[prop] !== proto[prop] && !_.contains(keys, prop)) {
-        keys.push(prop);
-      }
-    }
-  }
-
-  // Retrieve the names of an object's own properties.
+  // Retrieve the names of an object's properties.
   // Delegates to **ECMAScript 5**'s native `Object.keys`
   _.keys = function(obj) {
     if (!_.isObject(obj)) return [];
     if (nativeKeys) return nativeKeys(obj);
     var keys = [];
     for (var key in obj) if (_.has(obj, key)) keys.push(key);
-    // Ahem, IE < 9.
-    if (hasEnumBug) collectNonEnumProps(obj, keys);
-    return keys;
-  };
-
-  // Retrieve all the property names of an object.
-  _.allKeys = function(obj) {
-    if (!_.isObject(obj)) return [];
-    var keys = [];
-    for (var key in obj) keys.push(key);
-    // Ahem, IE < 9.
-    if (hasEnumBug) collectNonEnumProps(obj, keys);
     return keys;
   };
 
@@ -6242,21 +6132,6 @@ moment.tz.load(require('./data/packed/latest.json'));
       values[i] = obj[keys[i]];
     }
     return values;
-  };
-
-  // Returns the results of applying the iteratee to each element of the object
-  // In contrast to _.map it returns an object
-  _.mapObject = function(obj, iteratee, context) {
-    iteratee = cb(iteratee, context);
-    var keys =  _.keys(obj),
-          length = keys.length,
-          results = {},
-          currentKey;
-      for (var index = 0; index < length; index++) {
-        currentKey = keys[index];
-        results[currentKey] = iteratee(obj[currentKey], currentKey, obj);
-      }
-      return results;
   };
 
   // Convert an object into a list of `[key, value]` pairs.
@@ -6291,38 +6166,37 @@ moment.tz.load(require('./data/packed/latest.json'));
   };
 
   // Extend a given object with all the properties in passed-in object(s).
-  _.extend = createAssigner(_.allKeys);
-
-  // Assigns a given object with all the own properties in the passed-in object(s)
-  // (https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/assign)
-  _.extendOwn = _.assign = createAssigner(_.keys);
-
-  // Returns the first key on an object that passes a predicate test
-  _.findKey = function(obj, predicate, context) {
-    predicate = cb(predicate, context);
-    var keys = _.keys(obj), key;
-    for (var i = 0, length = keys.length; i < length; i++) {
-      key = keys[i];
-      if (predicate(obj[key], key, obj)) return key;
+  _.extend = function(obj) {
+    if (!_.isObject(obj)) return obj;
+    var source, prop;
+    for (var i = 1, length = arguments.length; i < length; i++) {
+      source = arguments[i];
+      for (prop in source) {
+        if (hasOwnProperty.call(source, prop)) {
+            obj[prop] = source[prop];
+        }
+      }
     }
+    return obj;
   };
 
   // Return a copy of the object only containing the whitelisted properties.
-  _.pick = function(object, oiteratee, context) {
-    var result = {}, obj = object, iteratee, keys;
+  _.pick = function(obj, iteratee, context) {
+    var result = {}, key;
     if (obj == null) return result;
-    if (_.isFunction(oiteratee)) {
-      keys = _.allKeys(obj);
-      iteratee = optimizeCb(oiteratee, context);
+    if (_.isFunction(iteratee)) {
+      iteratee = createCallback(iteratee, context);
+      for (key in obj) {
+        var value = obj[key];
+        if (iteratee(value, key, obj)) result[key] = value;
+      }
     } else {
-      keys = flatten(arguments, false, false, 1);
-      iteratee = function(value, key, obj) { return key in obj; };
-      obj = Object(obj);
-    }
-    for (var i = 0, length = keys.length; i < length; i++) {
-      var key = keys[i];
-      var value = obj[key];
-      if (iteratee(value, key, obj)) result[key] = value;
+      var keys = concat.apply([], slice.call(arguments, 1));
+      obj = new Object(obj);
+      for (var i = 0, length = keys.length; i < length; i++) {
+        key = keys[i];
+        if (key in obj) result[key] = obj[key];
+      }
     }
     return result;
   };
@@ -6332,7 +6206,7 @@ moment.tz.load(require('./data/packed/latest.json'));
     if (_.isFunction(iteratee)) {
       iteratee = _.negate(iteratee);
     } else {
-      var keys = _.map(flatten(arguments, false, false, 1), String);
+      var keys = _.map(concat.apply([], slice.call(arguments, 1)), String);
       iteratee = function(value, key) {
         return !_.contains(keys, key);
       };
@@ -6341,15 +6215,15 @@ moment.tz.load(require('./data/packed/latest.json'));
   };
 
   // Fill in a given object with default properties.
-  _.defaults = createAssigner(_.allKeys, true);
-
-  // Creates an object that inherits from the given prototype object.
-  // If additional properties are provided then they will be added to the
-  // created object.
-  _.create = function(prototype, props) {
-    var result = baseCreate(prototype);
-    if (props) _.extendOwn(result, props);
-    return result;
+  _.defaults = function(obj) {
+    if (!_.isObject(obj)) return obj;
+    for (var i = 1, length = arguments.length; i < length; i++) {
+      var source = arguments[i];
+      for (var prop in source) {
+        if (obj[prop] === void 0) obj[prop] = source[prop];
+      }
+    }
+    return obj;
   };
 
   // Create a (shallow-cloned) duplicate of an object.
@@ -6365,19 +6239,6 @@ moment.tz.load(require('./data/packed/latest.json'));
     interceptor(obj);
     return obj;
   };
-
-  // Returns whether an object has a given set of `key:value` pairs.
-  _.isMatch = function(object, attrs) {
-    var keys = _.keys(attrs), length = keys.length;
-    if (object == null) return !length;
-    var obj = Object(object);
-    for (var i = 0; i < length; i++) {
-      var key = keys[i];
-      if (attrs[key] !== obj[key] || !(key in obj)) return false;
-    }
-    return true;
-  };
-
 
   // Internal recursive comparison function for `isEqual`.
   var eq = function(a, b, aStack, bStack) {
@@ -6413,76 +6274,74 @@ moment.tz.load(require('./data/packed/latest.json'));
         // of `NaN` are not equivalent.
         return +a === +b;
     }
-
-    var areArrays = className === '[object Array]';
-    if (!areArrays) {
-      if (typeof a != 'object' || typeof b != 'object') return false;
-
-      // Objects with different constructors are not equivalent, but `Object`s or `Array`s
-      // from different frames are.
-      var aCtor = a.constructor, bCtor = b.constructor;
-      if (aCtor !== bCtor && !(_.isFunction(aCtor) && aCtor instanceof aCtor &&
-                               _.isFunction(bCtor) && bCtor instanceof bCtor)
-                          && ('constructor' in a && 'constructor' in b)) {
-        return false;
-      }
-    }
+    if (typeof a != 'object' || typeof b != 'object') return false;
     // Assume equality for cyclic structures. The algorithm for detecting cyclic
     // structures is adapted from ES 5.1 section 15.12.3, abstract operation `JO`.
-
-    // Initializing stack of traversed objects.
-    // It's done here since we only need them for objects and arrays comparison.
-    aStack = aStack || [];
-    bStack = bStack || [];
     var length = aStack.length;
     while (length--) {
       // Linear search. Performance is inversely proportional to the number of
       // unique nested structures.
       if (aStack[length] === a) return bStack[length] === b;
     }
-
+    // Objects with different constructors are not equivalent, but `Object`s
+    // from different frames are.
+    var aCtor = a.constructor, bCtor = b.constructor;
+    if (
+      aCtor !== bCtor &&
+      // Handle Object.create(x) cases
+      'constructor' in a && 'constructor' in b &&
+      !(_.isFunction(aCtor) && aCtor instanceof aCtor &&
+        _.isFunction(bCtor) && bCtor instanceof bCtor)
+    ) {
+      return false;
+    }
     // Add the first object to the stack of traversed objects.
     aStack.push(a);
     bStack.push(b);
-
+    var size, result;
     // Recursively compare objects and arrays.
-    if (areArrays) {
+    if (className === '[object Array]') {
       // Compare array lengths to determine if a deep comparison is necessary.
-      length = a.length;
-      if (length !== b.length) return false;
-      // Deep compare the contents, ignoring non-numeric properties.
-      while (length--) {
-        if (!eq(a[length], b[length], aStack, bStack)) return false;
+      size = a.length;
+      result = size === b.length;
+      if (result) {
+        // Deep compare the contents, ignoring non-numeric properties.
+        while (size--) {
+          if (!(result = eq(a[size], b[size], aStack, bStack))) break;
+        }
       }
     } else {
       // Deep compare objects.
       var keys = _.keys(a), key;
-      length = keys.length;
+      size = keys.length;
       // Ensure that both objects contain the same number of properties before comparing deep equality.
-      if (_.keys(b).length !== length) return false;
-      while (length--) {
-        // Deep compare each member
-        key = keys[length];
-        if (!(_.has(b, key) && eq(a[key], b[key], aStack, bStack))) return false;
+      result = _.keys(b).length === size;
+      if (result) {
+        while (size--) {
+          // Deep compare each member
+          key = keys[size];
+          if (!(result = _.has(b, key) && eq(a[key], b[key], aStack, bStack))) break;
+        }
       }
     }
     // Remove the first object from the stack of traversed objects.
     aStack.pop();
     bStack.pop();
-    return true;
+    return result;
   };
 
   // Perform a deep comparison to check if two objects are equal.
   _.isEqual = function(a, b) {
-    return eq(a, b);
+    return eq(a, b, [], []);
   };
 
   // Is a given array, string, or object empty?
   // An "empty" object has no enumerable own-properties.
   _.isEmpty = function(obj) {
     if (obj == null) return true;
-    if (isArrayLike(obj) && (_.isArray(obj) || _.isString(obj) || _.isArguments(obj))) return obj.length === 0;
-    return _.keys(obj).length === 0;
+    if (_.isArray(obj) || _.isString(obj) || _.isArguments(obj)) return obj.length === 0;
+    for (var key in obj) if (_.has(obj, key)) return false;
+    return true;
   };
 
   // Is a given value a DOM element?
@@ -6502,14 +6361,14 @@ moment.tz.load(require('./data/packed/latest.json'));
     return type === 'function' || type === 'object' && !!obj;
   };
 
-  // Add some isType methods: isArguments, isFunction, isString, isNumber, isDate, isRegExp, isError.
-  _.each(['Arguments', 'Function', 'String', 'Number', 'Date', 'RegExp', 'Error'], function(name) {
+  // Add some isType methods: isArguments, isFunction, isString, isNumber, isDate, isRegExp.
+  _.each(['Arguments', 'Function', 'String', 'Number', 'Date', 'RegExp'], function(name) {
     _['is' + name] = function(obj) {
       return toString.call(obj) === '[object ' + name + ']';
     };
   });
 
-  // Define a fallback version of the method in browsers (ahem, IE < 9), where
+  // Define a fallback version of the method in browsers (ahem, IE), where
   // there isn't any inspectable "Arguments" type.
   if (!_.isArguments(arguments)) {
     _.isArguments = function(obj) {
@@ -6517,9 +6376,8 @@ moment.tz.load(require('./data/packed/latest.json'));
     };
   }
 
-  // Optimize `isFunction` if appropriate. Work around some typeof bugs in old v8,
-  // IE 11 (#1621), and in Safari 8 (#1929).
-  if (typeof /./ != 'function' && typeof Int8Array != 'object') {
+  // Optimize `isFunction` if appropriate. Work around an IE 11 bug.
+  if (typeof /./ !== 'function') {
     _.isFunction = function(obj) {
       return typeof obj == 'function' || false;
     };
@@ -6571,7 +6429,6 @@ moment.tz.load(require('./data/packed/latest.json'));
     return value;
   };
 
-  // Predicate-generating functions. Often useful outside of Underscore.
   _.constant = function(value) {
     return function() {
       return value;
@@ -6580,28 +6437,30 @@ moment.tz.load(require('./data/packed/latest.json'));
 
   _.noop = function(){};
 
-  _.property = property;
-
-  // Generates a function for a given object that returns a given property.
-  _.propertyOf = function(obj) {
-    return obj == null ? function(){} : function(key) {
+  _.property = function(key) {
+    return function(obj) {
       return obj[key];
     };
   };
 
-  // Returns a predicate for checking whether an object has a given set of
-  // `key:value` pairs.
-  _.matcher = _.matches = function(attrs) {
-    attrs = _.extendOwn({}, attrs);
+  // Returns a predicate for checking whether an object has a given set of `key:value` pairs.
+  _.matches = function(attrs) {
+    var pairs = _.pairs(attrs), length = pairs.length;
     return function(obj) {
-      return _.isMatch(obj, attrs);
+      if (obj == null) return !length;
+      obj = new Object(obj);
+      for (var i = 0; i < length; i++) {
+        var pair = pairs[i], key = pair[0];
+        if (pair[1] !== obj[key] || !(key in obj)) return false;
+      }
+      return true;
     };
   };
 
   // Run a function **n** times.
   _.times = function(n, iteratee, context) {
     var accum = Array(Math.max(0, n));
-    iteratee = optimizeCb(iteratee, context, 1);
+    iteratee = createCallback(iteratee, context, 1);
     for (var i = 0; i < n; i++) accum[i] = iteratee(i);
     return accum;
   };
@@ -6650,12 +6509,10 @@ moment.tz.load(require('./data/packed/latest.json'));
 
   // If the value of the named `property` is a function then invoke it with the
   // `object` as context; otherwise, return it.
-  _.result = function(object, property, fallback) {
-    var value = object == null ? void 0 : object[property];
-    if (value === void 0) {
-      value = fallback;
-    }
-    return _.isFunction(value) ? value.call(object) : value;
+  _.result = function(object, property) {
+    if (object == null) return void 0;
+    var value = object[property];
+    return _.isFunction(value) ? object[property]() : value;
   };
 
   // Generate a unique integer id (unique within the entire client session).
@@ -6770,8 +6627,8 @@ moment.tz.load(require('./data/packed/latest.json'));
   // underscore functions. Wrapped objects may be chained.
 
   // Helper function to continue chaining intermediate results.
-  var result = function(instance, obj) {
-    return instance._chain ? _(obj).chain() : obj;
+  var result = function(obj) {
+    return this._chain ? _(obj).chain() : obj;
   };
 
   // Add your own custom functions to the Underscore object.
@@ -6781,7 +6638,7 @@ moment.tz.load(require('./data/packed/latest.json'));
       _.prototype[name] = function() {
         var args = [this._wrapped];
         push.apply(args, arguments);
-        return result(this, func.apply(_, args));
+        return result.call(this, func.apply(_, args));
       };
     });
   };
@@ -6796,7 +6653,7 @@ moment.tz.load(require('./data/packed/latest.json'));
       var obj = this._wrapped;
       method.apply(obj, arguments);
       if ((name === 'shift' || name === 'splice') && obj.length === 0) delete obj[0];
-      return result(this, obj);
+      return result.call(this, obj);
     };
   });
 
@@ -6804,21 +6661,13 @@ moment.tz.load(require('./data/packed/latest.json'));
   _.each(['concat', 'join', 'slice'], function(name) {
     var method = ArrayProto[name];
     _.prototype[name] = function() {
-      return result(this, method.apply(this._wrapped, arguments));
+      return result.call(this, method.apply(this._wrapped, arguments));
     };
   });
 
   // Extracts the result from a wrapped and chained object.
   _.prototype.value = function() {
     return this._wrapped;
-  };
-
-  // Provide unwrapping proxy for some methods used in engine operations
-  // such as arithmetic and JSON stringification.
-  _.prototype.valueOf = _.prototype.toJSON = _.prototype.value;
-
-  _.prototype.toString = function() {
-    return '' + this._wrapped;
   };
 
   // AMD registration happens at the end for compatibility with AMD loaders
@@ -6835,4 +6684,4 @@ moment.tz.load(require('./data/packed/latest.json'));
   }
 }.call(this));
 
-},{}]},{},[12]);
+},{}]},{},[10]);
