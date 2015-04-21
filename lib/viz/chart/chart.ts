@@ -1,6 +1,4 @@
 import Config = require('../config');
-import GroupedIntervalDataset = require('./grouped-interval-dataset');
-import StandardDataset = require('./standard-dataset');
 import Dataset = require('./dataset');
 import Queries = require('../../core/queries/queries');
 import Api = require('../../core/api');
@@ -62,38 +60,38 @@ class Chart implements Common.Visualization {
 
     }
 
-    private _initializeFieldOptions(metadata: Api.Metadata): void{
-        var fields = metadata.selects.concat(metadata.groups),
-            options = this._options,
-            fieldOptions = options.fields,
-            type = options.chart.type;
-
-        _.each(fields, (fieldName) => {
-            fieldOptions[fieldName] = fieldOptions[fieldName] || {}
-        });       
+    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, reRender: boolean = true): void {
+        this._renderChart();
+        this._resultHandler.handleResult(resultsPromise, this, this._loadData, reRender);
     }
 
-    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Api.Metadata, fullReload: boolean = true): void {        
-        var internalChartConfig;
-        this._initializeFieldOptions(metadata);
-        this._renderChart(metadata);
-        this._resultHandler.handleResult(resultsPromise, metadata, this, this._loadData, fullReload);
-    }
-
-    private _loadData(results: Api.QueryResults, metadata: Api.Metadata, fullReload: boolean): void {
+    private _loadData(results: Api.QueryResults, reRender: boolean): void {
         var options = this._options,
             type = options.chart.type,
             resultItems = results.results,
             typeOptions = options[type],
-            dataset = this._buildDataset(resultItems, metadata),
+            dataset = this._buildDataset(results),
             keys = dataset.getLabels(),
             uniqueKeys = _.unique(keys),
+            metadata = results.metadata,            
+            dateFormat = null,
+            standardDateformatter = null,
+            customDateFormatter = null,          
+            timezone = options.timezone || metadata.timezone,
             colors = Palette.getSwatch(uniqueKeys, options.chart.colors),
             internalChartConfig = (<any>this._chart).internal.config,
-            useTransition = this._chart.data().length && (options.transitionOnReload || !fullReload),
+            useTransition = this._chart.data().length && (options.transitionOnReload || !reRender),
             transitionDuration = useTransition ? this._transitionDuration.some : this._transitionDuration.none;
  
         internalChartConfig.transition_duration = transitionDuration;
+
+        if(metadata.interval) {
+            dateFormat = options.intervals.formats[metadata.interval];
+            standardDateformatter = (value) => Formatters.formatDate(value, timezone, dateFormat);
+            customDateFormatter = options.intervals.valueFormatter;
+            internalChartConfig.axis_x_tick_format = customDateFormatter || standardDateformatter;
+            internalChartConfig.axis_x_type = 'timeseries';
+        }
      
         this._currentDataset = dataset;
         this._chart.load({
@@ -112,17 +110,14 @@ class Chart implements Common.Visualization {
         Dom.removeAllChildren(this.targetElement)
     }
 
-    private _buildDataset(resultItems: Api.QueryResultItem[], metadata: Api.Metadata): Dataset.ChartDataset{
+    private _buildDataset(results: Api.QueryResults): Dataset.ChartDataset{
         var options = this._options,
             formatters = {        
-                selectLabelFormatter: select => options.fields[select] && options.fields[select].label ? options.fields[select].label : select,
+                selectLabelFormatter: select => (options.fields[select] || Config.defaulField).label || select,
                 groupValueFormatter: (groupByName, groupValue) => this._formatGroupValue(groupByName, groupValue)
-            },
-            isGroupedInterval = metadata.interval && metadata.groups.length;
+            };
 
-            return isGroupedInterval ? new GroupedIntervalDataset(resultItems, metadata, formatters)
-                                     : new StandardDataset(resultItems, metadata, formatters);
-
+        return new Dataset.ChartDataset(results, formatters);
     }
 
     private _showTitle(){
@@ -138,7 +133,7 @@ class Chart implements Common.Visualization {
         var dataset = this._currentDataset,
             select = this._currentDataset.getSelect(label),
             options = this._options,
-            fieldOption = options.fields[select],
+            fieldOption = options.fields[select] || Config.defaulField,
             valueFormatter = fieldOption.valueFormatter;
 
         if (valueFormatter){
@@ -149,7 +144,7 @@ class Chart implements Common.Visualization {
     }
 
     private _formatGroupValue(groupByName: string, groupValue: any){
-        var fieldOption = this._options.fields[groupByName],
+        var fieldOption = this._options.fields[groupByName] || Config.defaulField,
             valueFormatter = fieldOption.valueFormatter;
 
         if (valueFormatter){
@@ -159,19 +154,16 @@ class Chart implements Common.Visualization {
         return groupValue;
     }
 
-    private _renderChart(metadata: Api.Metadata) {
+    private _renderChart() {
         if(this._rendered)
             return;
             
         var options = this._options,
-            connectChartContainer: HTMLElement = document.createElement('div'),
-            c3Element: HTMLElement = document.createElement('div'),
+            chartTypeClass = 'connect-chart-' + options.chart.type,
+            connectChartContainer = Dom.createElement('div', 'connect-viz', 'connect-chart', chartTypeClass),
+            c3Element = Dom.createElement('div', 'connect-viz-result'),
             rootElement = this.targetElement,
-            titleElement = document.createElement('span'),
-            timezone = options.timezone || metadata.timezone,
-            dateFormat = null,
-            standardDateformatter = (value) => Formatters.formatDate(value, timezone, dateFormat),
-            customDateFormatter = options.intervals.valueFormatter,
+            titleElement = Dom.createElement('span', 'connect-viz-title'),
             tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
             config = {
                 bindto: c3Element,
@@ -212,21 +204,11 @@ class Chart implements Common.Visualization {
             };
 
         this.clear();
-        titleElement.className = 'connect-viz-title';
-        c3Element.className = 'connect-viz-result'
-        connectChartContainer.className = 'connect-viz connect-chart connect-chart-' + options.chart.type;
         connectChartContainer.appendChild(titleElement);
         connectChartContainer.appendChild(c3Element);
         rootElement.appendChild(connectChartContainer);
         config[options.chart.type] = options[options.chart.type];
 
-        if(metadata.interval) {
-            dateFormat = options.intervals.formats[metadata.interval];
-            config.data['xFormat'] = '%Y-%m-%dT%H:%M:%SZ';
-            config.data['xLocaltime'] = false;
-            config.axis.x.type = 'timeseries';
-            config.axis.x.tick.format = customDateFormatter || standardDateformatter;
-        }
         this._rendered = true;
         this._titleElement = titleElement;
         this._showTitle();        

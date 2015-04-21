@@ -1,6 +1,4 @@
 import Config = require('../config');
-import GroupedIntervalDataset = require('./grouped-interval-dataset');
-import StandardDataset = require('./standard-dataset');
 import Dataset = require('./dataset');
 import Queries = require('../../core/queries/queries');
 import Api = require('../../core/api');
@@ -63,66 +61,57 @@ class Gauge implements Common.Visualization {
         return options;
     }
 
-    private _initializeFieldOptions(metadata: Api.Metadata): void{
-        var fields = metadata.selects.concat(metadata.groups),
-            firstSelect = metadata.selects[0],
-            options = this._options,
-            fieldOptions = options.fields;         
-
-        _.each(fields, (fieldName) => {
-            fieldOptions[fieldName] = fieldOptions[fieldName] || {}
+    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, reRender: boolean = true): void {        
+        resultsPromise = resultsPromise.then((results) => {
+            var resultsCopy = results.clone();
+            return this._loadMinMax(resultsCopy);
         });
-        
-        options.gauge.label = _.clone(options.gauge.label);
-        fieldOptions[firstSelect].valueFormatter = fieldOptions[firstSelect].valueFormatter || options.gauge.label.format;
-        options.gauge.label.format = fieldOptions[firstSelect].valueFormatter;
+
+        this._renderGauge();
+        this._resultHandler.handleResult(resultsPromise, this, this._loadData, reRender);
     }
 
-    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, metadata: Api.Metadata, fullReload: boolean = true): void {        
-        var parsedMetaData = this._parseMetaData(metadata);
-
-        this._initializeFieldOptions(parsedMetaData);
-        this._renderGauge(parsedMetaData);
-        this._resultHandler.handleResult(resultsPromise, parsedMetaData, this, this._loadData, fullReload);
-    }
-
-    private _parseMetaData(metadata: Api.Metadata){
-        var options = this._options,
-            typeOptions = options.gauge,
-            parsedMetaData = _.clone(metadata),
-            filteredSelected = _.without(metadata.selects, this._minSelectName, this._maxSelectName);
-
-        parsedMetaData.selects = filteredSelected;
-
-        return parsedMetaData;
-    }
-
-    private _loadData(results: Api.QueryResults, metadata: Api.Metadata, fullReload: boolean): void {
-        var options = this._options,
-            typeOptions = options.gauge,
-            resultItems = results.results,
-            dataset = this._buildDataset(resultItems, metadata),
-            keys = dataset.getLabels(),
-            uniqueKeys = _.unique(keys),
-            colors = Palette.getSwatch(uniqueKeys, options.gauge.color ? [options.gauge.color] : null),
+    private _loadMinMax(results: Api.QueryResults){
+        var resultItems = results.results,
+            internalGaugeConfig = (<any>this._gauge).internal.config,
             setMinProperty = this._minSelectName && resultItems.length,
             setMaxProperty = this._maxSelectName && resultItems.length,
-            minConfigProperty = 'gauge_min',
-            maxConfigProperty = 'gauge_max',
             showLabelConfigProperty = 'gauge_label_show',
-            internalGaugeConfig = (<any>this._gauge).internal.config,
-            transitionDuration = !options.transitionOnReload && fullReload ? this._transitionDuration.none : this._transitionDuration.some;
-            
-        internalGaugeConfig.transition_duration = transitionDuration;
+            minConfigProperty = 'gauge_min',
+            resultItems = results.results,
+            maxConfigProperty = 'gauge_max';
 
         if (setMinProperty){
             internalGaugeConfig[minConfigProperty] = resultItems[0][this._minSelectName];
             internalGaugeConfig[showLabelConfigProperty] = true;
+            delete resultItems[0][this._minSelectName];
         }
 
         if (setMaxProperty){
             internalGaugeConfig[maxConfigProperty] = resultItems[0][this._maxSelectName];
             internalGaugeConfig[showLabelConfigProperty] = true;
+            delete resultItems[0][this._maxSelectName];
+        }
+
+        return results;
+    }
+
+    private _loadData(results: Api.QueryResults, reRender: boolean): void {
+        var options = this._options,
+            internalGaugeConfig = (<any>this._gauge).internal.config,
+            select = _.first(results.selects()),
+            typeOptions = options.gauge,
+            resultItems = results.results,
+            dataset = this._buildDataset(results),
+            keys = dataset.getLabels(),
+            uniqueKeys = _.unique(keys),
+            colors = Palette.getSwatch(uniqueKeys, options.gauge.color ? [options.gauge.color] : null),
+            transitionDuration = !options.transitionOnReload && reRender ? this._transitionDuration.none : this._transitionDuration.some;
+            
+        internalGaugeConfig.transition_duration = transitionDuration;
+
+        if ((options.fields[select] || Config.defaulField).valueFormatter){
+            internalGaugeConfig.gauge_label_format = options.fields[select].valueFormatter;
         }
 
         this._currentDataset = dataset;
@@ -142,14 +131,14 @@ class Gauge implements Common.Visualization {
         Dom.removeAllChildren(this.targetElement)
     }
 
-    private _buildDataset(resultItems: Api.QueryResultItem[], metadata: Api.Metadata): Dataset.ChartDataset{
+    private _buildDataset(results: Api.QueryResults): Dataset.ChartDataset{
         var options = this._options,
             formatters = {        
-                selectLabelFormatter: select => options.fields[select] && options.fields[select].label ? options.fields[select].label : select,
+                selectLabelFormatter: select => (options.fields[select] || Config.defaulField).label || select,
                 groupValueFormatter: (groupByName, groupValue) => this._formatGroupValue(groupByName, groupValue)
             };
 
-        return new StandardDataset(resultItems, metadata, formatters); 
+        return new Dataset.ChartDataset(results, formatters); 
     }
 
     private _showTitle(){
@@ -165,7 +154,7 @@ class Gauge implements Common.Visualization {
         var dataset = this._currentDataset,
             select = this._currentDataset.getSelect(label),
             options = this._options,
-            fieldOption = options.fields[select],
+            fieldOption = options.fields[select] || Config.defaulField,
             valueFormatter = fieldOption.valueFormatter;
 
         if (valueFormatter){
@@ -176,7 +165,7 @@ class Gauge implements Common.Visualization {
     }
 
     private _formatGroupValue(groupByName: string, groupValue: any){
-        var fieldOption = this._options.fields[groupByName],
+        var fieldOption = this._options.fields[groupByName] || Config.defaulField,
             valueFormatter = fieldOption.valueFormatter;
 
         if (valueFormatter){
@@ -186,16 +175,15 @@ class Gauge implements Common.Visualization {
         return groupValue;
     }
 
-    private _renderGauge(metadata: Api.Metadata) {
+    private _renderGauge() {
         if(this._rendered)
             return;
             
         var options = this._options,
-            connectGaugeContainer: HTMLElement = document.createElement('div'),
-            c3Element: HTMLElement = document.createElement('div'),
+            connectGaugeContainer = Dom.createElement('div', 'connect-viz', 'connect-chart', 'connect-chart-gauge'),
+            c3Element = Dom.createElement('div', 'connect-viz-result'),
             rootElement = this.targetElement,
-            titleElement = document.createElement('span'),
-            timezone = options.timezone || metadata.timezone,
+            titleElement = Dom.createElement('span', 'connect-viz-title'),
             dateFormat = null,
             tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
             config = {
@@ -216,9 +204,6 @@ class Gauge implements Common.Visualization {
             };
 
         this.clear();
-        titleElement.className = 'connect-viz-title';
-        c3Element.className = 'connect-viz-result'
-        connectGaugeContainer.className = 'connect-viz connect-chart connect-chart-gauge';
         connectGaugeContainer.appendChild(titleElement);
         connectGaugeContainer.appendChild(c3Element);
         rootElement.appendChild(connectGaugeContainer);

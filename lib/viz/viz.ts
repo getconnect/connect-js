@@ -1,34 +1,33 @@
 import Queries = require('../core/queries/queries');
+import Api = require('../core/api');
 import Config = require('./config');
+import DataVisualization = require('./data-visualization');
+import Chart = require('./chart/chart');
+import Gauge = require('./chart/gauge');
+import Text = require('./text/text');
+import Table = require('./table/table');
 
 module Viz {
-    export var DataVisualization = require('./data-visualization');
-    export var Chart = require('./chart/chart');
-    export var Gauge = require('./chart/gauge');
-    export var Text = require('./text/text');
-    export var Table = require('./table/table');
-
     export class Visualizations{
-        public chart(query: Queries.ConnectQuery, targetElement: string|HTMLElement, chartOptions: Config.ChartOptions){
+        public chart(data: Queries.ConnectQuery|Api.QueryResultsFactory, targetElement: string|HTMLElement, chartOptions: Config.VisualizationOptions){
             var chart = new Chart(targetElement, chartOptions);
-            return new DataVisualization(query, chart);
+            return new DataVisualization(data, chart);
         }
     
-        public text(query: Queries.ConnectQuery, targetElement: string|HTMLElement, textOptions: Config.TextOptions){
+        public text(data: Queries.ConnectQuery|Api.QueryResultsFactory, targetElement: string|HTMLElement, textOptions: Config.VisualizationOptions){
             var text = new Text(targetElement, textOptions);
-            return new DataVisualization(query, text);
+            return new DataVisualization(data, text);
         }
 
-        public table(query: Queries.ConnectQuery, targetElement: string|HTMLElement, tableOptions: Config.TableOptions){
+        public table(data: Queries.ConnectQuery|Api.QueryResultsFactory, targetElement: string|HTMLElement, tableOptions: Config.VisualizationOptions){
             var table = new Table(targetElement, tableOptions);
-            return new DataVisualization(query, table);
+            return new DataVisualization(data, table);
         }
 
-        public gauge(query: Queries.ConnectQuery, targetElement: string|HTMLElement, chartOptions: Config.ChartOptions){
-            var chart = new Gauge(targetElement, chartOptions);
-            return new DataVisualization(query, chart);
+        public gauge(data: Queries.ConnectQuery|Api.QueryResultsFactory, targetElement: string|HTMLElement, gaugeOptions: Config.VisualizationOptions){
+            var gauge = new Gauge(targetElement, gaugeOptions);
+            return new DataVisualization(data, gauge);
         }
-
     }
 }
 

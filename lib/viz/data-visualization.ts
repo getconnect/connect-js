@@ -6,30 +6,40 @@ import ErrorHandling = require('./error-handling');
 
 class DataVisualization{
     private _visualization: Common.Visualization;
-    private _query: Queries.ConnectQuery;
+    private _queryResultsFactory: Api.QueryResultsFactory;
     private _isLoading: boolean;
 
-    constructor(query: Queries.ConnectQuery, visualization: Common.Visualization) {
-        this._query = query;
+    constructor(data: Queries.ConnectQuery|Api.QueryResultsFactory, visualization: Common.Visualization) {
+        this._queryResultsFactory = this.getQueryResultsFactory(data);
         this._visualization = visualization;
         this._isLoading = false;
 
-        this.refresh();
+        this.refresh(true);
     }
 
-    public refresh() {
+    public refresh(reRender: boolean = false) {
         if (this._isLoading)
             return;
+
 
         this._isLoading = true;
 
         var targetElement = this._visualization.targetElement,
-            qryPromise = this._query.execute(),
-            loadingTracker = qryPromise.then(
+            loadingTracker = this._queryResultsFactory().then(
                 (data) => { this._isLoading = false });
-                
-        ErrorHandling.clearError(targetElement);
-        this._visualization.displayData(qryPromise, this._query.metadata());
+
+        this._visualization.displayData(this._queryResultsFactory(), reRender);
+    }
+
+    public update(data: Queries.ConnectQuery|Api.QueryResultsFactory, reRender: boolean = true) {
+        this._isLoading = false;
+        this._queryResultsFactory = this.getQueryResultsFactory(data);
+
+        this.refresh(reRender);
+    }
+
+    private getQueryResultsFactory(data: Queries.ConnectQuery|Api.QueryResultsFactory) : Api.QueryResultsFactory{
+        return (<Queries.ConnectQuery>data).execute ? () => (<Queries.ConnectQuery>data).execute() : <Api.QueryResultsFactory>data
     }
 }
 

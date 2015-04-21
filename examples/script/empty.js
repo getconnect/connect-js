@@ -1,28 +1,24 @@
-var queryResults = require('./query-results.js').empty;
+var connect = require('./connection.js');
+var emptyProvider = require('./query-results.js').empty;
 
-var bar = new Connect.Viz.Chart('#empty-bar', {
+var bar = connect.chart(emptyProvider, '#empty-bar', {
     title: 'Sales',
     chart: {
         type: 'bar'
     }
 });
 
-var table = new Connect.Viz.Table('#empty-table', {
+var table = connect.table(emptyProvider, '#empty-table', {
     title: 'Sales'
 });
 
-var text = new Connect.Viz.Text('#empty-text', {
+var text = connect.text(emptyProvider, '#empty-text', {
     title: 'Sales'
 });
 
-var gauge = new Connect.Viz.Gauge('#empty-gauge', {
+var gauge = connect.gauge(emptyProvider, '#empty-gauge', {
     title: 'Market (%)',
 });
-
-bar.displayData(queryResults.results, queryResults.metadata);
-table.displayData(queryResults.results, queryResults.metadata);
-text.displayData(queryResults.results, queryResults.metadata);
-gauge.displayData(queryResults.results, queryResults.metadata);
 
 module.exports = {
     bar: bar,

@@ -51,7 +51,7 @@ module Config {
         yAxisValueFormatter?: (value: any) => any;
     }
 
-    export interface GaugeOptions { 
+    export interface GaugeOptions {
         label?: {
             format?: (value: any) => any;
         };
@@ -61,7 +61,7 @@ module Config {
         padding?: PaddingOptions;
     }
 
-    export interface TextOptions {    
+    export interface TextOptions {
         counterDurationMs: number;    
     }
 
@@ -109,6 +109,11 @@ module Config {
             max: 100          
         },
         bar: {}
+    }
+
+    export var defaulField = {
+        label: undefined,
+        valueFormatter: undefined
     }
 }
 

@@ -7,7 +7,7 @@ export function getElement(selector: string|HTMLElement) : HTMLElement {
 	return <HTMLElement>selector;
 }
 
-export function removeAllChildren(targetElement: HTMLElement){
+export function removeAllChildren(targetElement: HTMLElement): void{
     var elementToClear = targetElement;
 
     if (!elementToClear)
@@ -15,4 +15,14 @@ export function removeAllChildren(targetElement: HTMLElement){
 
     while (elementToClear.firstChild) 
         elementToClear.removeChild(elementToClear.firstChild);
+}
+
+export function createElement(tag: string, ...classNames: string[]): HTMLElement{
+    var element: HTMLElement = document.createElement(tag);
+
+    _.each(classNames, (className) => {
+        element.classList.add(className);
+    });
+
+    return element;
 }

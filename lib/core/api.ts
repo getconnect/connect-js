@@ -1,8 +1,8 @@
 import request = require('superagent');
 import Q = require('q');
+import _ = require('underscore');
 
-module Api {
-    
+module Api {    
     export interface Query {
         select?: Api.QuerySelects;
         filter?: Api.QueryFilters;
@@ -13,7 +13,6 @@ module Api {
     }
 
     export interface Metadata {
-        selects: string[];
         groups: string[];
         interval: string;
         timezone: string | number;
@@ -42,8 +41,8 @@ module Api {
     }
 
     export interface QueryResultInterval {
-        start: string;
-        end: string;
+        start: string|Date;
+        end: string|Date;
     }
 
     export interface QueryResultItem {
@@ -52,10 +51,43 @@ module Api {
         results?: QueryResultItem[];
     }
 
-    export interface QueryResults { 
+    export interface QueryResponse { 
         metadata: Metadata;
         results: QueryResultItem[];
     }
+
+    export class QueryResults { 
+        public metadata: Metadata;
+        public results: QueryResultItem[];
+
+        constructor(response: QueryResponse) {
+            this.metadata = response.metadata;
+            this.results = response.results;
+
+            if (this.metadata.interval){
+                _.map(this.results, (intervalResult) => {
+                    var interval = intervalResult.interval;
+                    interval.start = new Date(<string>interval.start);
+                    interval.end = new Date(<string>interval.end);
+                });
+            }
+        }
+
+        public selects(): string[]{
+            var results = !this.metadata.interval ? this.results : _.flatten(_.map(this.results, result => result.results));
+
+            return _.difference(_.keys(_.first(results)), this.metadata.groups.concat(['_count']));
+        }
+
+        public clone(): QueryResults{
+            return new QueryResults({
+                metadata: _.clone(this.metadata),
+                results: JSON.parse(JSON.stringify(this.results))
+            });
+        }            
+    }
+
+    export type QueryResultsFactory = () => Q.IPromise<Api.QueryResults>;
     
     export class Client {
         _baseUrl: string;
@@ -107,8 +139,8 @@ module Api {
                         deferred.reject(res.error);
                         return;
                     }
-
-                    deferred.resolve(res.body);
+                    var results = new QueryResults(<QueryResponse>res.body);
+                    deferred.resolve(results);
                 });     
 
             return deferred.promise;

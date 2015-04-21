@@ -7,8 +7,10 @@ import DataVisualization = require('../viz/data-visualization');
 import _ = require('underscore');
 
 class Connect implements Viz.Visualizations {
-    _config: Config.ConnectConfig;
-    _client: Api.Client;
+    static QueryResults = Api.QueryResults;
+
+    private _config: Config.ConnectConfig;
+    private _client: Api.Client;
 
     constructor(config: Config.ConnectConfig) {
         this._config = this.getConfig(config);

@@ -1,10 +1,9 @@
-var queryResults = require('./query-results.js').salesByPayment;
+var connect = require('./connection.js');
+var salesByPaymentProvider = require('./query-results.js').salesByPayment;
 
-var text = new Connect.Viz.Text('#invalid-text', {
+var text = connect.text(salesByPaymentProvider, '#invalid-text', {
     title: 'Sales'
 });
-
-text.displayData(queryResults.results, queryResults.metadata);
 
 module.exports = {
     text: text

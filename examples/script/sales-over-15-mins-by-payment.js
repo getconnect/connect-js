@@ -1,5 +1,6 @@
-var queryResults = require('./query-results.js').salesOver15MinsByPayment;
-var sellPriceResults = require('./query-results.js').sellPriceOver15MinsByPayment;
+var connect = require('./connection.js');
+var salesOver15MinsByPaymentProvider = require('./query-results.js').salesOver15MinsByPayment;
+var sellPriceOver15MinsByPaymentProvider = require('./query-results.js').sellPriceOver15MinsByPayment;
 
 var fieldOptions = {
     'sellPriceTotal': {
@@ -12,7 +13,7 @@ var fieldOptions = {
     }
 }
 
-var bar = new Connect.Viz.Chart('#sales-over-15-mins-by-payment-bar', {
+var bar = connect.chart(salesOver15MinsByPaymentProvider, '#sales-over-15-mins-by-payment-bar', {
     title: 'Sales Over 15 Minutes by Payment Type',
     chart: {
         type: 'bar',        
@@ -22,7 +23,7 @@ var bar = new Connect.Viz.Chart('#sales-over-15-mins-by-payment-bar', {
     fields: fieldOptions 
 });
 
-var line = new Connect.Viz.Chart('#sales-over-15-mins-by-payment-line', {
+var line = connect.chart(salesOver15MinsByPaymentProvider, '#sales-over-15-mins-by-payment-line', {
     title: 'Sales Over 15 Minutes by Payment Type',
     chart: {
         type: 'line',        
@@ -31,7 +32,7 @@ var line = new Connect.Viz.Chart('#sales-over-15-mins-by-payment-line', {
     fields: fieldOptions,
 });
 
-var sellPriceLine = new Connect.Viz.Chart('#sell-price-over-15-mins-by-payment-line', {
+var sellPriceLine = connect.chart(sellPriceOver15MinsByPaymentProvider, '#sell-price-over-15-mins-by-payment-line', {
     title: 'Sales Over 15 Minutes by Payment Type (Sell Price)',
     chart: {
         type: 'line',        
@@ -40,7 +41,7 @@ var sellPriceLine = new Connect.Viz.Chart('#sell-price-over-15-mins-by-payment-l
     fields: fieldOptions,
 });
 
-var spline = new Connect.Viz.Chart('#sales-over-15-mins-by-payment-spline', {
+var spline = connect.chart(salesOver15MinsByPaymentProvider, '#sales-over-15-mins-by-payment-spline', {
     title: 'Sales Over 15 Minutes by Payment Type',
     chart: {
         type: 'spline',        
@@ -49,11 +50,6 @@ var spline = new Connect.Viz.Chart('#sales-over-15-mins-by-payment-spline', {
     type: 'spline',
     fields: fieldOptions,
 });
-
-bar.displayData(queryResults.results, queryResults.metadata);
-line.displayData(queryResults.results, queryResults.metadata);
-sellPriceLine.displayData(sellPriceResults.results, sellPriceResults.metadata);
-spline.displayData(queryResults.results, queryResults.metadata);
 
 module.exports = {
     bar: bar,

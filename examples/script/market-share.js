@@ -1,6 +1,6 @@
-var results = require('./query-results.js');
-var percentResults = results.marketSharePercent;
-var dollarsResults = results.marketShareDollars;
+var connect = require('./connection.js');
+var marketSharePercentProvider = require('./query-results.js').marketSharePercent;
+var marketShareDollarsProvider = require('./query-results.js').marketShareDollars;
 
 var percentFieldOptions = {
     share: {
@@ -17,13 +17,12 @@ var dollarsFieldOptions = {
     }
 }
 
-var percentGauge = new Connect.Viz.Gauge('#market-share-percent-gauge', {
+var percentGauge = connect.gauge(marketSharePercentProvider, '#market-share-percent-gauge', {
     title: 'Acme Market Share (%)',
     fields: percentFieldOptions
 });
-percentGauge.displayData(percentResults.results, percentResults.metadata);
 
-var dollarsGauge = new Connect.Viz.Gauge('#market-share-dollars-gauge', {
+var dollarsGauge = connect.gauge(marketShareDollarsProvider, '#market-share-dollars-gauge', {
     title: 'Acme Market Share ($)',
     fields: dollarsFieldOptions,
     gauge:{
@@ -31,7 +30,6 @@ var dollarsGauge = new Connect.Viz.Gauge('#market-share-dollars-gauge', {
     	max: 'totalMarketValue'
     }
 });
-dollarsGauge.displayData(dollarsResults.results, dollarsResults.metadata);
 
 module.exports = {
     percentGauge: percentGauge,

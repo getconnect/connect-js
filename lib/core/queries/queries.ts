@@ -43,15 +43,6 @@ module Queries {
 			return this._collection;
 		}
 
-		public metadata(): Api.Metadata {
-			return {
-				selects: _(this._selects).keys(),
-				groups: this._groups,
-				interval: this._interval,
-				timezone: this._timezone || 'UTC'
-			};
-		}
-
 		public select(selects: Selects.QuerySelects): ConnectQuery {
 			for(var key in selects) {
 				var select = selects[key];
@@ -112,7 +103,7 @@ module Queries {
 			return new ConnectQuery(this._client, this._collection, this._selects, this._filters, this._groups, this._timeframe, this._interval, timezone);
 		}
 
-		public execute(): Q.IPromise<any> {
+		public execute(): Q.IPromise<Api.QueryResults> {
 			var queryBuilder = new QueryBuilder(),
 				apiQuery = queryBuilder.build(this._selects, this._filters, this._groups, this._timeframe, this._interval, this._timezone);
 
