@@ -91,8 +91,6 @@ class Chart implements Common.Visualization {
             customDateFormatter = options.intervals.valueFormatter;
             internalChartConfig.axis_x_tick_format = customDateFormatter || standardDateformatter;
             internalChartConfig.axis_x_type = 'timeseries';
-            internalChartConfig.data_xFormat = '%Y-%m-%dT%H:%M:%SZ';
-            internalChartConfig.data_xLocaltime = false;
         }
      
         this._currentDataset = dataset;

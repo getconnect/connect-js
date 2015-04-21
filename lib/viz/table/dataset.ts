@@ -90,9 +90,8 @@ export class TableDataset {
         };
 
         var createIntervalCell = (result: Api.QueryResultItem): ContentCell => {
-            var serverTimeFormat = d3.time.format('%Y-%m-%dT%H:%M:%SZ');
-            var startDate = serverTimeFormat.parse(result.interval.start);
-            var endDate = serverTimeFormat.parse(result.interval.end);
+            var startDate = <Date>result.interval.start;
+            var endDate = <Date>result.interval.end;
 
             var defaultFormat = (start: Date, end: Date): String => {
                 var timeFormat = options.intervals.formats[metadata.interval];
@@ -102,7 +101,7 @@ export class TableDataset {
                 return startDate + ' - ' + endDate;
             };
 
-            var intervalFormatter = options.intervals.valueFormatter ? options.intervals.valueFormatter : defaultFormat;
+            var intervalFormatter = options.intervals.valueFormatter || defaultFormat;
 
             return {
                 isGrouped: false,

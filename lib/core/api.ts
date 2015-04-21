@@ -41,8 +41,8 @@ module Api {
     }
 
     export interface QueryResultInterval {
-        start: string;
-        end: string;
+        start: string|Date;
+        end: string|Date;
     }
 
     export interface QueryResultItem {
@@ -63,6 +63,14 @@ module Api {
         constructor(response: QueryResponse) {
             this.metadata = response.metadata;
             this.results = response.results;
+
+            if (this.metadata.interval){
+                _.map(this.results, (intervalResult) => {
+                    var interval = intervalResult.interval;
+                    interval.start = new Date(<string>interval.start);
+                    interval.end = new Date(<string>interval.end);
+                });
+            }
         }
 
         public selects(): string[]{
