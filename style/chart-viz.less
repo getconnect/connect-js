@@ -1,6 +1,35 @@
 @import "variables";
 @import "mixins";
 
+
+
+.connect-gauge{
+    box-sizing: @box-sizing;
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    .connect-viz-result {
+        flex-grow: 1;
+    }
+
+    .connect-error{    
+        bottom: 10px;
+        left: 0;
+        right: 0;
+    }
+
+    &.connect-viz-loading, &.connect-viz-in-error{
+        .c3-chart-arc{
+            display: none;
+        }
+
+        .c3-chart-arcs-gauge-min, .c3-chart-arcs-gauge-max{
+            visibility: hidden;
+        }
+    }
+}
+
 .connect-chart{
     box-sizing: @box-sizing;
     position: relative;
@@ -11,44 +40,24 @@
         flex-grow: 1;
     }
     
-    &.connect-chart-line, &.connect-chart-spline, &.connect-chart-bar{
-        .connect-error{    
-            .middle();
-        }
-        &.connect-viz-loading, &.connect-viz-in-error{
-            .c3 text{
-                display: none;
-            }
-            
-            .c3-axis-x .tick{
-                display: none;
-            }
-
-            .c3-legend-item{
-                display: none;
-            }
-
-            .c3-chart{
-                visibility: hidden;
-            }
-        }
+    .connect-error{    
+        .middle();
     }
-
-    &.connect-chart-gauge{
-        .connect-error{    
-            bottom: 10px;
-            left: 0;
-            right: 0;
+    &.connect-viz-loading, &.connect-viz-in-error{
+        .c3 text{
+            display: none;
+        }
+        
+        .c3-axis-x .tick{
+            display: none;
         }
 
-        &.connect-viz-loading, &.connect-viz-in-error{
-            .c3-chart-arc{
-                display: none;
-            }
+        .c3-legend-item{
+            display: none;
+        }
 
-            .c3-chart-arcs-gauge-min, .c3-chart-arcs-gauge-max{
-                visibility: hidden;
-            }
+        .c3-chart{
+            visibility: hidden;
         }
     }
 }

@@ -10,6 +10,7 @@ import Loader = require('../loader');
 import Formatters = require('../formatters');
 import Dom = require('../dom');
 import ResultHandling = require('../result-handling');
+import Classes = require('../css-classes');
 
 class Gauge implements Common.Visualization {
     public targetElement: HTMLElement;
@@ -99,7 +100,9 @@ class Gauge implements Common.Visualization {
     private _loadData(results: Api.QueryResults, reRender: boolean): void {
         var options = this._options,
             internalGaugeConfig = (<any>this._gauge).internal.config,
-            select = _.first(results.selects()),
+            metadata = results.metadata,
+            selects = results.selects(),
+            select = _.first(selects),
             typeOptions = options.gauge,
             resultItems = results.results,
             dataset = this._buildDataset(results),
@@ -108,6 +111,11 @@ class Gauge implements Common.Visualization {
             colors = Palette.getSwatch(uniqueKeys, options.gauge.color ? [options.gauge.color] : null),
             transitionDuration = !options.transitionOnReload && reRender ? this._transitionDuration.none : this._transitionDuration.some;
             
+        if (!this._checkMetaDataIsApplicable(metadata, selects)){
+            this._renderQueryNotApplicable();
+            return;
+        } 
+
         internalGaugeConfig.transition_duration = transitionDuration;
 
         if ((options.fields[select] || Config.defaulField).valueFormatter){
@@ -123,12 +131,19 @@ class Gauge implements Common.Visualization {
             },
             colors: colors
         });
-        this._showTitle();
     }
 
     public clear(): void{        
         this._rendered = false;
         Dom.removeAllChildren(this.targetElement)
+    }    
+
+    private _checkMetaDataIsApplicable(metadata: Api.Metadata, selects: string[]): boolean {
+        var exactlyOneSelect = selects.length === 1,
+            noGroupBys = metadata.groups.length === 0,
+            noInterval = metadata.interval == null;
+
+        return exactlyOneSelect && noGroupBys && noInterval;
     }
 
     private _buildDataset(results: Api.QueryResults): Dataset.ChartDataset{
@@ -139,15 +154,6 @@ class Gauge implements Common.Visualization {
             };
 
         return new Dataset.ChartDataset(results, formatters); 
-    }
-
-    private _showTitle(){
-        var options = this._options,
-            titleText = options.title ? options.title.toString() : '',
-            showTitle = titleText.length > 0;
-
-        this._titleElement.textContent = titleText;
-        this._titleElement.style.display = !showTitle ? 'none' : '';      
     }
 
     private _formatValueForLabel(label: string, value: any){ 
@@ -180,10 +186,10 @@ class Gauge implements Common.Visualization {
             return;
             
         var options = this._options,
-            connectGaugeContainer = Dom.createElement('div', 'connect-viz', 'connect-chart', 'connect-chart-gauge'),
-            c3Element = Dom.createElement('div', 'connect-viz-result'),
+            connectGaugeContainer = Dom.createElement('div', Classes.viz, Classes.gauge),
+            c3Element = Dom.createElement('div', Classes.result),
             rootElement = this.targetElement,
-            titleElement = Dom.createElement('span', 'connect-viz-title'),
+            titleElement = Dom.createTitle(options.title),
             dateFormat = null,
             tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
             config = {
@@ -211,8 +217,12 @@ class Gauge implements Common.Visualization {
 
         this._rendered = true;
         this._titleElement = titleElement;
-        this._showTitle();       
         this._gauge = c3.generate(config);
+    }
+
+    private _renderQueryNotApplicable(){
+        this._rendered = false;
+        ErrorHandling.displayFriendlyError(this.targetElement, 'unsupportedQuery');
     }
 }
 

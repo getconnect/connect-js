@@ -8,6 +8,7 @@ import Loader = require('../loader');
 import ResultHandling = require('../result-handling');
 import Dom = require('../dom');
 import Counter = require('./counter');
+import Classes = require('../css-classes');
 
 class Text implements Common.Visualization {
     public targetElement: HTMLElement;
@@ -56,7 +57,7 @@ class Text implements Common.Visualization {
             isIncreasing = value > this._currentValue,
             hasChanged = valueFormatter(this._currentValue) !== valueFormatter(value),
             duration = options.text.counterDurationMs,
-            transitionClass = isIncreasing ? 'connect-text-value-increasing' : 'connect-text-value-decreasing';        
+            transitionClass = isIncreasing ? Classes.textValueInc : Classes.textValueDec;        
 
         if (!this._checkMetaDataIsApplicable(metadata, selects)){
             this._renderQueryNotApplicable();
@@ -92,43 +93,33 @@ class Text implements Common.Visualization {
         return exactlyOneSelect && noGroupBys && noInterval;
     }
 
-    private _showTitle(){
-        var options = this._options,
-            title = options.title,
-            titleText = title && (<string>title).length > 0 ? title.toString() : '',
-            showTitle = title !== false;
-
-        this._titleElement.textContent = titleText;
-        this._titleElement.style.display = !showTitle ? 'none' : '';
-    }
-
     private _renderText(){
         if (this._rendered)
             return;
 
-        var container = Dom.createElement('div', 'connect-viz', 'connect-text'),
-            label = Dom.createElement('span', 'connect-viz-title'),
+        var options = this._options,
+            container = Dom.createElement('div', Classes.viz, Classes.text),
+            titleElement = Dom.createTitle(options.title),
             elementForWidget = this.targetElement,
             spanForValues = Dom.createElement('span'),
-            valueTextElement = Dom.createElement('span', 'connect-text-value'),
-            valueIncreaseIconElement = Dom.createElement('span', 'connect-text-icon', 'connect-text-icon-increase', 'ion-arrow-up-b'),
-            valueDecreaseIconElement = Dom.createElement('span', 'connect-text-icon', 'connect-text-icon-decrease', 'ion-arrow-down-b'),
-            result = Dom.createElement('div', 'connect-viz-result');
+            valueTextElement = Dom.createElement('span', Classes.textValue),
+            valueIncreaseIconElement = Dom.createElement('span', Classes.textIcon, Classes.textIconInc, Classes.arrowUp),
+            valueDecreaseIconElement = Dom.createElement('span', Classes.textIcon, Classes.textIconDec, Classes.arrowDown),
+            result = Dom.createElement('div', Classes.result);
 
         this.clear();
         spanForValues.appendChild(valueIncreaseIconElement);
         spanForValues.appendChild(valueDecreaseIconElement);
         spanForValues.appendChild(valueTextElement);
         result.appendChild(spanForValues);
-        container.appendChild(label);
+        container.appendChild(titleElement);
         container.appendChild(result);
         elementForWidget.appendChild(container);
 
         this._valueContainerElement = result;
         this._valueTextElement = valueTextElement;
         this._valueTextElement.innerHTML = '&nbsp;';
-        this._titleElement = label;
-        this._showTitle();
+        this._titleElement = titleElement;
         this._rendered = true;
     }
 

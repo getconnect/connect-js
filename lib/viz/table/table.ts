@@ -9,6 +9,7 @@ import Loader = require('../loader');
 import ErrorHandling = require('../error-handling');
 import Dom = require('../dom');
 import ResultHandling = require('../result-handling');
+import Classes = require('../css-classes');
 
 class Table implements Common.Visualization {
     public targetElement: HTMLElement;
@@ -42,7 +43,6 @@ class Table implements Common.Visualization {
     private _loadData(results: Api.QueryResults, reRender: boolean) {
         var dataset = new Dataset.TableDataset(results, this._options);
         this._tableWrapper.innerHTML = TableRenderer.renderDataset(dataset);
-        this._showTitle();
     }
 
     public clear() {        
@@ -50,25 +50,16 @@ class Table implements Common.Visualization {
         Dom.removeAllChildren(this.targetElement)
     }
 
-    private _showTitle(){
-        var options = this._options,
-            titleText = options.title ? options.title.toString() : '',
-            showTitle = titleText.length > 0;
-
-        this._titleElement.textContent = titleText;
-        this._titleElement.style.display = !showTitle ? 'none' : '';      
-    }
-
     private _renderTable() {
         if(this._rendered)
             return;
             
         var options = this._options,
-            tableContainer = Dom.createElement('div', 'connect-viz', 'connect-table'),
-            tableWrapper = Dom.createElement('div', 'connect-table-wrapper'),
-            results = Dom.createElement('div', 'connect-viz-result'),
+            tableContainer = Dom.createElement('div', Classes.viz, Classes.table),
+            tableWrapper = Dom.createElement('div', Classes.tableWrapper),
+            results = Dom.createElement('div', Classes.result),
             rootElement = this.targetElement,
-            titleElement = Dom.createElement('span', 'connect-viz-title')
+            titleElement = Dom.createTitle(options.title);
 
         this.clear();
         tableContainer.appendChild(titleElement);
@@ -80,7 +71,6 @@ class Table implements Common.Visualization {
 
         this._tableWrapper = tableWrapper;
         this._titleElement = titleElement;
-        this._showTitle();        
     }
 }
 

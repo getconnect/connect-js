@@ -11,6 +11,10 @@ module Config {
         (value: any): any;
     }    
 
+    export interface FormatTitleFunction {
+        (container: HTMLElement): void;
+    }    
+
     export interface FormatIntervalFunction {
         (start: Date, end?: Date): any;
     }
@@ -31,7 +35,7 @@ module Config {
     }
 
     export interface VisualizationOptions {
-        title?: string | boolean;
+        title?: string | FormatTitleFunction;
         fields?: FieldOptions;   
         intervals?: IntervalOptions;   
         timezone?: string|number;

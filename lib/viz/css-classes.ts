@@ -1,0 +1,27 @@
+var classes = {
+    viz: 'connect-viz',
+    title: 'connect-viz-title',
+    result: 'connect-viz-result',
+    loader: 'connect-viz-loader',
+    loading: 'connect-viz-loading',
+    loaderBar1: 'connect-viz-loader-bar1',
+    loaderBar2: 'connect-viz-loader-bar2',
+    loaderBar3: 'connect-viz-loader-bar3',
+    loaderBar4: 'connect-viz-loader-bar4',
+    loaderBar5: 'connect-viz-loader-bar5',
+    chart: 'connect-chart',
+    gauge: 'connect-gauge',
+    table: 'connect-table',
+    tableWrapper: 'connect-table-wrapper',
+    text: 'connect-text',
+    textValue: 'connect-text-value',
+    textValueInc: 'connect-text-value-increasing',
+    textValueDec: 'connect-text-value-decreasing',
+    textIcon: 'connect-text-icon',
+    textIconInc: 'connect-text-icon-increase',
+    textIconDec: 'connect-text-icon-decrease',
+    arrowUp: 'ion-arrow-up-b',
+    arrowDown: 'ion-arrow-down-b',
+};
+
+export = classes;
