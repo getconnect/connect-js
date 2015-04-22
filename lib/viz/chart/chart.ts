@@ -41,7 +41,6 @@ class Chart implements Common.Visualization {
                 fields: {},
                 chart: {
                     type: 'bar',
-                    showLegend: true,
                     yAxisValueFormatter: (value) => value
                 },
             },
@@ -65,6 +64,15 @@ class Chart implements Common.Visualization {
         this._resultHandler.handleResult(resultsPromise, this, this._loadData, reRender);
     }
 
+    private getDefaultLegendVisibility(results: Api.QueryResults): boolean {
+        var metadata = results.metadata,
+            selects = results.selects(),
+            hasMultipleSelects = selects.length > 1,
+            isGroupedInterval = (metadata.groups.length > 0 && metadata.interval != null);
+
+        return hasMultipleSelects || isGroupedInterval;
+    }
+
     private _loadData(results: Api.QueryResults, reRender: boolean): void {
         var options = this._options,
             type = options.chart.type,
@@ -73,17 +81,19 @@ class Chart implements Common.Visualization {
             dataset = this._buildDataset(results),
             keys = dataset.getLabels(),
             uniqueKeys = _.unique(keys),
-            metadata = results.metadata,            
+            metadata = results.metadata,
             dateFormat = null,
             standardDateformatter = null,
-            customDateFormatter = null,          
+            customDateFormatter = null,
             timezone = options.timezone || metadata.timezone,
             colors = Palette.getSwatch(uniqueKeys, options.chart.colors),
             internalChartConfig = (<any>this._chart).internal.config,
             useTransition = this._chart.data().length && (options.transitionOnReload || !reRender),
-            transitionDuration = useTransition ? this._transitionDuration.some : this._transitionDuration.none;
+            transitionDuration = useTransition ? this._transitionDuration.some : this._transitionDuration.none,
+            showLegend = options.chart.showLegend != null ? options.chart.showLegend : this.getDefaultLegendVisibility(results);
  
         internalChartConfig.transition_duration = transitionDuration;
+        internalChartConfig.legend_show = showLegend;
 
         if(metadata.interval) {
             dateFormat = options.intervals.formats[metadata.interval];
@@ -197,9 +207,6 @@ class Chart implements Common.Visualization {
                     format: {
                         value: tooltipValueFormatter
                     }                   
-                },
-                legend: {
-                    show: options.chart.showLegend
                 }
             };
 
