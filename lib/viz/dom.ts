@@ -30,17 +30,14 @@ export function createElement(tag: string, ...classNames: string[]): HTMLElement
 }
 
 export function createTitle(title: string|Config.FormatTitleFunction): HTMLElement{
-    var hasFormatter = title && !_.isString(title),
-        titleTag = hasFormatter ? 'div' : 'span',
-        element: HTMLElement = createElement(titleTag, Classes.title);
+    var titleContainer = createElement('div', Classes.title),
+        titleFunc = typeof title === 'function' ? title : (container) => {
+            var titleElement = createElement('span');
+            titleElement.textContent = <string>title || '';
+            container.appendChild(titleElement); 
+        };
+    titleContainer.style.display = title == null ? 'none' : '';    
+    titleFunc(titleContainer);
 
-    if (typeof title === 'string'){
-        element.textContent = title || '';
-        element.style.display = title == null ? 'none' : ''; 
-    }else{
-        title(element);
-    }
-
-
-    return element;
+    return titleContainer;
 }

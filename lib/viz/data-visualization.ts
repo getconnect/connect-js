@@ -21,14 +21,14 @@ class DataVisualization{
         if (this._isLoading)
             return;
 
-
         this._isLoading = true;
 
         var targetElement = this._visualization.targetElement,
-            loadingTracker = this._queryResultsFactory().then(
+            results = this._queryResultsFactory(),
+            loadingTracker = results.then(
                 (data) => { this._isLoading = false });
 
-        this._visualization.displayData(this._queryResultsFactory(), reRender);
+        this._visualization.displayData(results, reRender);
     }
 
     public update(data: Queries.ConnectQuery|Api.QueryResultsFactory, reRender: boolean = true) {

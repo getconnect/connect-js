@@ -26,8 +26,8 @@ class Loader {
     }
 
     show(){               
-        var vizContainer = this._targetElement.querySelector(Classes.viz),
-            parentOfLoader = this._targetElement.querySelector(Classes.result);
+        var vizContainer = this._targetElement.querySelector('.' + Classes.viz),
+            parentOfLoader = this._targetElement.querySelector('.' + Classes.result);
 
         if (!vizContainer || !parentOfLoader)    
             return; 
@@ -39,8 +39,8 @@ class Loader {
     }
 
     hide(){
-        var vizContainer = this._targetElement.querySelector(Classes.viz),
-            parentOfLoader = this._targetElement.querySelector(Classes.result);
+        var vizContainer = this._targetElement.querySelector('.' + Classes.viz),
+            parentOfLoader = this._targetElement.querySelector('.' + Classes.result);
 
         if (!this._visible)
             return;
