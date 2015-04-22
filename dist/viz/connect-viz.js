@@ -7,7 +7,7 @@ function applyMixins(targetClass, mixinClass) {
 }
 module.exports = applyMixins;
 
-},{"underscore":25}],2:[function(require,module,exports){
+},{"underscore":26}],2:[function(require,module,exports){
 var Config = require('../config');
 var Dataset = require('./dataset');
 var _ = require('underscore');
@@ -16,6 +16,7 @@ var Loader = require('../loader');
 var Formatters = require('../formatters');
 var Dom = require('../dom');
 var ResultHandling = require('../result-handling');
+var Classes = require('../css-classes');
 var Chart = (function () {
     function Chart(targetElement, chartOptions) {
         this._options = this._parseOptions(chartOptions);
@@ -34,7 +35,6 @@ var Chart = (function () {
             fields: {},
             chart: {
                 type: 'bar',
-                showLegend: true,
                 yAxisValueFormatter: function (value) { return value; }
             },
         }, defaultIntervalOptions = {
@@ -49,9 +49,14 @@ var Chart = (function () {
         this._renderChart();
         this._resultHandler.handleResult(resultsPromise, this, this._loadData, reRender);
     };
+    Chart.prototype.getDefaultLegendVisibility = function (results) {
+        var metadata = results.metadata, selects = results.selects(), hasMultipleSelects = selects.length > 1, isGroupedInterval = (metadata.groups.length > 0 && metadata.interval != null);
+        return hasMultipleSelects || isGroupedInterval;
+    };
     Chart.prototype._loadData = function (results, reRender) {
-        var options = this._options, type = options.chart.type, resultItems = results.results, typeOptions = options[type], dataset = this._buildDataset(results), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), metadata = results.metadata, dateFormat = null, standardDateformatter = null, customDateFormatter = null, timezone = options.timezone || metadata.timezone, colors = Palette.getSwatch(uniqueKeys, options.chart.colors), internalChartConfig = this._chart.internal.config, useTransition = this._chart.data().length && (options.transitionOnReload || !reRender), transitionDuration = useTransition ? this._transitionDuration.some : this._transitionDuration.none;
+        var options = this._options, type = options.chart.type, resultItems = results.results, typeOptions = options[type], dataset = this._buildDataset(results), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), metadata = results.metadata, dateFormat = null, standardDateformatter = null, customDateFormatter = null, timezone = options.timezone || metadata.timezone, colors = Palette.getSwatch(uniqueKeys, options.chart.colors), internalChartConfig = this._chart.internal.config, useTransition = this._chart.data().length && (options.transitionOnReload || !reRender), transitionDuration = useTransition ? this._transitionDuration.some : this._transitionDuration.none, showLegend = options.chart.showLegend != null ? options.chart.showLegend : this.getDefaultLegendVisibility(results);
         internalChartConfig.transition_duration = transitionDuration;
+        internalChartConfig.legend_show = showLegend;
         if (metadata.interval) {
             dateFormat = options.intervals.formats[metadata.interval];
             standardDateformatter = function (value) { return Formatters.formatDate(value, timezone, dateFormat); };
@@ -68,7 +73,6 @@ var Chart = (function () {
             },
             colors: colors
         });
-        this._showTitle();
     };
     Chart.prototype.clear = function () {
         this._rendered = false;
@@ -81,11 +85,6 @@ var Chart = (function () {
             groupValueFormatter: function (groupByName, groupValue) { return _this._formatGroupValue(groupByName, groupValue); }
         };
         return new Dataset.ChartDataset(results, formatters);
-    };
-    Chart.prototype._showTitle = function () {
-        var options = this._options, titleText = options.title ? options.title.toString() : '', showTitle = titleText.length > 0;
-        this._titleElement.textContent = titleText;
-        this._titleElement.style.display = !showTitle ? 'none' : '';
     };
     Chart.prototype._formatValueForLabel = function (label, value) {
         var dataset = this._currentDataset, select = this._currentDataset.getSelect(label), options = this._options, fieldOption = options.fields[select] || Config.defaulField, valueFormatter = fieldOption.valueFormatter;
@@ -105,7 +104,7 @@ var Chart = (function () {
         var _this = this;
         if (this._rendered)
             return;
-        var options = this._options, chartTypeClass = 'connect-chart-' + options.chart.type, connectChartContainer = Dom.createElement('div', 'connect-viz', 'connect-chart', chartTypeClass), c3Element = Dom.createElement('div', 'connect-viz-result'), rootElement = this.targetElement, titleElement = Dom.createElement('span', 'connect-viz-title'), tooltipValueFormatter = function (value, ratio, id, index) { return _this._formatValueForLabel(id, value); }, config = {
+        var options = this._options, connectChartContainer = Dom.createElement('div', Classes.viz, Classes.chart), c3Element = Dom.createElement('div', Classes.result), rootElement = this.targetElement, titleElement = Dom.createTitle(options.title), tooltipValueFormatter = function (value, ratio, id, index) { return _this._formatValueForLabel(id, value); }, config = {
             bindto: c3Element,
             size: {
                 height: options.chart.height
@@ -137,9 +136,6 @@ var Chart = (function () {
                 format: {
                     value: tooltipValueFormatter
                 }
-            },
-            legend: {
-                show: options.chart.showLegend
             }
         };
         this.clear();
@@ -149,14 +145,13 @@ var Chart = (function () {
         config[options.chart.type] = options[options.chart.type];
         this._rendered = true;
         this._titleElement = titleElement;
-        this._showTitle();
         this._chart = c3.generate(config);
     };
     return Chart;
 })();
 module.exports = Chart;
 
-},{"../config":5,"../dom":7,"../formatters":9,"../loader":11,"../palette":12,"../result-handling":13,"./dataset":3,"underscore":25}],3:[function(require,module,exports){
+},{"../config":5,"../css-classes":6,"../dom":8,"../formatters":10,"../loader":12,"../palette":13,"../result-handling":14,"./dataset":3,"underscore":26}],3:[function(require,module,exports){
 var _ = require('underscore');
 var Dataset;
 (function (Dataset) {
@@ -270,14 +265,16 @@ var Dataset;
 })(Dataset || (Dataset = {}));
 module.exports = Dataset;
 
-},{"underscore":25}],4:[function(require,module,exports){
+},{"underscore":26}],4:[function(require,module,exports){
 var Config = require('../config');
 var Dataset = require('./dataset');
 var _ = require('underscore');
+var ErrorHandling = require('../error-handling');
 var Palette = require('../palette');
 var Loader = require('../loader');
 var Dom = require('../dom');
 var ResultHandling = require('../result-handling');
+var Classes = require('../css-classes');
 var Gauge = (function () {
     function Gauge(targetElement, gaugeOptions) {
         this._options = this._parseOptions(gaugeOptions);
@@ -332,7 +329,11 @@ var Gauge = (function () {
         return results;
     };
     Gauge.prototype._loadData = function (results, reRender) {
-        var options = this._options, internalGaugeConfig = this._gauge.internal.config, select = _.first(results.selects()), typeOptions = options.gauge, resultItems = results.results, dataset = this._buildDataset(results), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = Palette.getSwatch(uniqueKeys, options.gauge.color ? [options.gauge.color] : null), transitionDuration = !options.transitionOnReload && reRender ? this._transitionDuration.none : this._transitionDuration.some;
+        var options = this._options, internalGaugeConfig = this._gauge.internal.config, metadata = results.metadata, selects = results.selects(), select = _.first(selects), typeOptions = options.gauge, resultItems = results.results, dataset = this._buildDataset(results), keys = dataset.getLabels(), uniqueKeys = _.unique(keys), colors = Palette.getSwatch(uniqueKeys, options.gauge.color ? [options.gauge.color] : null), transitionDuration = !options.transitionOnReload && reRender ? this._transitionDuration.none : this._transitionDuration.some;
+        if (!this._checkMetaDataIsApplicable(metadata, selects)) {
+            this._renderQueryNotApplicable();
+            return;
+        }
         internalGaugeConfig.transition_duration = transitionDuration;
         if ((options.fields[select] || Config.defaulField).valueFormatter) {
             internalGaugeConfig.gauge_label_format = options.fields[select].valueFormatter;
@@ -346,11 +347,14 @@ var Gauge = (function () {
             },
             colors: colors
         });
-        this._showTitle();
     };
     Gauge.prototype.clear = function () {
         this._rendered = false;
         Dom.removeAllChildren(this.targetElement);
+    };
+    Gauge.prototype._checkMetaDataIsApplicable = function (metadata, selects) {
+        var exactlyOneSelect = selects.length === 1, noGroupBys = metadata.groups.length === 0, noInterval = metadata.interval == null;
+        return exactlyOneSelect && noGroupBys && noInterval;
     };
     Gauge.prototype._buildDataset = function (results) {
         var _this = this;
@@ -359,11 +363,6 @@ var Gauge = (function () {
             groupValueFormatter: function (groupByName, groupValue) { return _this._formatGroupValue(groupByName, groupValue); }
         };
         return new Dataset.ChartDataset(results, formatters);
-    };
-    Gauge.prototype._showTitle = function () {
-        var options = this._options, titleText = options.title ? options.title.toString() : '', showTitle = titleText.length > 0;
-        this._titleElement.textContent = titleText;
-        this._titleElement.style.display = !showTitle ? 'none' : '';
     };
     Gauge.prototype._formatValueForLabel = function (label, value) {
         var dataset = this._currentDataset, select = this._currentDataset.getSelect(label), options = this._options, fieldOption = options.fields[select] || Config.defaulField, valueFormatter = fieldOption.valueFormatter;
@@ -383,7 +382,7 @@ var Gauge = (function () {
         var _this = this;
         if (this._rendered)
             return;
-        var options = this._options, connectGaugeContainer = Dom.createElement('div', 'connect-viz', 'connect-chart', 'connect-chart-gauge'), c3Element = Dom.createElement('div', 'connect-viz-result'), rootElement = this.targetElement, titleElement = Dom.createElement('span', 'connect-viz-title'), dateFormat = null, tooltipValueFormatter = function (value, ratio, id, index) { return _this._formatValueForLabel(id, value); }, config = {
+        var options = this._options, connectGaugeContainer = Dom.createElement('div', Classes.viz, Classes.gauge), c3Element = Dom.createElement('div', Classes.result), rootElement = this.targetElement, titleElement = Dom.createTitle(options.title), dateFormat = null, tooltipValueFormatter = function (value, ratio, id, index) { return _this._formatValueForLabel(id, value); }, config = {
             bindto: c3Element,
             padding: options.gauge.padding,
             data: {
@@ -406,14 +405,17 @@ var Gauge = (function () {
         config['gauge'] = options['gauge'];
         this._rendered = true;
         this._titleElement = titleElement;
-        this._showTitle();
         this._gauge = c3.generate(config);
+    };
+    Gauge.prototype._renderQueryNotApplicable = function () {
+        this._rendered = false;
+        ErrorHandling.displayFriendlyError(this.targetElement, 'unsupportedQuery');
     };
     return Gauge;
 })();
 module.exports = Gauge;
 
-},{"../config":5,"../dom":7,"../loader":11,"../palette":12,"../result-handling":13,"./dataset":3,"underscore":25}],5:[function(require,module,exports){
+},{"../config":5,"../css-classes":6,"../dom":8,"../error-handling":9,"../loader":12,"../palette":13,"../result-handling":14,"./dataset":3,"underscore":26}],5:[function(require,module,exports){
 var Config;
 (function (Config) {
     Config.defaultTimeSeriesFormats = {
@@ -457,6 +459,34 @@ var Config;
 module.exports = Config;
 
 },{}],6:[function(require,module,exports){
+var classes = {
+    viz: 'connect-viz',
+    title: 'connect-viz-title',
+    result: 'connect-viz-result',
+    loader: 'connect-viz-loader',
+    loading: 'connect-viz-loading',
+    loaderBar1: 'connect-viz-loader-bar1',
+    loaderBar2: 'connect-viz-loader-bar2',
+    loaderBar3: 'connect-viz-loader-bar3',
+    loaderBar4: 'connect-viz-loader-bar4',
+    loaderBar5: 'connect-viz-loader-bar5',
+    chart: 'connect-chart',
+    gauge: 'connect-gauge',
+    table: 'connect-table',
+    tableWrapper: 'connect-table-wrapper',
+    text: 'connect-text',
+    textValue: 'connect-text-value',
+    textValueInc: 'connect-text-value-increasing',
+    textValueDec: 'connect-text-value-decreasing',
+    textIcon: 'connect-text-icon',
+    textIconInc: 'connect-text-icon-increase',
+    textIconDec: 'connect-text-icon-decrease',
+    arrowUp: 'ion-arrow-up-b',
+    arrowDown: 'ion-arrow-down-b',
+};
+module.exports = classes;
+
+},{}],7:[function(require,module,exports){
 var DataVisualization = (function () {
     function DataVisualization(data, visualization) {
         this._queryResultsFactory = this.getQueryResultsFactory(data);
@@ -470,10 +500,10 @@ var DataVisualization = (function () {
         if (this._isLoading)
             return;
         this._isLoading = true;
-        var targetElement = this._visualization.targetElement, loadingTracker = this._queryResultsFactory().then(function (data) {
+        var targetElement = this._visualization.targetElement, results = this._queryResultsFactory(), loadingTracker = results.then(function (data) {
             _this._isLoading = false;
         });
-        this._visualization.displayData(this._queryResultsFactory(), reRender);
+        this._visualization.displayData(results, reRender);
     };
     DataVisualization.prototype.update = function (data, reRender) {
         if (reRender === void 0) { reRender = true; }
@@ -488,8 +518,9 @@ var DataVisualization = (function () {
 })();
 module.exports = DataVisualization;
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 var _ = require('underscore');
+var Classes = require('./css-classes');
 function getElement(selector) {
     if (_.isString(selector))
         return document.querySelector(selector);
@@ -516,8 +547,19 @@ function createElement(tag) {
     return element;
 }
 exports.createElement = createElement;
+function createTitle(title) {
+    var titleContainer = createElement('div', Classes.title), titleFunc = typeof title === 'function' ? title : function (container) {
+        var titleElement = createElement('span');
+        titleElement.textContent = title || '';
+        container.appendChild(titleElement);
+    };
+    titleContainer.style.display = title == null ? 'none' : '';
+    titleFunc(titleContainer);
+    return titleContainer;
+}
+exports.createTitle = createTitle;
 
-},{"underscore":25}],8:[function(require,module,exports){
+},{"./css-classes":6,"underscore":26}],9:[function(require,module,exports){
 var ErrorHandling;
 (function (ErrorHandling) {
     var errorTypes = {
@@ -590,7 +632,7 @@ var ErrorHandling;
 })(ErrorHandling || (ErrorHandling = {}));
 module.exports = ErrorHandling;
 
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 var moment = require('moment-timezone');
 var _ = require('underscore');
 function formatDate(dateToFormat, timezone, format) {
@@ -605,7 +647,7 @@ function formatDate(dateToFormat, timezone, format) {
 }
 exports.formatDate = formatDate;
 
-},{"moment-timezone":22,"underscore":25}],10:[function(require,module,exports){
+},{"moment-timezone":23,"underscore":26}],11:[function(require,module,exports){
 (function (global){
 var Viz = require('./viz');
 var applyMixins = require('./apply-mixins');
@@ -638,19 +680,12 @@ else if (typeof global !== 'undefined') {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./apply-mixins":1,"./viz":19,"tipi-connect":20}],11:[function(require,module,exports){
+},{"./apply-mixins":1,"./viz":20,"tipi-connect":21}],12:[function(require,module,exports){
+var Classes = require('./css-classes');
+var Dom = require('./dom');
 var Loader = (function () {
     function Loader(targetElement) {
-        this._vizSelector = '.connect-viz';
-        this._parentOfLoaderSelector = '.connect-viz-result';
-        this._loaderClass = 'connect-viz-loading';
-        var bar1 = document.createElement('div'), bar2 = document.createElement('div'), bar3 = document.createElement('div'), bar4 = document.createElement('div'), bar5 = document.createElement('div'), loaderContainer = document.createElement('div');
-        bar1.className = 'connect-loader-bar1';
-        bar2.className = 'connect-loader-bar2';
-        bar3.className = 'connect-loader-bar3';
-        bar4.className = 'connect-loader-bar4';
-        bar5.className = 'connect-loader-bar5';
-        loaderContainer.className = 'connect-loader';
+        var bar1 = Dom.createElement('div', Classes.loaderBar1), bar2 = Dom.createElement('div', Classes.loaderBar2), bar3 = Dom.createElement('div', Classes.loaderBar3), bar4 = Dom.createElement('div', Classes.loaderBar4), bar5 = Dom.createElement('div', Classes.loaderBar5), loaderContainer = Dom.createElement('div', Classes.loader);
         loaderContainer.appendChild(bar1);
         loaderContainer.appendChild(bar2);
         loaderContainer.appendChild(bar3);
@@ -660,19 +695,19 @@ var Loader = (function () {
         this._loaderContainer = loaderContainer;
     }
     Loader.prototype.show = function () {
-        var vizContainer = this._targetElement.querySelector(this._vizSelector), parentOfLoader = this._targetElement.querySelector(this._parentOfLoaderSelector);
+        var vizContainer = this._targetElement.querySelector('.' + Classes.viz), parentOfLoader = this._targetElement.querySelector('.' + Classes.result);
         if (!vizContainer || !parentOfLoader)
             return;
-        vizContainer.classList.add(this._loaderClass);
+        vizContainer.classList.add(Classes.loading);
         parentOfLoader.appendChild(this._loaderContainer);
         this._visible = true;
     };
     Loader.prototype.hide = function () {
-        var vizContainer = this._targetElement.querySelector(this._vizSelector), parentOfLoader = this._targetElement.querySelector(this._parentOfLoaderSelector);
+        var vizContainer = this._targetElement.querySelector('.' + Classes.viz), parentOfLoader = this._targetElement.querySelector('.' + Classes.result);
         if (!this._visible)
             return;
         if (vizContainer)
-            vizContainer.classList.remove(this._loaderClass);
+            vizContainer.classList.remove(Classes.loading);
         if (parentOfLoader)
             parentOfLoader.removeChild(this._loaderContainer);
         this._visible = false;
@@ -681,7 +716,7 @@ var Loader = (function () {
 })();
 module.exports = Loader;
 
-},{}],12:[function(require,module,exports){
+},{"./css-classes":6,"./dom":8}],13:[function(require,module,exports){
 var _ = require('underscore');
 var Palette;
 (function (Palette) {
@@ -696,7 +731,7 @@ var Palette;
 })(Palette || (Palette = {}));
 module.exports = Palette;
 
-},{"underscore":25}],13:[function(require,module,exports){
+},{"underscore":26}],14:[function(require,module,exports){
 var ErrorHandling = require('./error-handling');
 var ResultHandling;
 (function (ResultHandling) {
@@ -751,7 +786,7 @@ var ResultHandling;
 })(ResultHandling || (ResultHandling = {}));
 module.exports = ResultHandling;
 
-},{"./error-handling":8}],14:[function(require,module,exports){
+},{"./error-handling":9}],15:[function(require,module,exports){
 var _ = require('underscore');
 var Formatters = require('../formatters');
 var TableDataset = (function () {
@@ -852,7 +887,7 @@ var TableDataset = (function () {
 })();
 exports.TableDataset = TableDataset;
 
-},{"../formatters":9,"underscore":25}],15:[function(require,module,exports){
+},{"../formatters":10,"underscore":26}],16:[function(require,module,exports){
 var _ = require('underscore');
 function renderDataset(dataset) {
     return template()({
@@ -898,7 +933,7 @@ function template() {
     ');
 }
 
-},{"underscore":25}],16:[function(require,module,exports){
+},{"underscore":26}],17:[function(require,module,exports){
 var _ = require('underscore');
 var Config = require('../config');
 var Dataset = require('./dataset');
@@ -906,6 +941,7 @@ var TableRenderer = require('./renderer');
 var Loader = require('../loader');
 var Dom = require('../dom');
 var ResultHandling = require('../result-handling');
+var Classes = require('../css-classes');
 var Table = (function () {
     function Table(targetElement, suppliedOptions) {
         var defaultTableOptions = {
@@ -928,21 +964,15 @@ var Table = (function () {
     Table.prototype._loadData = function (results, reRender) {
         var dataset = new Dataset.TableDataset(results, this._options);
         this._tableWrapper.innerHTML = TableRenderer.renderDataset(dataset);
-        this._showTitle();
     };
     Table.prototype.clear = function () {
         this._rendered = false;
         Dom.removeAllChildren(this.targetElement);
     };
-    Table.prototype._showTitle = function () {
-        var options = this._options, titleText = options.title ? options.title.toString() : '', showTitle = titleText.length > 0;
-        this._titleElement.textContent = titleText;
-        this._titleElement.style.display = !showTitle ? 'none' : '';
-    };
     Table.prototype._renderTable = function () {
         if (this._rendered)
             return;
-        var options = this._options, tableContainer = Dom.createElement('div', 'connect-viz', 'connect-table'), tableWrapper = Dom.createElement('div', 'connect-table-wrapper'), results = Dom.createElement('div', 'connect-viz-result'), rootElement = this.targetElement, titleElement = Dom.createElement('span', 'connect-viz-title');
+        var options = this._options, tableContainer = Dom.createElement('div', Classes.viz, Classes.table), tableWrapper = Dom.createElement('div', Classes.tableWrapper), results = Dom.createElement('div', Classes.result), rootElement = this.targetElement, titleElement = Dom.createTitle(options.title);
         this.clear();
         tableContainer.appendChild(titleElement);
         tableContainer.appendChild(results);
@@ -951,13 +981,12 @@ var Table = (function () {
         this._rendered = true;
         this._tableWrapper = tableWrapper;
         this._titleElement = titleElement;
-        this._showTitle();
     };
     return Table;
 })();
 module.exports = Table;
 
-},{"../config":5,"../dom":7,"../loader":11,"../result-handling":13,"./dataset":14,"./renderer":15,"underscore":25}],17:[function(require,module,exports){
+},{"../config":5,"../css-classes":6,"../dom":8,"../loader":12,"../result-handling":14,"./dataset":15,"./renderer":16,"underscore":26}],18:[function(require,module,exports){
 //Adapted from https://github.com/inorganik/countUp.js
 var lastTime = 0;
 var vendors = ['webkit', 'moz', 'ms', 'o'];
@@ -1048,13 +1077,14 @@ var Counter = (function () {
 })();
 module.exports = Counter;
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 var ErrorHandling = require('../error-handling');
 var _ = require('underscore');
 var Loader = require('../loader');
 var ResultHandling = require('../result-handling');
 var Dom = require('../dom');
 var Counter = require('./counter');
+var Classes = require('../css-classes');
 var Text = (function () {
     function Text(targetElement, textOptions) {
         this._options = _.extend({
@@ -1075,7 +1105,7 @@ var Text = (function () {
         this._resultHandler.handleResult(resultsPromise, this, this._loadData, reRender);
     };
     Text.prototype._loadData = function (results, reRender) {
-        var options = this._options, metadata = results.metadata, selects = results.selects(), onlyResult = results.results[0], aliasOfSelect = selects[0], defaultFieldOption = { valueFormatter: function (value) { return value; } }, fieldOption = options.fields[aliasOfSelect] || defaultFieldOption, valueFormatter = fieldOption.valueFormatter, value = onlyResult[aliasOfSelect], animationElementClassList = this._valueContainerElement.classList, isIncreasing = value > this._currentValue, hasChanged = valueFormatter(this._currentValue) !== valueFormatter(value), duration = options.text.counterDurationMs, transitionClass = isIncreasing ? 'connect-text-value-increasing' : 'connect-text-value-decreasing';
+        var options = this._options, metadata = results.metadata, selects = results.selects(), onlyResult = results.results[0], aliasOfSelect = selects[0], defaultFieldOption = { valueFormatter: function (value) { return value; } }, fieldOption = options.fields[aliasOfSelect] || defaultFieldOption, valueFormatter = fieldOption.valueFormatter, value = onlyResult[aliasOfSelect], animationElementClassList = this._valueContainerElement.classList, isIncreasing = value > this._currentValue, hasChanged = valueFormatter(this._currentValue) !== valueFormatter(value), duration = options.text.counterDurationMs, transitionClass = isIncreasing ? Classes.textValueInc : Classes.textValueDec;
         if (!this._checkMetaDataIsApplicable(metadata, selects)) {
             this._renderQueryNotApplicable();
             return;
@@ -1102,28 +1132,22 @@ var Text = (function () {
         var exactlyOneSelect = selects.length === 1, noGroupBys = metadata.groups.length === 0, noInterval = metadata.interval == null;
         return exactlyOneSelect && noGroupBys && noInterval;
     };
-    Text.prototype._showTitle = function () {
-        var options = this._options, title = options.title, titleText = title && title.length > 0 ? title.toString() : '', showTitle = title !== false;
-        this._titleElement.textContent = titleText;
-        this._titleElement.style.display = !showTitle ? 'none' : '';
-    };
     Text.prototype._renderText = function () {
         if (this._rendered)
             return;
-        var container = Dom.createElement('div', 'connect-viz', 'connect-text'), label = Dom.createElement('span', 'connect-viz-title'), elementForWidget = this.targetElement, spanForValues = Dom.createElement('span'), valueTextElement = Dom.createElement('span', 'connect-text-value'), valueIncreaseIconElement = Dom.createElement('span', 'connect-text-icon', 'connect-text-icon-increase', 'ion-arrow-up-b'), valueDecreaseIconElement = Dom.createElement('span', 'connect-text-icon', 'connect-text-icon-decrease', 'ion-arrow-down-b'), result = Dom.createElement('div', 'connect-viz-result');
+        var options = this._options, container = Dom.createElement('div', Classes.viz, Classes.text), titleElement = Dom.createTitle(options.title), elementForWidget = this.targetElement, spanForValues = Dom.createElement('span'), valueTextElement = Dom.createElement('span', Classes.textValue), valueIncreaseIconElement = Dom.createElement('span', Classes.textIcon, Classes.textIconInc, Classes.arrowUp), valueDecreaseIconElement = Dom.createElement('span', Classes.textIcon, Classes.textIconDec, Classes.arrowDown), result = Dom.createElement('div', Classes.result);
         this.clear();
         spanForValues.appendChild(valueIncreaseIconElement);
         spanForValues.appendChild(valueDecreaseIconElement);
         spanForValues.appendChild(valueTextElement);
         result.appendChild(spanForValues);
-        container.appendChild(label);
+        container.appendChild(titleElement);
         container.appendChild(result);
         elementForWidget.appendChild(container);
         this._valueContainerElement = result;
         this._valueTextElement = valueTextElement;
         this._valueTextElement.innerHTML = '&nbsp;';
-        this._titleElement = label;
-        this._showTitle();
+        this._titleElement = titleElement;
         this._rendered = true;
     };
     Text.prototype._renderQueryNotApplicable = function () {
@@ -1134,7 +1158,7 @@ var Text = (function () {
 })();
 module.exports = Text;
 
-},{"../dom":7,"../error-handling":8,"../loader":11,"../result-handling":13,"./counter":17,"underscore":25}],19:[function(require,module,exports){
+},{"../css-classes":6,"../dom":8,"../error-handling":9,"../loader":12,"../result-handling":14,"./counter":18,"underscore":26}],20:[function(require,module,exports){
 var DataVisualization = require('./data-visualization');
 var Chart = require('./chart/chart');
 var Gauge = require('./chart/gauge');
@@ -1167,9 +1191,9 @@ var Viz;
 })(Viz || (Viz = {}));
 module.exports = Viz;
 
-},{"./chart/chart":2,"./chart/gauge":4,"./data-visualization":6,"./table/table":16,"./text/text":18}],20:[function(require,module,exports){
+},{"./chart/chart":2,"./chart/gauge":4,"./data-visualization":7,"./table/table":17,"./text/text":19}],21:[function(require,module,exports){
 
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 module.exports={
 	"version": "2014j",
 	"zones": [
@@ -1759,11 +1783,11 @@ module.exports={
 		"Pacific/Pohnpei|Pacific/Ponape"
 	]
 }
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 var moment = module.exports = require("./moment-timezone");
 moment.tz.load(require('./data/packed/latest.json'));
 
-},{"./data/packed/latest.json":21,"./moment-timezone":23}],23:[function(require,module,exports){
+},{"./data/packed/latest.json":22,"./moment-timezone":24}],24:[function(require,module,exports){
 //! moment-timezone.js
 //! version : 0.3.0
 //! author : Tim Wood
@@ -2183,7 +2207,7 @@ moment.tz.load(require('./data/packed/latest.json'));
 	return moment;
 }));
 
-},{"moment":24}],24:[function(require,module,exports){
+},{"moment":25}],25:[function(require,module,exports){
 //! moment.js
 //! version : 2.10.2
 //! authors : Tim Wood, Iskren Chernev, Moment.js contributors
@@ -5267,7 +5291,7 @@ moment.tz.load(require('./data/packed/latest.json'));
     return _moment;
 
 }));
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 //     Underscore.js 1.7.0
 //     http://underscorejs.org
 //     (c) 2009-2014 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -6684,4 +6708,4 @@ moment.tz.load(require('./data/packed/latest.json'));
   }
 }.call(this));
 
-},{}]},{},[10]);
+},{}]},{},[11]);

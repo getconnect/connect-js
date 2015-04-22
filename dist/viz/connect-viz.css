@@ -1,3 +1,38 @@
+.connect-gauge {
+  box-sizing: border-box;
+  position: relative;
+  height: 100%;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -webkit-flex-direction: column;
+      -ms-flex-direction: column;
+          flex-direction: column;
+}
+.connect-gauge .connect-viz-result {
+  -webkit-box-flex: 1;
+  -webkit-flex-grow: 1;
+      -ms-flex-positive: 1;
+          flex-grow: 1;
+}
+.connect-gauge .connect-error {
+  bottom: 10px;
+  left: 0;
+  right: 0;
+}
+.connect-gauge.connect-viz-loading .c3-chart-arc,
+.connect-gauge.connect-viz-in-error .c3-chart-arc {
+  display: none;
+}
+.connect-gauge.connect-viz-loading .c3-chart-arcs-gauge-min,
+.connect-gauge.connect-viz-in-error .c3-chart-arcs-gauge-min,
+.connect-gauge.connect-viz-loading .c3-chart-arcs-gauge-max,
+.connect-gauge.connect-viz-in-error .c3-chart-arcs-gauge-max {
+  visibility: hidden;
+}
 .connect-chart {
   box-sizing: border-box;
   position: relative;
@@ -18,60 +53,27 @@
       -ms-flex-positive: 1;
           flex-grow: 1;
 }
-.connect-chart.connect-chart-line .connect-error,
-.connect-chart.connect-chart-spline .connect-error,
-.connect-chart.connect-chart-bar .connect-error {
+.connect-chart .connect-error {
   left: 50%;
   top: 50%;
   -webkit-transform: translate(-50%, -50%);
       -ms-transform: translate(-50%, -50%);
           transform: translate(-50%, -50%);
 }
-.connect-chart.connect-chart-line.connect-viz-loading .c3 text,
-.connect-chart.connect-chart-spline.connect-viz-loading .c3 text,
-.connect-chart.connect-chart-bar.connect-viz-loading .c3 text,
-.connect-chart.connect-chart-line.connect-viz-in-error .c3 text,
-.connect-chart.connect-chart-spline.connect-viz-in-error .c3 text,
-.connect-chart.connect-chart-bar.connect-viz-in-error .c3 text {
+.connect-chart.connect-viz-loading .c3 text,
+.connect-chart.connect-viz-in-error .c3 text {
   display: none;
 }
-.connect-chart.connect-chart-line.connect-viz-loading .c3-axis-x .tick,
-.connect-chart.connect-chart-spline.connect-viz-loading .c3-axis-x .tick,
-.connect-chart.connect-chart-bar.connect-viz-loading .c3-axis-x .tick,
-.connect-chart.connect-chart-line.connect-viz-in-error .c3-axis-x .tick,
-.connect-chart.connect-chart-spline.connect-viz-in-error .c3-axis-x .tick,
-.connect-chart.connect-chart-bar.connect-viz-in-error .c3-axis-x .tick {
+.connect-chart.connect-viz-loading .c3-axis-x .tick,
+.connect-chart.connect-viz-in-error .c3-axis-x .tick {
   display: none;
 }
-.connect-chart.connect-chart-line.connect-viz-loading .c3-legend-item,
-.connect-chart.connect-chart-spline.connect-viz-loading .c3-legend-item,
-.connect-chart.connect-chart-bar.connect-viz-loading .c3-legend-item,
-.connect-chart.connect-chart-line.connect-viz-in-error .c3-legend-item,
-.connect-chart.connect-chart-spline.connect-viz-in-error .c3-legend-item,
-.connect-chart.connect-chart-bar.connect-viz-in-error .c3-legend-item {
+.connect-chart.connect-viz-loading .c3-legend-item,
+.connect-chart.connect-viz-in-error .c3-legend-item {
   display: none;
 }
-.connect-chart.connect-chart-line.connect-viz-loading .c3-chart,
-.connect-chart.connect-chart-spline.connect-viz-loading .c3-chart,
-.connect-chart.connect-chart-bar.connect-viz-loading .c3-chart,
-.connect-chart.connect-chart-line.connect-viz-in-error .c3-chart,
-.connect-chart.connect-chart-spline.connect-viz-in-error .c3-chart,
-.connect-chart.connect-chart-bar.connect-viz-in-error .c3-chart {
-  visibility: hidden;
-}
-.connect-chart.connect-chart-gauge .connect-error {
-  bottom: 10px;
-  left: 0;
-  right: 0;
-}
-.connect-chart.connect-chart-gauge.connect-viz-loading .c3-chart-arc,
-.connect-chart.connect-chart-gauge.connect-viz-in-error .c3-chart-arc {
-  display: none;
-}
-.connect-chart.connect-chart-gauge.connect-viz-loading .c3-chart-arcs-gauge-min,
-.connect-chart.connect-chart-gauge.connect-viz-in-error .c3-chart-arcs-gauge-min,
-.connect-chart.connect-chart-gauge.connect-viz-loading .c3-chart-arcs-gauge-max,
-.connect-chart.connect-chart-gauge.connect-viz-in-error .c3-chart-arcs-gauge-max {
+.connect-chart.connect-viz-loading .c3-chart,
+.connect-chart.connect-viz-in-error .c3-chart {
   visibility: hidden;
 }
 .c3-legend-item {
@@ -166,7 +168,7 @@
   font-size: 18px;
 }
 
-.connect-loader {
+.connect-viz-loader {
   position: absolute;
   width: 50px;
   height: 30px;
@@ -179,23 +181,23 @@
       -ms-transform: translate(-50%, -50%);
           transform: translate(-50%, -50%);
 }
-.connect-loader .connect-loader-bar2 {
+.connect-viz-loader .connect-viz-loader-bar2 {
   -webkit-animation-delay: -1.1s;
           animation-delay: -1.1s;
 }
-.connect-loader .connect-loader-bar3 {
+.connect-viz-loader .connect-viz-loader-bar3 {
   -webkit-animation-delay: -1s;
           animation-delay: -1s;
 }
-.connect-loader .connect-loader-bar4 {
+.connect-viz-loader .connect-viz-loader-bar4 {
   -webkit-animation-delay: -0.9s;
           animation-delay: -0.9s;
 }
-.connect-loader .connect-loader-bar5 {
+.connect-viz-loader .connect-viz-loader-bar5 {
   -webkit-animation-delay: -0.8s;
           animation-delay: -0.8s;
 }
-.connect-loader > div {
+.connect-viz-loader > div {
   height: 100%;
   width: 7px;
   margin: 0 3px 0 0;
