@@ -1,27 +1,19 @@
 import Config = require('./config');
+import Classes = require('./css-classes');
+import Dom = require('./dom');
 
 class Loader {
     private _loaderContainer;
     private _visible;
     private _targetElement;
-    private _vizSelector = '.connect-viz';
-    private _parentOfLoaderSelector = '.connect-viz-result';
-    private _loaderClass = 'connect-viz-loading';
 
     constructor(targetElement: HTMLElement){
-        var bar1 = document.createElement('div'),
-            bar2 = document.createElement('div'),
-            bar3 = document.createElement('div'),
-            bar4 = document.createElement('div'),
-            bar5 = document.createElement('div'),
-            loaderContainer = document.createElement('div');
-
-        bar1.className = 'connect-loader-bar1';
-        bar2.className = 'connect-loader-bar2';
-        bar3.className = 'connect-loader-bar3';
-        bar4.className = 'connect-loader-bar4';
-        bar5.className = 'connect-loader-bar5';
-        loaderContainer.className = 'connect-loader';
+        var bar1 = Dom.createElement('div', Classes.loaderBar1),
+            bar2 = Dom.createElement('div', Classes.loaderBar2),
+            bar3 = Dom.createElement('div', Classes.loaderBar3),
+            bar4 = Dom.createElement('div', Classes.loaderBar4),
+            bar5 = Dom.createElement('div', Classes.loaderBar5),
+            loaderContainer = Dom.createElement('div', Classes.loader);
 
         loaderContainer.appendChild(bar1);
         loaderContainer.appendChild(bar2);
@@ -34,27 +26,27 @@ class Loader {
     }
 
     show(){               
-        var vizContainer = this._targetElement.querySelector(this._vizSelector),
-            parentOfLoader = this._targetElement.querySelector(this._parentOfLoaderSelector);
+        var vizContainer = this._targetElement.querySelector('.' + Classes.viz),
+            parentOfLoader = this._targetElement.querySelector('.' + Classes.result);
 
         if (!vizContainer || !parentOfLoader)    
             return; 
         
-        vizContainer.classList.add(this._loaderClass);
+        vizContainer.classList.add(Classes.loading);
         parentOfLoader.appendChild(this._loaderContainer);
         this._visible = true;
 
     }
 
     hide(){
-        var vizContainer = this._targetElement.querySelector(this._vizSelector),
-            parentOfLoader = this._targetElement.querySelector(this._parentOfLoaderSelector);
+        var vizContainer = this._targetElement.querySelector('.' + Classes.viz),
+            parentOfLoader = this._targetElement.querySelector('.' + Classes.result);
 
         if (!this._visible)
             return;
         
         if (vizContainer)
-            vizContainer.classList.remove(this._loaderClass);
+            vizContainer.classList.remove(Classes.loading);
 
         if (parentOfLoader)
             parentOfLoader.removeChild(this._loaderContainer);

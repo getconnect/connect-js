@@ -10,6 +10,7 @@ import Loader = require('../loader');
 import Formatters = require('../formatters');
 import Dom = require('../dom');
 import ResultHandling = require('../result-handling');
+import Classes = require('../css-classes');
 
 class Chart implements Common.Visualization {
     public targetElement: HTMLElement;
@@ -112,7 +113,6 @@ class Chart implements Common.Visualization {
             },
             colors: colors
         });
-        this._showTitle();
     }
 
     public clear(): void{        
@@ -128,15 +128,6 @@ class Chart implements Common.Visualization {
             };
 
         return new Dataset.ChartDataset(results, formatters);
-    }
-
-    private _showTitle(){
-        var options = this._options,
-            titleText = options.title ? options.title.toString() : '',
-            showTitle = titleText.length > 0;
-
-        this._titleElement.textContent = titleText;
-        this._titleElement.style.display = !showTitle ? 'none' : '';      
     }
 
     private _formatValueForLabel(label: string, value: any){ 
@@ -169,11 +160,10 @@ class Chart implements Common.Visualization {
             return;
             
         var options = this._options,
-            chartTypeClass = 'connect-chart-' + options.chart.type,
-            connectChartContainer = Dom.createElement('div', 'connect-viz', 'connect-chart', chartTypeClass),
-            c3Element = Dom.createElement('div', 'connect-viz-result'),
+            connectChartContainer = Dom.createElement('div', Classes.viz, Classes.chart),
+            c3Element = Dom.createElement('div', Classes.result),
             rootElement = this.targetElement,
-            titleElement = Dom.createElement('span', 'connect-viz-title'),
+            titleElement = Dom.createTitle(options.title),
             tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
             config = {
                 bindto: c3Element,
@@ -218,7 +208,6 @@ class Chart implements Common.Visualization {
 
         this._rendered = true;
         this._titleElement = titleElement;
-        this._showTitle();        
         this._chart = c3.generate(config);
     }
 }
