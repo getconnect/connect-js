@@ -3,7 +3,10 @@
   "version": "0.0.1",
   "description": "JavaScript SDK for Connect (http://getconnect.io/)",
   "main": "build/lib/core/index.js",
-  "browser": "dist/core/connect.js",
+  "browser": {
+    "d3": "./node_modules/d3/d3.js",
+    "c3": "./node_modules/d3/d3.js"
+  },
   "homepage": "http://getconnect.io/",
   "repository": {
     "type": "git",
@@ -26,6 +29,7 @@
   "devDependencies": {
     "browserify": "8.1.1",
     "chai": "1.10.0",
+    "browserify-shim": "3.8.5",
     "del": "1.1.1",
     "event-stream": "3.2.1",
     "gulp": "3.8.10",
@@ -61,10 +65,26 @@
     "gulp-git": "1.1.0"
   },
   "dependencies": {
+    "c3": "0.4.10",
+    "d3": "3.5.5",
     "q": "1.1.2",
     "superagent": "0.21.0",
     "underscore": "1.7.0",
     "moment-timezone": "0.3.0",
     "bootstrap": "3.3.2"
+  },
+  "browserify": {
+    "transform": [
+      "browserify-shim"
+    ]
+  },
+  "browserify-shim": {
+    "c3": {
+      "exports": "global:c3",
+      "depends": [
+        "d3"
+      ]
+    },
+    "d3": "global:d3"
   }
 }
