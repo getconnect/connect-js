@@ -36,17 +36,17 @@ var Api;
         }
         Client.prototype.query = function (collection, query) {
             var deferred = Q.defer(), queryJson = JSON.stringify(query), url = this._buildUrl('/events/' + collection + '?query=' + queryJson), get = request.get(url);
-            return this._send(get);
+            return this._send(get, function (r) { return new QueryResults(r.body); });
         };
         Client.prototype.pushBatch = function (batches) {
             var url = this._buildUrl('/events'), post = request.post(url).send(batches);
-            return this._send(post);
+            return this._send(post, function (r) { return r.body; });
         };
         Client.prototype.push = function (collection, newEvent) {
             var url = this._buildUrl('/events/' + collection), post = request.post(url).send(newEvent);
-            return this._send(post);
+            return this._send(post, function (r) { return r.body; });
         };
-        Client.prototype._send = function (requestToSend) {
+        Client.prototype._send = function (requestToSend, resultsFactory) {
             var deferred = Q.defer();
             requestToSend.set('X-API-Key', this._apiKey).end(function (err, res) {
                 if (err) {
@@ -60,7 +60,7 @@ var Api;
                     deferred.reject(res.error);
                     return;
                 }
-                var results = new QueryResults(res.body);
+                var results = resultsFactory(res);
                 deferred.resolve(results);
             });
             return deferred.promise;
