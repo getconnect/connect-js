@@ -165,7 +165,9 @@ gulp.task('browserify', ['build'], function() {
         var b = browserify(filename, {
             basedir: dest.lib
         })
-        .ignore('tipi-connect');
+        .ignore('tipi-connect')
+        .external('d3')
+        .external('c3');
         
         return b.bundle();
     });
