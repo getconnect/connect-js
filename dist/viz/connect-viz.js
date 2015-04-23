@@ -8,6 +8,7 @@ function applyMixins(targetClass, mixinClass) {
 module.exports = applyMixins;
 
 },{"underscore":26}],2:[function(require,module,exports){
+(function (global){
 var Config = require('../config');
 var Dataset = require('./dataset');
 var _ = require('underscore');
@@ -16,7 +17,11 @@ var Loader = require('../loader');
 var Formatters = require('../formatters');
 var Dom = require('../dom');
 var ResultHandling = require('../result-handling');
+var c3 = (typeof window !== "undefined" ? window.c3 : typeof global !== "undefined" ? global.c3 : null);
 var Classes = require('../css-classes');
+if (!c3) {
+    throw "c3 has not been loaded.";
+}
 var Chart = (function () {
     function Chart(targetElement, chartOptions) {
         this._options = this._parseOptions(chartOptions);
@@ -151,6 +156,7 @@ var Chart = (function () {
 })();
 module.exports = Chart;
 
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"../config":5,"../css-classes":6,"../dom":8,"../formatters":10,"../loader":12,"../palette":13,"../result-handling":14,"./dataset":3,"underscore":26}],3:[function(require,module,exports){
 var _ = require('underscore');
 var Dataset;
@@ -266,6 +272,7 @@ var Dataset;
 module.exports = Dataset;
 
 },{"underscore":26}],4:[function(require,module,exports){
+(function (global){
 var Config = require('../config');
 var Dataset = require('./dataset');
 var _ = require('underscore');
@@ -274,7 +281,11 @@ var Palette = require('../palette');
 var Loader = require('../loader');
 var Dom = require('../dom');
 var ResultHandling = require('../result-handling');
+var c3 = (typeof window !== "undefined" ? window.c3 : typeof global !== "undefined" ? global.c3 : null);
 var Classes = require('../css-classes');
+if (!c3) {
+    throw "c3 has not been loaded.";
+}
 var Gauge = (function () {
     function Gauge(targetElement, gaugeOptions) {
         this._options = this._parseOptions(gaugeOptions);
@@ -415,6 +426,7 @@ var Gauge = (function () {
 })();
 module.exports = Gauge;
 
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"../config":5,"../css-classes":6,"../dom":8,"../error-handling":9,"../loader":12,"../palette":13,"../result-handling":14,"./dataset":3,"underscore":26}],5:[function(require,module,exports){
 var Config;
 (function (Config) {
