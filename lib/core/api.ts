@@ -104,24 +104,24 @@ module Api {
                 url = this._buildUrl('/events/' + collection + '?query=' + queryJson),
                 get = request.get(url);
 
-            return this._send(get);
+            return this._send(get, r => new QueryResults(<QueryResponse>r.body));
         }
 
         public pushBatch(batches: any): Q.IPromise<any> {
             var url = this._buildUrl('/events'),
                 post = request.post(url).send(batches);
 
-            return this._send(post);
+            return this._send(post, r => r.body);
         }
 
         public push(collection: string, newEvent: any): Q.IPromise<any> {
             var url = this._buildUrl('/events/' + collection),
                 post = request.post(url).send(newEvent);
 
-            return this._send(post);
+            return this._send(post, r => r.body);
         }
 
-        private _send(requestToSend: request.Request<any>): Q.IPromise<any>{
+        private _send(requestToSend: request.Request<any>, resultsFactory: (response) => any): Q.IPromise<any>{
             var deferred = Q.defer();
 
             requestToSend
@@ -139,7 +139,8 @@ module Api {
                         deferred.reject(res.error);
                         return;
                     }
-                    var results = new QueryResults(<QueryResponse>res.body);
+
+                    var results = resultsFactory(res);
                     deferred.resolve(results);
                 });     
 
