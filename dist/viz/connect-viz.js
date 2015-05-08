@@ -633,12 +633,9 @@ var ErrorHandling;
     }
     ErrorHandling.displayFriendlyError = displayFriendlyError;
     function logError(error) {
-        var printable = error;
-        if (console && console.log) {
-            console.log(error.message);
-            if (printable.stack)
-                console.log(printable.stack);
-        }
+        var objToPrint = error.stack || error.message, printer = console || {}, printMethod = (printer.error || printer.log) || (function () {
+        });
+        printMethod.call(printer, objToPrint);
     }
     ErrorHandling.logError = logError;
 })(ErrorHandling || (ErrorHandling = {}));
