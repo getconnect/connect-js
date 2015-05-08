@@ -83,14 +83,11 @@ module ErrorHandling {
     }
 
     export function logError(error: Error){
-        var printable: any = error;
+        var objToPrint: any = (<any>error).stack || error.message,
+            printer: any = console || {},
+            printMethod: any = (printer.error || printer.log) || (() => {});
 
-        if (console && console.log){
-            console.log(error.message);
-
-            if (printable.stack)
-                console.log(printable.stack)
-        }
+        printMethod.call(printer, objToPrint);
     }
 }
 
