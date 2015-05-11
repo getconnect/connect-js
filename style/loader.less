@@ -4,10 +4,10 @@
 //Big thanks to @tobiasahlin for the loader https://github.com/tobiasahlin/SpinKit
 .connect-viz-loader {
     position:absolute;
-    width: 50px;
-    height: 30px;
+    width: (@loader-bar-spacing + @loader-bar-width) * 5;
+    height: @loader-height;
     text-align: center;
-    font-size: 10px;
+    font-size: 0;
     opacity: @loader-opacity;
     
     .middle();
@@ -30,9 +30,9 @@
 
     > div {
         height: 100%;
-        width: 7px;
-        margin: 0 3px 0 0;
-        background-color: #2C97DE;
+        width: @loader-bar-width;
+        margin: 0 @loader-bar-spacing 0 0;
+        background-color: @loader-color;
         display: inline-block;
         animation: connect-loader-stretchdelay 1.2s infinite ease-in-out;
     }
