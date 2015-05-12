@@ -21,17 +21,17 @@ var bar = connect.chart(salesByPaymentProvider, '#sales-by-payment-bar', {
         type: 'bar',        
         yAxisValueFormatter: d3.format('$,.2f')
     },
-    fields: fieldOptions,
+    fields: fieldOptions
 });
 
 var barNoLegend = connect.chart(salesByPaymentProvider, '#sales-by-payment-bar-no-legend', {
     title: 'Sales by Payment Type (No Legend)',
     chart: {
         type: 'bar',
-        yAxisValueFormatter: d3.format('$,.2f')
+        yAxisValueFormatter: d3.format('$,.2f'),
+        showLegend: false
     },
-    fields: fieldOptions,
-    showLegend: false,
+    fields: fieldOptions
 });
 
 var line = connect.chart(salesByPaymentProvider, '#sales-by-payment-line', {
@@ -40,7 +40,7 @@ var line = connect.chart(salesByPaymentProvider, '#sales-by-payment-line', {
         type: 'line',
         yAxisValueFormatter: d3.format('$,.2f')
     },
-    fields: fieldOptions,
+    fields: fieldOptions
 });
 
 var table = connect.table(salesByPaymentProvider, '#sales-by-payment-table', {
