@@ -1,4 +1,5 @@
-import Api = require('../api')
+import Api = require('../api');
+import _ = require('underscore');
 
 module Filters {
 	export type QueryFilters = Array<QueryFilter>;
@@ -15,51 +16,13 @@ module Filters {
 		}
 	}
 
-	export class QueryFilterBuilder { 
-		field: string;
-
-		constructor(field: string) {
-			this.field = field;
-		}
-
-		public eq(value: any): Filters.QueryFilter {
-			return new Filters.QueryFilter(this.field, 'eq', value);
-		}
-
-		public ne(value: any): Filters.QueryFilter {
-			return new Filters.QueryFilter(this.field, 'ne', value);
-		}
-
-		public gt(value: any): Filters.QueryFilter {
-			return new Filters.QueryFilter(this.field, 'gt', value);
-		}
-
-		public gte(value: any): Filters.QueryFilter {
-			return new Filters.QueryFilter(this.field, 'gte', value);
-		}
-
-		public lt(value: any): Filters.QueryFilter {
-			return new Filters.QueryFilter(this.field, 'lt', value);
-		}
-
-		public lte(value: any): Filters.QueryFilter {
-			return new Filters.QueryFilter(this.field, 'lte', value);
-		}
-
-		public exists(value: boolean): Filters.QueryFilter {
-			return new Filters.QueryFilter(this.field, 'exists', value);
-		}
-
-		public startsWith(value: string): Filters.QueryFilter {
-			return new Filters.QueryFilter(this.field, 'startsWith', value);
-		}
-
-		public endsWith(value: string): Filters.QueryFilter {
-			return new Filters.QueryFilter(this.field, 'endsWith', value);
-		}
-
-		public contains(value: string): Filters.QueryFilter {
-			return new Filters.QueryFilter(this.field, 'contains', value);
+	export function queryFilterBuilder(filterValue: any, field: string) : QueryFilter[]{
+		if (!_.isObject(filterValue)){
+			return [new QueryFilter(field, "eq", filterValue)];
+		}else if (_.isArray(filterValue)){
+			return [new QueryFilter(field, "in", filterValue)];
+		}else{
+			return _.map(filterValue, (value: any, opName: string) => new QueryFilter(field, opName, value));
 		}
 	}
 }

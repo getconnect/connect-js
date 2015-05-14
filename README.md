@@ -1,4 +1,6 @@
 # Connect Javascript SDK
+[![NPM version](http://img.shields.io/npm/v/connect-js.svg?style=flat)](https://www.npmjs.org/package/selectize)
+![Bower version](http://img.shields.io/bower/v/connect-js.svg?style=flat)
 
 ## Getting Access
 
@@ -22,6 +24,12 @@ npm install connent-js-viz
 
 ```ssh
 npm install connent-js
+```
+
+# static
+```
+https://cdn.rawgit.com/getconnect/connect-js/0.0.124/dist/core/connect.min.js
+https://cdn.rawgit.com/getconnect/connect-js/0.0.124/dist/viz/connect-viz.min.js
 ```
 
 ## Module support

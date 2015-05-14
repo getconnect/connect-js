@@ -7,7 +7,6 @@ import Q = require('q');
 import _ = require('underscore');
 
 module Queries {
-	export type FilterFactory = (builder: (field: string) => Filters.QueryFilterBuilder) => Filters.QueryFilter;
 	export type TimeframeFactory = (builder: Timeframes.TimeframeBuilder) => Timeframes.Timeframe;
 
 	export class ConnectQuery {
@@ -54,16 +53,15 @@ module Queries {
 			return new ConnectQuery(this._client, this._collection, selects, this._filters, this._groups, this._timeframe, this._interval, this._timezone);
 		}
 
-		public filter(factory: FilterFactory): ConnectQuery {
-			var builder = (field: string) => {
-				return new Filters.QueryFilterBuilder(field);
-			};	
+		public filter(filterSpecification: any): ConnectQuery {
+			var filters = _.chain(filterSpecification)
+				.map(Filters.queryFilterBuilder)
+				.flatten()
+				.value()
+				.concat(this._filters);
 
-			var filter = factory(builder);
-			if(_.any(this._filters, x => x.field === filter.field && x.operator === filter.operator))
-				throw new Error('You have already defined a filter on operator \'' + filter.operator + '\' for field \'' + filter.field + '\'.');
+			filters = _.uniq(filters, filter => filter.operator);
 
-			var filters = this._filters.concat(filter);
 			return new ConnectQuery(this._client, this._collection, this._selects, filters, this._groups, this._timeframe, this._interval, this._timezone);
 		}
 

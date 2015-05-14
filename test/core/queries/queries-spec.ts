@@ -67,7 +67,7 @@ describe('Queries', () => {
 
 				var QueriesProxy = proxyquire('../../../lib/core/queries/queries', {
 					'./filters': {
-						QueryFilterBuilder: builder
+						queryFilterBuilder: builder
 					}	
 				});
 
@@ -76,48 +76,64 @@ describe('Queries', () => {
 
 			it('should add a single filter', () => {
 				var field = 'field',
-					fieldFilter = sinon.createStubInstance(Filters.QueryFilter),
-					fieldBuilder = sinon.createStubInstance(Filters.QueryFilterBuilder);
+					fieldValue = 10,
+					filterSpec = {},
+					fieldFilter = new Filters.QueryFilter('field', 'eq', 10);
 
-				builder.withArgs(field).returns(fieldBuilder);
-				fieldBuilder['eq'].withArgs(10).returns(fieldFilter)
+				filterSpec[field] = fieldValue;
 
-				query = query.filter(x => x(field).eq(10));
+				builder.withArgs(fieldValue, field).returns(fieldFilter);
+
+				query = query.filter(filterSpec);
 				expect(query._filters).to.contain(fieldFilter);
 			});
 
 			it('should add multiple filters', () => {
 				var field1 = 'field1',
 					field2 = 'field2',
+					field1Value =  { eq: 10 },
+					field2Value =  { gt: 20 },
+					filterSpec = {},
 					field1Filter = new Filters.QueryFilter(field1, 'eq', 10),
-					field2Filter = new Filters.QueryFilter(field2, 'gt', 20),
-					field1Builder = sinon.createStubInstance(Filters.QueryFilterBuilder),
-					field2Builder = sinon.createStubInstance(Filters.QueryFilterBuilder);
+					field2Filter = new Filters.QueryFilter(field2, 'gt', 20);
 
-				builder.withArgs(field1).returns(field1Builder);
-				field1Builder['eq'].withArgs(10).returns(field1Filter);
+				filterSpec[field1] = field1Value;
+				filterSpec[field2] = field2Value;
 
-				builder.withArgs(field2).returns(field2Builder);
-				field2Builder['gt'].withArgs(20).returns(field2Filter);
+				builder.withArgs(field1Value, field1).returns([field1Filter]);
+				builder.withArgs(field2Value, field2).returns([field2Filter]);
 
-				query = query.filter(x => x(field1).eq(10));
-				query = query.filter(x => x(field2).gt(20));
+				query = query.filter(filterSpec);
 				expect(query._filters).to.contain(field1Filter);
 				expect(query._filters).to.contain(field2Filter);
 			});
 
 			it('should return a new query instance', () => {
 				var query = new Queries.ConnectQuery(client, 'test');
-				var query2 = query.filter(x => x('test').eq(10));
+				var query2 = query.filter({test: 10});
 
 				expect(query2).to.not.equal(query);
 			});
 
-			it('should not allow to add same filter for same field', () => {
-				var query = new Queries.ConnectQuery(client, 'test');	
-				query = query.filter(x => x('name').eq('bob'));
+			it('should use last filter specification of operator and field', () => {				
+				var field1 = 'field1',
+					field1Value =  { eq: 10 },
+					field2Value =  { gt: 20 },
+					filterSpec1 = {},
+					filterSpec2 = {},
+					field1Filter = new Filters.QueryFilter(field1, 'eq', 10),
+					field2Filter = new Filters.QueryFilter(field1, 'eq', 20);
 
-				expect(() => query.filter(x => x('name').eq('bob'))).to.throw(Error);
+				filterSpec1[field1] = field1Value;
+				filterSpec2[field1] = field2Value;
+
+				builder.withArgs(field1Value, field1).returns([field1Filter]);
+				builder.withArgs(field2Value, field1).returns([field2Filter]);
+
+				query = query.filter(filterSpec1);
+				query = query.filter(filterSpec2);
+				expect(query._filters).not.to.contain(field1Filter);
+				expect(query._filters).to.contain(field2Filter);
 			});
 		});
 

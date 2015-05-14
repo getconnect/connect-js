@@ -31,40 +31,113 @@ describe('Filters', () => {
 	});
 
 	describe('QueryFilterBuilder', () => {
-		var builder: Filters.QueryFilterBuilder,
-			field = 'foo',
-			value = 'testing';
+		var field = 'foo',
+			value = 'testing',
+			allOperators = ['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'exists', 'startsWith', 'endsWith', 'contains', 'in'];
 
-		before(() => {
-			builder = new Filters.QueryFilterBuilder(field);
+		it('should default string to be "eq" operator', () => {
+			var filterValue = 'testing',
+				defaultOp = 'eq',
+				filter = Filters.queryFilterBuilder(filterValue, field)[0];
+
+			expect(filter.operator).to.equal(defaultOp);
 		});
 
-		describe('constructor', () => {
-			if('should set the field', () => {
-				expect(builder.field).to.equal(field);
+		it('should default number to be "eq" operator', () => {
+			var filterValue = 5,
+				defaultOp = 'eq',
+				filter = Filters.queryFilterBuilder(filterValue, field)[0];
+
+			expect(filter.operator).to.equal(defaultOp);
+		});
+
+		it('should default array to be "in" operator', () => {
+			var filterValue = ['testing'],
+				defaultOp = 'in',
+				filter = Filters.queryFilterBuilder(filterValue, field)[0];
+
+			expect(filter.operator).to.equal(defaultOp);
+		});
+
+		it('should be an empty array for an object with no properties', () => {
+			var filterValue = 'testing',
+				filters = Filters.queryFilterBuilder({}, field);
+
+			expect(filters).to.be.empty;
+		});
+
+		it('should be an empty array for null', () => {
+			var filterValue = 'testing',
+				filters = Filters.queryFilterBuilder({}, field);
+
+			expect(filters).to.be.empty;
+		});
+
+		it('should create a filter for each operator property in filter spec', () => {
+			var filterValue = {};
+			
+			allOperators.forEach(op => {
+				filterValue[op] = op + 'Value';
 			});
+			
+			var filters = Filters.queryFilterBuilder(filterValue, field);
+			expect(filters).to.have.length(allOperators.length);
 		});
 
-		data_driven(['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'exists', 'startsWith', 'endsWith', 'contains'], () => {
+
+		it('should use the correct value for operator in complex spec', () => {
+			var filterValue = { lt: 10, gt: 5 },
+				field = 'field';
+			
+			var filters = Filters.queryFilterBuilder(filterValue, field);
+			expect(filters[0]).to.deep.equal(new Filters.QueryFilter(field, 'lt', 10));
+			expect(filters[1]).to.deep.equal(new Filters.QueryFilter(field, 'gt', 5));
+		});		
+
+		data_driven(allOperators, () => {
 			it('should return a QueryFilter instance', op => {
-				var filter = builder[op](value);
+				var filterValue = {},
+					filter;
+				
+				filterValue[op] = value;
+				filter = Filters.queryFilterBuilder(filterValue, field)[0];
+
+				filterValue[op] = value;
 				expect(filter).to.be.instanceof(Filters.QueryFilter);
 			});
 
 			it('should set the correct field', op => {
-				var filter = builder[op](value);
+				var filterValue = {},
+					filter;
+				
+				filterValue[op] = value;
+				filter = Filters.queryFilterBuilder(filterValue, field)[0];
+
+				filterValue[op] = value;
 				expect(filter.field).to.equal(field);
 			});
 
 			it('should set the correct value', op => {
-				var filter = builder[op](value);
+				var filterValue = {},
+					filter;
+				
+				filterValue[op] = value;
+				filter = Filters.queryFilterBuilder(filterValue, field)[0];
+
+				filterValue[op] = value;
 				expect(filter.value).to.equal(value);
 			});
 
 			it('should set the operator', op => {
-				var filter = builder[op](value);
+				var filterValue = {},
+					filter;
+				
+				filterValue[op] = value;
+				filter = Filters.queryFilterBuilder(filterValue, field)[0];
+
 				expect(filter.operator).to.equal(op);
 			});
 		});
+
 	});
 });

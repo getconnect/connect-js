@@ -135,6 +135,7 @@ else if (typeof global !== 'undefined') {
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"./connect":2}],4:[function(require,module,exports){
+var _ = require('underscore');
 var Filters;
 (function (Filters) {
     var QueryFilter = (function () {
@@ -146,47 +147,22 @@ var Filters;
         return QueryFilter;
     })();
     Filters.QueryFilter = QueryFilter;
-    var QueryFilterBuilder = (function () {
-        function QueryFilterBuilder(field) {
-            this.field = field;
+    function queryFilterBuilder(filterValue, field) {
+        if (!_.isObject(filterValue)) {
+            return [new QueryFilter(field, "eq", filterValue)];
         }
-        QueryFilterBuilder.prototype.eq = function (value) {
-            return new Filters.QueryFilter(this.field, 'eq', value);
-        };
-        QueryFilterBuilder.prototype.ne = function (value) {
-            return new Filters.QueryFilter(this.field, 'ne', value);
-        };
-        QueryFilterBuilder.prototype.gt = function (value) {
-            return new Filters.QueryFilter(this.field, 'gt', value);
-        };
-        QueryFilterBuilder.prototype.gte = function (value) {
-            return new Filters.QueryFilter(this.field, 'gte', value);
-        };
-        QueryFilterBuilder.prototype.lt = function (value) {
-            return new Filters.QueryFilter(this.field, 'lt', value);
-        };
-        QueryFilterBuilder.prototype.lte = function (value) {
-            return new Filters.QueryFilter(this.field, 'lte', value);
-        };
-        QueryFilterBuilder.prototype.exists = function (value) {
-            return new Filters.QueryFilter(this.field, 'exists', value);
-        };
-        QueryFilterBuilder.prototype.startsWith = function (value) {
-            return new Filters.QueryFilter(this.field, 'startsWith', value);
-        };
-        QueryFilterBuilder.prototype.endsWith = function (value) {
-            return new Filters.QueryFilter(this.field, 'endsWith', value);
-        };
-        QueryFilterBuilder.prototype.contains = function (value) {
-            return new Filters.QueryFilter(this.field, 'contains', value);
-        };
-        return QueryFilterBuilder;
-    })();
-    Filters.QueryFilterBuilder = QueryFilterBuilder;
+        else if (_.isArray(filterValue)) {
+            return [new QueryFilter(field, "in", filterValue)];
+        }
+        else {
+            return _.map(filterValue, function (value, opName) { return new QueryFilter(field, opName, value); });
+        }
+    }
+    Filters.queryFilterBuilder = queryFilterBuilder;
 })(Filters || (Filters = {}));
 module.exports = Filters;
 
-},{}],5:[function(require,module,exports){
+},{"underscore":13}],5:[function(require,module,exports){
 var Filters = require('./filters');
 var Timeframes = require('./timeframes');
 var QueryBuilder = require('./query-builder');
@@ -215,14 +191,9 @@ var Queries;
             }
             return new ConnectQuery(this._client, this._collection, selects, this._filters, this._groups, this._timeframe, this._interval, this._timezone);
         };
-        ConnectQuery.prototype.filter = function (factory) {
-            var builder = function (field) {
-                return new Filters.QueryFilterBuilder(field);
-            };
-            var filter = factory(builder);
-            if (_.any(this._filters, function (x) { return x.field === filter.field && x.operator === filter.operator; }))
-                throw new Error('You have already defined a filter on operator \'' + filter.operator + '\' for field \'' + filter.field + '\'.');
-            var filters = this._filters.concat(filter);
+        ConnectQuery.prototype.filter = function (filterSpecification) {
+            var filters = _.chain(filterSpecification).map(Filters.queryFilterBuilder).flatten().value().concat(this._filters);
+            filters = _.uniq(filters, function (filter) { return filter.operator; });
             return new ConnectQuery(this._client, this._collection, this._selects, filters, this._groups, this._timeframe, this._interval, this._timezone);
         };
         ConnectQuery.prototype.groupBy = function (field) {
