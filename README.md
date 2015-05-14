@@ -10,16 +10,15 @@
 
 ```ssh
 # using npm
-npm install tipi-connent
-npm install tipi-connect-viz
+npm install connect-js
 
 
 # using bower
-bower install tipi-connect
+bower install connect-js
 
 # static
-https://cdn.getconnect.io/connect.js
-https://cdn.getconnect.io/connect-viz.js
+https://cdn.rawgit.com/getconnect/connect-js/0.0.124/dist/core/connect.min.js
+https://cdn.rawgit.com/getconnect/connect-js/0.0.124/dist/viz/connect-viz.min.js
 
 ```
 
