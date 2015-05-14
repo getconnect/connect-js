@@ -2,21 +2,15 @@
 @import "mixins";
 
 .connect-table {
-    font-family: @text-value-font-family;
+    font-family: @table-font-family;
     color: @table-text-color;
     position: relative;
     height: 100%;
     overflow-y: hidden;
-    display: flex;
-    flex-direction: column;
+    .grow-results-vertically();
 
     .connect-error{    
         .middle();
-    }
-
-    .connect-viz-result {
-        flex-grow: 1;
-        position: relative;
     }
 
     .connect-table-wrapper {
@@ -36,8 +30,8 @@
             height: 100%;
         }
 
-        border-top: 1px solid @table-border-color;
-        border-bottom: 1px solid @table-border-color;
+        border-top: @table-border;
+        border-bottom: @table-border;
 
     }
 
@@ -45,7 +39,7 @@
         border-collapse: collapse;
         width: 100%;
         max-width: 100%;
-        font-size:12px;
+        font-size: @table-font-size;
        
         > thead,
         > tbody,
@@ -64,13 +58,13 @@
                         padding-right: @cell-horizontal-padding-default * 2;
                     }
 
-                    vertical-align: top;
-                    text-align: left;
+                    vertical-align: @table-vertical-text-align;
+                    text-align: @table-default-text-align;
                     &.isNumeric {
-                        text-align: right;
+                        text-align: @table-numeric-text-align;
                     }
                     &.isGrouped {
-                        text-align: left; 
+                        text-align: @table-grouped-text-align; 
                     }
 
                 }
@@ -82,7 +76,7 @@
                 display: none;
             }
             vertical-align: bottom;
-            border-bottom: 1px solid @table-border-color;
+            border-bottom: @table-border;
             padding-top: @cell-vertical-padding-large;
             padding-bottom: @cell-vertical-padding-large;
         }
@@ -157,7 +151,7 @@
             padding-top: @table-fixed-header-height;
 
             .connect-table-scrolling-inner {
-                border-top: 1px solid @table-border-color;
+                border-top: @table-border;
             }
         }
 

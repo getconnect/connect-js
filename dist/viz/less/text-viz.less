@@ -11,7 +11,7 @@
         position: relative;
         display: block;
         text-align: center;
-        font: @text-value-size @text-value-font-family;
+        font: @text-value-font-size @text-value-font-family;
         color: @label-color;
         line-height: @text-value-line-height;
         
@@ -22,7 +22,7 @@
         transition: color @text-value-animation-delay linear;
         
         .connect-text-value{
-            font-feature-settings: 'tnum';            
+            font-feature-settings: @font-feature;            
         }
 
         .connect-text-icon{

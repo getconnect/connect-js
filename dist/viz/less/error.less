@@ -2,15 +2,15 @@
 
 .connect-error{    
     position: absolute;
-    font: @label-size @label-font-family;
-    color: @light-label-color;
+    font-family: @label-font-family;
+    color: @error-color;
     span{
         display: block;
         text-align: center;      
-        font-size: 14px;  
+        font-size: @error-label-font-size;  
     }
 
     .connect-error-icon{
-        font-size: 18px;                  
+        font-size: @error-icon-size;                  
     }
 }  

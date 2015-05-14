@@ -17,6 +17,7 @@
   -webkit-flex-grow: 1;
       -ms-flex-positive: 1;
           flex-grow: 1;
+  position: relative;
 }
 .connect-gauge .connect-error {
   bottom: 10px;
@@ -32,6 +33,24 @@
 .connect-gauge.connect-viz-loading .c3-chart-arcs-gauge-max,
 .connect-gauge.connect-viz-in-error .c3-chart-arcs-gauge-max {
   visibility: hidden;
+}
+.c3-chart-arc .c3-chart-arcs-gauge-min,
+.c3-chart-arcs .c3-chart-arcs-gauge-min,
+.c3-chart-arc .c3-chart-arcs-gauge-max,
+.c3-chart-arcs .c3-chart-arcs-gauge-max {
+  fill: #34495e;
+  -webkit-font-feature-settings: 'tnum';
+     -moz-font-feature-settings: 'tnum';
+          font-feature-settings: 'tnum';
+  font: 11px 'Roboto', sans-serif;
+}
+.c3-chart-arc .c3-gauge-value,
+.c3-chart-arcs .c3-gauge-value {
+  fill: #34495e;
+  font: 'Open Sans', sans-serif;
+  -webkit-font-feature-settings: 'tnum';
+     -moz-font-feature-settings: 'tnum';
+          font-feature-settings: 'tnum';
 }
 .connect-chart {
   box-sizing: border-box;
@@ -52,6 +71,7 @@
   -webkit-flex-grow: 1;
       -ms-flex-positive: 1;
           flex-grow: 1;
+  position: relative;
 }
 .connect-chart .connect-error {
   left: 50%;
@@ -79,28 +99,6 @@
 .c3-legend-item {
   font: 12px 'Roboto', sans-serif;
   color: #34495e;
-}
-.c3-chart-arc .c3-gauge-value,
-.c3-chart-arcs .c3-gauge-value,
-.c3-chart-arc .c3-chart-arcs-gauge-min,
-.c3-chart-arcs .c3-chart-arcs-gauge-min,
-.c3-chart-arc .c3-chart-arcs-gauge-max,
-.c3-chart-arcs .c3-chart-arcs-gauge-max {
-  fill: #34495e;
-  -webkit-font-feature-settings: 'tnum';
-     -moz-font-feature-settings: 'tnum';
-          font-feature-settings: 'tnum';
-}
-.c3-chart-arc .c3-gauge-value,
-.c3-chart-arcs .c3-gauge-value {
-  font-family: 'Open Sans', sans-serif;
-}
-.c3-chart-arc .c3-chart-arcs-gauge-min,
-.c3-chart-arcs .c3-chart-arcs-gauge-min,
-.c3-chart-arc .c3-chart-arcs-gauge-max,
-.c3-chart-arcs .c3-chart-arcs-gauge-max {
-  font-family: 'Roboto', sans-serif;
-  font-size: 11px;
 }
 .c3-axis,
 .c3-line {
@@ -148,7 +146,7 @@
   text-align: center;
   font: 700 16px 'Roboto', sans-serif;
   color: #34495e;
-  padding-bottom: 5px;
+  padding: 0 0 5px 0;
 }
 .connect-viz svg {
   font-family: 'Roboto', sans-serif;
@@ -156,7 +154,7 @@
 
 .connect-error {
   position: absolute;
-  font: 12px 'Roboto', sans-serif;
+  font-family: 'Roboto', sans-serif;
   color: #bdc3c7;
 }
 .connect-error span {
@@ -173,7 +171,7 @@
   width: 50px;
   height: 30px;
   text-align: center;
-  font-size: 10px;
+  font-size: 0;
   opacity: 0.35;
   left: 50%;
   top: 50%;
@@ -201,7 +199,7 @@
   height: 100%;
   width: 7px;
   margin: 0 3px 0 0;
-  background-color: #2C97DE;
+  background-color: #2c97de;
   display: inline-block;
   -webkit-animation: connect-loader-stretchdelay 1.2s infinite ease-in-out;
           animation: connect-loader-stretchdelay 1.2s infinite ease-in-out;
@@ -254,19 +252,19 @@
       -ms-flex-direction: column;
           flex-direction: column;
 }
-.connect-table .connect-error {
-  left: 50%;
-  top: 50%;
-  -webkit-transform: translate(-50%, -50%);
-      -ms-transform: translate(-50%, -50%);
-          transform: translate(-50%, -50%);
-}
 .connect-table .connect-viz-result {
   -webkit-box-flex: 1;
   -webkit-flex-grow: 1;
       -ms-flex-positive: 1;
           flex-grow: 1;
   position: relative;
+}
+.connect-table .connect-error {
+  left: 50%;
+  top: 50%;
+  -webkit-transform: translate(-50%, -50%);
+      -ms-transform: translate(-50%, -50%);
+          transform: translate(-50%, -50%);
 }
 .connect-table .connect-table-wrapper {
   position: absolute;
