@@ -11,19 +11,19 @@ Sign up at [https://getconnect.io](https://getconnect.io) to generate and retrie
 ### Core
 
 ```ssh
-npm install connent-js
+npm install connect-js
 ```
 
 ### Viz
 
 ```ssh
-npm install connent-js-viz
+npm install connect-js-viz
 ```
 
 ## Install using bower
 
 ```ssh
-npm install connent-js
+npm install connect-js
 ```
 
 # static
