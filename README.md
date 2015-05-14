@@ -4,25 +4,37 @@
 
 ## Getting Access
 
-[Get Connect](https://getconnect.io) to sign up and gain access to API keys to start using the SDK.
+Sign up at [https://getconnect.io](https://getconnect.io) to generate and retrieve your API keys so that you can start using the SDK.
 
-## Installation
+## Install using npm
+
+### Core
 
 ```ssh
-# using npm
 npm install connect-js
-
-
-# using bower
-bower install connect-js
-
-# static
-https://cdn.rawgit.com/getconnect/connect-js/0.0.124/dist/core/connect.min.js
-https://cdn.rawgit.com/getconnect/connect-js/0.0.124/dist/viz/connect-viz.min.js
-
 ```
 
-The SDK supports browserify, AMD, and global scope.
+### Viz
+
+```ssh
+npm install connect-js-viz
+```
+
+## Install using bower
+
+```ssh
+npm install connect-js
+```
+
+# static
+```
+https://cdn.rawgit.com/getconnect/connect-js/0.0.124/dist/core/connect.min.js
+https://cdn.rawgit.com/getconnect/connect-js/0.0.124/dist/viz/connect-viz.min.js
+```
+
+## Module support
+
+The SDK supports CommonJS (node.js/io.js), browserify and global scope.
 
 ## Documentation
 
@@ -34,7 +46,7 @@ Get your questions answered and join in with the connect community at [http://do
 
 ## Contributing
 
-We love open source here at Tipi HQ, so we are happy to accept pull requests and will endeavor to fix the issues and include the enhancements that the community raise.
+We love open source, so we are happy to accept pull requests and will endeavor to fix the issues and include the enhancements that the community raise.
 
 ## Building
 

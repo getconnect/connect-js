@@ -22,7 +22,12 @@ var dest = {
     lib: './build/lib',
     style: './build/css',
     test: './build/test',
-    dist: './dist'
+    dist: './dist',
+    distCore: './dist/core',
+    distViz: './dist/viz',
+    distNpm: './dist-modules',
+    distNpmCore: './dist-modules/connect-js',
+    distNpmViz: './dist-modules/connect-js-viz',
 };
 
 var exampleDest = {
@@ -32,9 +37,17 @@ var exampleDest = {
 };
 
 var sources = {
+    readme: './README.md',
+    npmConfig: './package.json',
     lib: './lib/**/*.ts',
+    compiledLibCore: dest.lib + '/core/**/*.js',
+    compiledLibViz: dest.lib + '/viz/**/*.js',
+    compiledTdCore: dest.lib + '/core/**/*.d.ts',
+    compiledTdViz: dest.lib + '/viz/**/*.d.ts',
+    compiledStyle: dest.style + '/*.css',
     style: './style/**/*.less',
-    test: './test/**/*.ts'
+    test: './test/**/*.ts',
+    compiledTest: dest.test + '/**/*.ts'
 };
 
 var exampleSources = {
@@ -81,41 +94,6 @@ gulp.task('compile:lib',  function() {
     return es.merge(js, dts);
 });
 
-gulp.task('readme',  function() {
-    var readmeSrc = gulp.src('./README.md')
-        .on('error', handleError);
-
-    var core = readmeSrc
-        .pipe(gulp.dest(dest.lib + '/core'));
-
-    var viz = readmeSrc
-        .pipe(gulp.dest(dest.lib + '/viz'));
-
-    return es.merge(core, viz);
-});
-
-gulp.task('compile:config',  function() {
-    var corePackage = gulp.src('./package.json')
-        .pipe(gulp.dest(dest.lib + '/core'))
-        .on('error', handleError);
-
-    var vizPackage = gulp.src('./package.json')
-        .pipe(jeditor({
-            'name': 'connect-js-viz',
-            "main": "build/viz/index.js",
-            "browser": "dist/viz/connect-viz.js"
-        }))
-        .pipe(jeditor(function (packageJson){
-            packageJson.peerDependencies = {};
-            packageJson.peerDependencies['connect-js'] = packageJson.version;
-            return packageJson;
-        }))
-        .pipe(gulp.dest(dest.lib + '/viz'))
-        .on('error', handleError);
-
-    return es.merge(corePackage, vizPackage);
-});
-
 gulp.task('compile:style',  function() {
     return gulp.src(sources.style)
        .pipe(less())
@@ -133,7 +111,7 @@ gulp.task('compile:tests', ['clean:test', 'build'], function() {
 });
 
 gulp.task('test:karma', ['compile:tests'], function () {
-    return gulp.src(dest.test + '/**/*.js')
+    return gulp.src(sources.compiledTest)
         .pipe(karma({
             action: 'run',
             configFile: 'karma.conf.js'
@@ -146,7 +124,7 @@ gulp.task('test:mocha', ['compile:tests'], function () {
         ? 'mocha-teamcity-reporter' 
         : 'list';
 
-    return gulp.src(dest.test + '/**/*.js')
+    return gulp.src(sources.compiledTest)
         .pipe(mocha({ 
             reporter: reporter
         }))
@@ -175,40 +153,40 @@ gulp.task('browserify', ['build'], function() {
     var core = gulp.src(dest.lib + '/core/index.js')
         .pipe(browserifiedCore)
         .pipe(rename('connect.js'))
-        .pipe(gulp.dest(dest.dist + '/core'))
+        .pipe(gulp.dest(dest.distCore))
         .on('error', handleError);
 
     var viz = gulp.src(dest.lib + '/viz/index.js')
         .pipe(browserifiedViz)
         .pipe(rename('connect-viz.js'))
-        .pipe(gulp.dest(dest.dist + '/viz'))
+        .pipe(gulp.dest(dest.distViz))
         .on('error', handleError);
 
     return es.merge(core, viz);
 });
 
 gulp.task('combineCss', ['build'], function() {
-    return gulp.src(dest.style + '/*.css')
+    return gulp.src(sources.compiledStyle)
         .pipe(autoprefixer())
         .pipe(concat('connect-viz.css'))
-        .pipe(gulp.dest(dest.dist + '/viz'))
+        .pipe(gulp.dest(dest.distViz))
         .pipe(cssmin())
         .pipe(rename('connect-viz.min.css'))
-        .pipe(gulp.dest(dest.dist + '/viz'))
+        .pipe(gulp.dest(dest.distViz))
         .on('error', handleError);
 });
 
 gulp.task('uglify', ['browserify'], function() {
-     var core = gulp.src(dest.dist + '/core/connect.js')
+     var core = gulp.src(dest.distCore + '/connect.js')
         .pipe(uglify())
         .pipe(rename('connect.min.js'))
-        .pipe(gulp.dest(dest.dist + '/core'))
+        .pipe(gulp.dest(dest.distCore))
         .on('error', handleError);
 
-    var viz = gulp.src(dest.dist + '/viz/connect-viz.js')
+    var viz = gulp.src(dest.distViz + '/connect-viz.js')
         .pipe(uglify())
         .pipe(rename('connect-viz.min.js'))
-        .pipe(gulp.dest(dest.dist + '/viz'))
+        .pipe(gulp.dest(dest.distViz))
         .on('error', handleError);
 
     return es.merge(core, viz);
@@ -216,8 +194,80 @@ gulp.task('uglify', ['browserify'], function() {
 
 gulp.task('copy-less', function() {
     return gulp.src(sources.style)
-        .pipe(gulp.dest(dest.dist + '/viz/less'))
+        .pipe(gulp.dest(dest.distViz + '/less'))
         .on('error', handleError);
+});
+
+gulp.task('npm:readme',  function() {
+    var readmeSrc = gulp.src(sources.readme)
+        .on('error', handleError);
+
+    var core = readmeSrc
+        .pipe(gulp.dest(dest.distNpmCore));
+
+    var viz = readmeSrc
+        .pipe(gulp.dest(dest.distNpmViz));
+
+    return es.merge(core, viz);
+});
+
+gulp.task('npm:src',  ['compile:lib'], function() {
+    var coreJs = gulp.src(sources.compiledLibCore)
+        .pipe(gulp.dest(dest.distNpmCore + '/js'))
+        .on('error', handleError);
+
+    var vizJs = gulp.src(sources.compiledLibViz)
+        .pipe(gulp.dest(dest.distNpmViz + '/js'))
+        .on('error', handleError);
+
+    var coreTd = gulp.src(sources.compiledTdCore)
+        .pipe(gulp.dest(dest.distNpmCore + '/ts'))
+        .on('error', handleError);
+
+    var vizTd = gulp.src(sources.compiledTdViz)
+        .pipe(gulp.dest(dest.distNpmViz + '/ts'))
+        .on('error', handleError);
+
+    return es.merge(coreJs, vizJs, coreTd, vizTd);
+});
+
+gulp.task('npm:style', ['combineCss'],  function() {
+    var notVariableCss = '!' + dest.style + '/variables.css',
+        notMixinsCss = '!' + dest.style + '/mixins.css';
+
+    var less = gulp.src(sources.style)
+        .pipe(gulp.dest(dest.distNpmViz + '/less'))
+        .on('error', handleError);
+
+    var css = gulp.src([sources.compiledStyle, notMixinsCss, notVariableCss])
+        .pipe(gulp.dest(dest.distNpmViz + '/css/separate'))
+        .on('error', handleError);
+
+    var combinedCss = gulp.src(dest.distViz + '/connect-viz.css')
+        .pipe(gulp.dest(dest.distNpmViz + '/css'))
+        .on('error', handleError);
+
+    return es.merge(less, css, combinedCss);
+});
+
+gulp.task('npm:config',  function() {
+    var corePackage = gulp.src(sources.npmConfig)
+        .pipe(gulp.dest(dest.distNpmCore))
+        .on('error', handleError);
+
+    var vizPackage = gulp.src(sources.npmConfig)
+        .pipe(jeditor({
+            'name': 'connect-js-viz'
+        }))
+        .pipe(jeditor(function (packageJson){
+            packageJson.peerDependencies = {};
+            packageJson.peerDependencies['connect-js'] = packageJson.version;
+            return packageJson;
+        }))
+        .pipe(gulp.dest(dest.distNpmViz))
+        .on('error', handleError);
+
+    return es.merge(corePackage, vizPackage);
 });
 
 gulp.task('clean:lib', function() {
@@ -228,16 +278,12 @@ gulp.task('clean:style', function() {
     return del(dest.style);
 });
 
-gulp.task('examples:clean:style', function() {
-    return del(exampleDest.style);
-});
-
 gulp.task('clean:test', function() {
     return del(dest.test);
 });
 
 gulp.task('clean:dist', function() {
-    return del(dest.dist);
+    return es.merge(del(dest.dist), del(dest.npm));
 });
 
 gulp.task('serve', function() {
@@ -312,6 +358,10 @@ gulp.task('examples:clean:lib', function() {
     return del(exampleDest.lib);
 });
 
+gulp.task('examples:clean:style', function() {
+    return del(exampleDest.style);
+});
+
 gulp.task('examples:serve', ['examples'], function() {
     browserSync({
         server: {
@@ -328,9 +378,11 @@ gulp.task('watch', ['dist'], function() {
     gulp.watch([sources.lib, sources.style], ['dist']);
 });
 
-gulp.task('build', ['compile:lib', 'compile:style', 'compile:config', 'readme']);
+gulp.task('build', ['compile:lib', 'compile:style']);
 gulp.task('examples:build', ['examples:compile:lib', 'examples:compile:style']);
 gulp.task('test', ['compile:tests', 'test:karma', 'test:mocha']);
-gulp.task('dist', ['build', 'combineCss', 'browserify', 'uglify', 'copy-less']);
+gulp.task('dist:bower', ['build', 'combineCss', 'browserify', 'uglify', 'copy-less']);
+gulp.task('dist:npm', ['npm:src', 'npm:config', 'npm:style', 'npm:readme']);
+gulp.task('dist', ['dist:bower', 'dist:npm']);
 gulp.task('examples', ['examples:combineCss', 'examples:browserify', 'examples:copyHtml']);
 gulp.task('default', ['build']);

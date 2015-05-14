@@ -1,5 +1,10 @@
-.std-border(@color){
-	border: 1px solid @color
+.grow-results-vertically(){    
+    display: flex;
+    flex-direction: column;
+    .connect-viz-result {
+        flex-grow: 1;
+        position: relative;
+    }
 }
 
 .middle(){
