@@ -57,6 +57,7 @@ npm-debug.log
 # build and dist
 build/*
 dist/*
+dist-modules/*
 examples/build/*
 examples/dist/*
 
