@@ -46,8 +46,9 @@ var sources = {
     compiledLibStandalone: dest.lib + '/standalone.js',
     compiledTdCore: dest.lib + '/core/**/*.d.ts',
     compiledTdViz: dest.lib + '/viz/**/*.d.ts',
-    compiledStyle: dest.style + '/*.css',
-    style: './style/**/*.less',
+    compiledStyle: dest.style + '/connect-viz.css',
+    style: './style/**/connect-viz.less',
+    less: './style/**/*.less',
     test: './test/**/*.ts',
     compiledTest: dest.test + '/**/*.ts',
     ionIconsCss: './bower_components/ionicons/css/ionicons.css',
@@ -101,6 +102,7 @@ gulp.task('compile:lib',  function() {
 gulp.task('compile:style',  function() {
     return gulp.src(sources.style)
        .pipe(less())
+       .pipe(autoprefixer())
        .pipe(gulp.dest(dest.style))
        .on('error', handleError);
 });
@@ -170,10 +172,9 @@ gulp.task('browserify', ['build'], function() {
     return es.merge(core, viz);
 });
 
-gulp.task('combineCss', ['build'], function() {
+gulp.task('minifyCss', ['build'], function() {
     return gulp.src(sources.compiledStyle)
         .pipe(autoprefixer())
-        .pipe(concat('connect-viz.css'))
         .pipe(gulp.dest(dest.distViz))
         .pipe(cssmin())
         .pipe(rename('connect-viz.min.css'))
@@ -198,7 +199,7 @@ gulp.task('uglify', ['browserify'], function() {
 });
 
 gulp.task('copy-less', function() {
-    return gulp.src(sources.style)
+    return gulp.src(sources.less)
         .pipe(gulp.dest(dest.distViz + '/less'))
         .on('error', handleError);
 });
@@ -236,23 +237,16 @@ gulp.task('npm:src',  ['compile:lib'], function() {
     return es.merge(coreJs, vizJs, coreTd, vizTd);
 });
 
-gulp.task('npm:style', ['combineCss'],  function() {
-    var notVariableCss = '!' + dest.style + '/variables.css',
-        notMixinsCss = '!' + dest.style + '/mixins.css';
-
-    var less = gulp.src(sources.style)
+gulp.task('npm:style', ['compile:style'],  function() {
+    var less = gulp.src(sources.less)
         .pipe(gulp.dest(dest.distNpmViz + '/less'))
         .on('error', handleError);
 
-    var css = gulp.src([sources.compiledStyle, notMixinsCss, notVariableCss])
-        .pipe(gulp.dest(dest.distNpmViz + '/css/separate'))
-        .on('error', handleError);
-
-    var combinedCss = gulp.src(dest.distViz + '/connect-viz.css')
+    var combinedCss = gulp.src(sources.compiledStyle)
         .pipe(gulp.dest(dest.distNpmViz + '/css'))
         .on('error', handleError);
 
-    return es.merge(less, css, combinedCss);
+    return es.merge(less, combinedCss);
 });
 
 gulp.task('npm:config',  function() {
@@ -418,7 +412,7 @@ gulp.task('watch', ['dist'], function() {
 gulp.task('build', ['compile:lib', 'compile:style']);
 gulp.task('examples:build', ['examples:compile:lib', 'examples:compile:style']);
 gulp.task('test', ['compile:tests', 'test:karma', 'test:mocha']);
-gulp.task('dist:bower', ['build', 'combineCss', 'browserify', 'uglify', 'copy-less']);
+gulp.task('dist:bower', ['build', 'minifyCss', 'browserify', 'uglify', 'copy-less']);
 gulp.task('dist:npm', ['npm:src', 'npm:config', 'npm:style', 'npm:readme']);
 gulp.task('dist:standalone', ['standalone:js', 'standalone:css', 'standalone:fonts']);
 gulp.task('dist', ['dist:bower', 'dist:npm', 'dist:standalone']);
