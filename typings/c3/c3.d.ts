@@ -424,6 +424,6 @@ declare module C3 {
 
 declare var c3: C3.Base;
 
-declare module "c3" {
+declare module "connect-js-c3" {
     export = c3;
 }
