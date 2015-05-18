@@ -673,9 +673,10 @@ if (typeof define === "function" && define.amd) {
 }
 // CommonJS
 if (typeof module !== "undefined" && module.exports) {
-    var Connect = require('tipi-connect');
+    var Connect = require('connect-js');
     if (Connect.prototype)
         extendConnect(Connect);
+    module.exports = Connect;
 }
 // Global
 if (typeof self !== 'undefined') {
@@ -689,7 +690,7 @@ else if (typeof global !== 'undefined') {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./apply-mixins":1,"./viz":20,"tipi-connect":21}],12:[function(require,module,exports){
+},{"./apply-mixins":1,"./viz":20,"connect-js":21}],12:[function(require,module,exports){
 var Classes = require('./css-classes');
 var Dom = require('./dom');
 var Loader = (function () {

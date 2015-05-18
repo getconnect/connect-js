@@ -150,7 +150,7 @@ gulp.task('browserify', ['build'], function() {
         var b = browserify(filename, {
             basedir: dest.lib
         })
-        .ignore('tipi-connect')
+        .ignore('connect-js')
         .external('d3')
         .external('connect-js-c3');        
 
@@ -251,6 +251,11 @@ gulp.task('npm:style', ['compile:style'],  function() {
 
 gulp.task('npm:config',  function() {
     var corePackage = gulp.src(sources.npmConfig)
+        .pipe(jeditor(function (packageJson){
+            delete packageJson.dependencies['connect-js-c3'];
+            delete packageJson.dependencies['d3'];
+            return packageJson;
+        }))
         .pipe(gulp.dest(dest.distNpmCore))
         .on('error', handleError);
 
@@ -259,8 +264,7 @@ gulp.task('npm:config',  function() {
             'name': 'connect-js-viz'
         }))
         .pipe(jeditor(function (packageJson){
-            packageJson.peerDependencies = {};
-            packageJson.peerDependencies['connect-js'] = packageJson.version;
+            packageJson.dependencies['connect-js'] = packageJson.version;
             return packageJson;
         }))
         .pipe(gulp.dest(dest.distNpmViz))
