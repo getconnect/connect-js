@@ -1,5 +1,5 @@
 # Connect Javascript SDK
-[![NPM version](http://img.shields.io/npm/v/connect-js.svg?style=flat)](https://www.npmjs.org/package/selectize)
+[![NPM version](http://img.shields.io/npm/v/connect-js.svg?style=flat)](https://www.npmjs.org/package/connect-js)
 ![Bower version](http://img.shields.io/bower/v/connect-js.svg?style=flat)
 
 ## Getting Access
