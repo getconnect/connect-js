@@ -22,9 +22,11 @@ if(typeof define === "function" && define.amd) {
 
 // CommonJS
 if (typeof module !== "undefined" && module.exports) {
-    var Connect = require('tipi-connect');
+    var Connect = require('connect-js');
     if (Connect.prototype)
 	   extendConnect(Connect);
+    
+    module.exports = Connect;
 } 
 
 // Global
