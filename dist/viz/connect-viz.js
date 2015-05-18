@@ -7,8 +7,22 @@ function applyMixins(targetClass, mixinClass) {
 }
 module.exports = applyMixins;
 
-},{"underscore":26}],2:[function(require,module,exports){
+},{"underscore":27}],2:[function(require,module,exports){
 (function (global){
+var c3;
+try {
+    c3 = require('connect-js-c3');
+}
+catch (err) {
+    c3 = typeof window !== 'undefined' ? window.c3 : typeof global !== 'undefined' ? global.c3 : null;
+}
+if (typeof c3 === 'undefined') {
+    throw 'c3 has not been loaded.';
+}
+module.exports = c3;
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"connect-js-c3":"connect-js-c3"}],3:[function(require,module,exports){
 var Config = require('../config');
 var Dataset = require('./dataset');
 var _ = require('underscore');
@@ -17,11 +31,8 @@ var Loader = require('../loader');
 var Formatters = require('../formatters');
 var Dom = require('../dom');
 var ResultHandling = require('../result-handling');
-var c3 = (typeof window !== "undefined" ? window.c3 : typeof global !== "undefined" ? global.c3 : null);
+var c3 = require('../c3');
 var Classes = require('../css-classes');
-if (!c3) {
-    throw "c3 has not been loaded.";
-}
 var Chart = (function () {
     function Chart(targetElement, chartOptions) {
         this._options = this._parseOptions(chartOptions);
@@ -156,8 +167,7 @@ var Chart = (function () {
 })();
 module.exports = Chart;
 
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../config":5,"../css-classes":6,"../dom":8,"../formatters":10,"../loader":12,"../palette":13,"../result-handling":14,"./dataset":3,"underscore":26}],3:[function(require,module,exports){
+},{"../c3":2,"../config":6,"../css-classes":7,"../dom":9,"../formatters":11,"../loader":13,"../palette":14,"../result-handling":15,"./dataset":4,"underscore":27}],4:[function(require,module,exports){
 var _ = require('underscore');
 var Dataset;
 (function (Dataset) {
@@ -271,8 +281,7 @@ var Dataset;
 })(Dataset || (Dataset = {}));
 module.exports = Dataset;
 
-},{"underscore":26}],4:[function(require,module,exports){
-(function (global){
+},{"underscore":27}],5:[function(require,module,exports){
 var Config = require('../config');
 var Dataset = require('./dataset');
 var _ = require('underscore');
@@ -281,11 +290,8 @@ var Palette = require('../palette');
 var Loader = require('../loader');
 var Dom = require('../dom');
 var ResultHandling = require('../result-handling');
-var c3 = (typeof window !== "undefined" ? window.c3 : typeof global !== "undefined" ? global.c3 : null);
+var c3 = require('../c3');
 var Classes = require('../css-classes');
-if (!c3) {
-    throw "c3 has not been loaded.";
-}
 var Gauge = (function () {
     function Gauge(targetElement, gaugeOptions) {
         this._options = this._parseOptions(gaugeOptions);
@@ -426,8 +432,7 @@ var Gauge = (function () {
 })();
 module.exports = Gauge;
 
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../config":5,"../css-classes":6,"../dom":8,"../error-handling":9,"../loader":12,"../palette":13,"../result-handling":14,"./dataset":3,"underscore":26}],5:[function(require,module,exports){
+},{"../c3":2,"../config":6,"../css-classes":7,"../dom":9,"../error-handling":10,"../loader":13,"../palette":14,"../result-handling":15,"./dataset":4,"underscore":27}],6:[function(require,module,exports){
 var Config;
 (function (Config) {
     Config.defaultTimeSeriesFormats = {
@@ -470,7 +475,7 @@ var Config;
 })(Config || (Config = {}));
 module.exports = Config;
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 var classes = {
     viz: 'connect-viz',
     title: 'connect-viz-title',
@@ -498,7 +503,7 @@ var classes = {
 };
 module.exports = classes;
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 var DataVisualization = (function () {
     function DataVisualization(data, visualization) {
         this._queryResultsFactory = this.getQueryResultsFactory(data);
@@ -530,7 +535,7 @@ var DataVisualization = (function () {
 })();
 module.exports = DataVisualization;
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 var _ = require('underscore');
 var Classes = require('./css-classes');
 function getElement(selector) {
@@ -571,7 +576,7 @@ function createTitle(title) {
 }
 exports.createTitle = createTitle;
 
-},{"./css-classes":6,"underscore":26}],9:[function(require,module,exports){
+},{"./css-classes":7,"underscore":27}],10:[function(require,module,exports){
 var ErrorHandling;
 (function (ErrorHandling) {
     var errorTypes = {
@@ -641,7 +646,7 @@ var ErrorHandling;
 })(ErrorHandling || (ErrorHandling = {}));
 module.exports = ErrorHandling;
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 var moment = require('moment-timezone');
 var _ = require('underscore');
 function formatDate(dateToFormat, timezone, format) {
@@ -656,7 +661,7 @@ function formatDate(dateToFormat, timezone, format) {
 }
 exports.formatDate = formatDate;
 
-},{"moment-timezone":23,"underscore":26}],11:[function(require,module,exports){
+},{"moment-timezone":24,"underscore":27}],12:[function(require,module,exports){
 (function (global){
 var Viz = require('./viz');
 var applyMixins = require('./apply-mixins');
@@ -690,7 +695,7 @@ else if (typeof global !== 'undefined') {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./apply-mixins":1,"./viz":20,"connect-js":21}],12:[function(require,module,exports){
+},{"./apply-mixins":1,"./viz":21,"connect-js":22}],13:[function(require,module,exports){
 var Classes = require('./css-classes');
 var Dom = require('./dom');
 var Loader = (function () {
@@ -726,7 +731,7 @@ var Loader = (function () {
 })();
 module.exports = Loader;
 
-},{"./css-classes":6,"./dom":8}],13:[function(require,module,exports){
+},{"./css-classes":7,"./dom":9}],14:[function(require,module,exports){
 var _ = require('underscore');
 var Palette;
 (function (Palette) {
@@ -741,7 +746,7 @@ var Palette;
 })(Palette || (Palette = {}));
 module.exports = Palette;
 
-},{"underscore":26}],14:[function(require,module,exports){
+},{"underscore":27}],15:[function(require,module,exports){
 var ErrorHandling = require('./error-handling');
 var ResultHandling;
 (function (ResultHandling) {
@@ -796,7 +801,7 @@ var ResultHandling;
 })(ResultHandling || (ResultHandling = {}));
 module.exports = ResultHandling;
 
-},{"./error-handling":9}],15:[function(require,module,exports){
+},{"./error-handling":10}],16:[function(require,module,exports){
 var _ = require('underscore');
 var Formatters = require('../formatters');
 var TableDataset = (function () {
@@ -897,7 +902,7 @@ var TableDataset = (function () {
 })();
 exports.TableDataset = TableDataset;
 
-},{"../formatters":10,"underscore":26}],16:[function(require,module,exports){
+},{"../formatters":11,"underscore":27}],17:[function(require,module,exports){
 var _ = require('underscore');
 function renderDataset(dataset) {
     return template()({
@@ -943,7 +948,7 @@ function template() {
     ');
 }
 
-},{"underscore":26}],17:[function(require,module,exports){
+},{"underscore":27}],18:[function(require,module,exports){
 var _ = require('underscore');
 var Config = require('../config');
 var Dataset = require('./dataset');
@@ -996,7 +1001,7 @@ var Table = (function () {
 })();
 module.exports = Table;
 
-},{"../config":5,"../css-classes":6,"../dom":8,"../loader":12,"../result-handling":14,"./dataset":15,"./renderer":16,"underscore":26}],18:[function(require,module,exports){
+},{"../config":6,"../css-classes":7,"../dom":9,"../loader":13,"../result-handling":15,"./dataset":16,"./renderer":17,"underscore":27}],19:[function(require,module,exports){
 //Adapted from https://github.com/inorganik/countUp.js
 var lastTime = 0;
 var vendors = ['webkit', 'moz', 'ms', 'o'];
@@ -1087,7 +1092,7 @@ var Counter = (function () {
 })();
 module.exports = Counter;
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 var ErrorHandling = require('../error-handling');
 var _ = require('underscore');
 var Loader = require('../loader');
@@ -1168,7 +1173,7 @@ var Text = (function () {
 })();
 module.exports = Text;
 
-},{"../css-classes":6,"../dom":8,"../error-handling":9,"../loader":12,"../result-handling":14,"./counter":18,"underscore":26}],20:[function(require,module,exports){
+},{"../css-classes":7,"../dom":9,"../error-handling":10,"../loader":13,"../result-handling":15,"./counter":19,"underscore":27}],21:[function(require,module,exports){
 var DataVisualization = require('./data-visualization');
 var Chart = require('./chart/chart');
 var Gauge = require('./chart/gauge');
@@ -1201,9 +1206,9 @@ var Viz;
 })(Viz || (Viz = {}));
 module.exports = Viz;
 
-},{"./chart/chart":2,"./chart/gauge":4,"./data-visualization":7,"./table/table":17,"./text/text":19}],21:[function(require,module,exports){
+},{"./chart/chart":3,"./chart/gauge":5,"./data-visualization":8,"./table/table":18,"./text/text":20}],22:[function(require,module,exports){
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 module.exports={
 	"version": "2014j",
 	"zones": [
@@ -1793,11 +1798,11 @@ module.exports={
 		"Pacific/Pohnpei|Pacific/Ponape"
 	]
 }
-},{}],23:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 var moment = module.exports = require("./moment-timezone");
 moment.tz.load(require('./data/packed/latest.json'));
 
-},{"./data/packed/latest.json":22,"./moment-timezone":24}],24:[function(require,module,exports){
+},{"./data/packed/latest.json":23,"./moment-timezone":25}],25:[function(require,module,exports){
 //! moment-timezone.js
 //! version : 0.3.0
 //! author : Tim Wood
@@ -2217,7 +2222,7 @@ moment.tz.load(require('./data/packed/latest.json'));
 	return moment;
 }));
 
-},{"moment":25}],25:[function(require,module,exports){
+},{"moment":26}],26:[function(require,module,exports){
 //! moment.js
 //! version : 2.10.3
 //! authors : Tim Wood, Iskren Chernev, Moment.js contributors
@@ -5329,7 +5334,7 @@ moment.tz.load(require('./data/packed/latest.json'));
     return _moment;
 
 }));
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 //     Underscore.js 1.7.0
 //     http://underscorejs.org
 //     (c) 2009-2014 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -6746,4 +6751,4 @@ moment.tz.load(require('./data/packed/latest.json'));
   }
 }.call(this));
 
-},{}]},{},[11]);
+},{}]},{},[12]);
