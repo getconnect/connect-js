@@ -65,13 +65,12 @@
     "gulp-git": "1.1.0"
   },
   "dependencies": {
-    "c3": "0.4.10",
+    "connect-js-c3": "0.4.11",
     "d3": "3.5.5",
     "q": "1.1.2",
     "superagent": "0.21.0",
     "underscore": "1.7.0",
-    "moment-timezone": "0.3.0",
-    "bootstrap": "3.3.2"
+    "moment-timezone": "0.3.0"
   },
   "browserify": {
     "transform": [

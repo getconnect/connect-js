@@ -147,7 +147,7 @@ gulp.task('browserify', ['build'], function() {
         })
         .ignore('tipi-connect')
         .external('d3')
-        .external('c3');
+        .external('connect-js-c3');
         
         return b.bundle();
     });
@@ -246,6 +246,11 @@ gulp.task('npm:style', ['compile:style'],  function() {
 
 gulp.task('npm:config',  function() {
     var corePackage = gulp.src(sources.npmConfig)
+        .pipe(jeditor(function (packageJson){
+            delete packageJson.dependencies['connect-js-c3'];
+            delete packageJson.dependencies['d3'];
+            return packageJson;
+        }))
         .pipe(gulp.dest(dest.distNpmCore))
         .on('error', handleError);
 
