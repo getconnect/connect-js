@@ -28,8 +28,8 @@ npm install connect-js
 
 # static
 ```
-https://cdn.rawgit.com/getconnect/connect-js/0.0.124/dist/core/connect.min.js
-https://cdn.rawgit.com/getconnect/connect-js/0.0.124/dist/viz/connect-viz.min.js
+https://cdn.rawgit.com/getconnect/connect-js/{VERSION}/dist/core/connect.min.js
+https://cdn.rawgit.com/getconnect/connect-js/{VERSION}/dist/viz/connect-viz.min.js
 ```
 
 ## Module support
