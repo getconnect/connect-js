@@ -29,7 +29,6 @@
   "devDependencies": {
     "browserify": "8.1.1",
     "chai": "1.10.0",
-    "browserify-shim": "3.8.5",
     "del": "1.1.1",
     "event-stream": "3.2.1",
     "gulp": "3.8.10",
@@ -72,19 +71,5 @@
     "superagent": "0.21.0",
     "underscore": "1.7.0",
     "moment-timezone": "0.3.0"
-  },
-  "browserify": {
-    "transform": [
-      "browserify-shim"
-    ]
-  },
-  "browserify-shim": {
-    "connect-js-c3": {
-      "exports": "global:c3",
-      "depends": [
-        "d3"
-      ]
-    },
-    "d3": "global:d3"
   }
 }

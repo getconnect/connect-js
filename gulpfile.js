@@ -25,6 +25,7 @@ var dest = {
     dist: './dist',
     distCore: './dist/core',
     distViz: './dist/viz',
+    distStandalone: './dist/standalone',
     distNpm: './dist-modules',
     distNpmCore: './dist-modules/connect-js',
     distNpmViz: './dist-modules/connect-js-viz',
@@ -42,13 +43,17 @@ var sources = {
     lib: './lib/**/*.ts',
     compiledLibCore: dest.lib + '/core/**/*.js',
     compiledLibViz: dest.lib + '/viz/**/*.js',
+    compiledLibStandalone: dest.lib + '/standalone.js',
     compiledTdCore: dest.lib + '/core/**/*.d.ts',
     compiledTdViz: dest.lib + '/viz/**/*.d.ts',
     compiledStyle: dest.style + '/connect-viz.css',
     style: './style/**/connect-viz.less',
     less: './style/**/*.less',
     test: './test/**/*.ts',
-    compiledTest: dest.test + '/**/*.ts'
+    compiledTest: dest.test + '/**/*.ts',
+    ionIconsCss: './bower_components/ionicons/css/ionicons.css',
+    ionIconsFonts: './bower_components/ionicons/fonts/*',
+    c3Css: './node_modules/c3/c3.css'
 };
 
 var exampleSources = {
@@ -74,7 +79,6 @@ var tsProject = ts.createProject({
 });
 
 function handleError(error) {
-
     console.log(error.stack);
 
     if(errorsFatal)
@@ -133,7 +137,7 @@ gulp.task('test:mocha', ['compile:tests'], function () {
         .on('error', handleError);
 });
 
-gulp.task('browserify', ['build'], function() {
+gulp.task('browserify', ['build'], function() {   
     var browserifiedCore = transform(function(filename) {
         var b = browserify(filename, {
             basedir: dest.lib
@@ -141,14 +145,15 @@ gulp.task('browserify', ['build'], function() {
         
         return b.bundle();
     });
+
     var browserifiedViz = transform(function(filename) {
         var b = browserify(filename, {
             basedir: dest.lib
         })
         .ignore('connect-js')
         .external('d3')
-        .external('connect-js-c3');
-        
+        .external('connect-js-c3');        
+
         return b.bundle();
     });
 
@@ -369,6 +374,45 @@ gulp.task('examples:serve', ['examples'], function() {
     });
 });
 
+gulp.task('standalone:js', ['build'], function() {
+    var browserifiedStandalone = transform(function(filename) {
+        var b = browserify(filename, {
+            basedir: dest.lib
+        })
+        .ignore('tipi-connect');
+        
+        return b.bundle();
+    });
+
+    return gulp.src(sources.compiledLibStandalone)
+        .pipe(browserifiedStandalone)
+        .pipe(rename('connect-all.js'))
+        .pipe(gulp.dest(dest.distStandalone))
+        .pipe(uglify())
+        .pipe(rename('connect-all.min.js'))
+        .pipe(gulp.dest(dest.distStandalone))
+        .on('error', handleError);
+});
+
+gulp.task('standalone:css', ['minifyCss'], function() {
+    var styles = [
+        sources.ionIconsCss,
+        sources.c3Css,
+        dest.distViz + '/connect-viz.css'
+    ];
+
+    return gulp.src(styles)
+        .pipe(concat('connect-all.css'))
+        .pipe(gulp.dest(dest.distStandalone + '/styles'))
+        .pipe(cssmin())
+        .pipe(rename('connect-all.min.css'))
+        .pipe(gulp.dest(dest.distStandalone + '/styles'))
+});
+
+gulp.task('standalone:fonts', function() {
+    return gulp.src(sources.ionIconsFonts)
+        .pipe(gulp.dest(dest.distStandalone + '/fonts'));
+});
 
 gulp.task('watch', ['dist'], function() {
     errorsFatal = false;
@@ -381,6 +425,7 @@ gulp.task('examples:build', ['examples:compile:lib', 'examples:compile:style']);
 gulp.task('test', ['compile:tests', 'test:karma', 'test:mocha']);
 gulp.task('dist:bower', ['build', 'minifyCss', 'browserify', 'uglify', 'copy-less']);
 gulp.task('dist:npm', ['npm:src', 'npm:config', 'npm:style', 'npm:readme']);
-gulp.task('dist', ['dist:bower', 'dist:npm']);
+gulp.task('dist:standalone', ['standalone:js', 'standalone:css', 'standalone:fonts']);
+gulp.task('dist', ['dist:bower', 'dist:npm', 'dist:standalone']);
 gulp.task('examples', ['examples:combineCss', 'examples:browserify', 'examples:copyHtml']);
 gulp.task('default', ['build']);
