@@ -13,10 +13,6 @@ import ResultHandling = require('../result-handling');
 import c3 = require('../c3');
 import Classes = require('../css-classes');
 
-if(!c3) { 
-    throw "c3 has not been loaded."; 
-}
-
 class Gauge implements Common.Visualization {
     public targetElement: HTMLElement;
     public loader: Loader;
