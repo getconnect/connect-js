@@ -137,7 +137,7 @@ gulp.task('test:mocha', ['compile:tests'], function () {
         .on('error', handleError);
 });
 
-gulp.task('browserify', ['build'], function() {
+gulp.task('browserify', ['build'], function() {   
     var browserifiedCore = transform(function(filename) {
         var b = browserify(filename, {
             basedir: dest.lib
@@ -152,8 +152,8 @@ gulp.task('browserify', ['build'], function() {
         })
         .ignore('tipi-connect')
         .external('d3')
-        .external('c3');
-               
+        .external('connect-js-c3');        
+
         return b.bundle();
     });
 
@@ -374,7 +374,8 @@ gulp.task('standalone:js', ['build'], function() {
     var browserifiedStandalone = transform(function(filename) {
         var b = browserify(filename, {
             basedir: dest.lib
-        });
+        })
+        .ignore('tipi-connect');
         
         return b.bundle();
     });
@@ -383,10 +384,13 @@ gulp.task('standalone:js', ['build'], function() {
         .pipe(browserifiedStandalone)
         .pipe(rename('connect-all.js'))
         .pipe(gulp.dest(dest.distStandalone))
+        .pipe(uglify())
+        .pipe(rename('connect-all.min.js'))
+        .pipe(gulp.dest(dest.distStandalone))
         .on('error', handleError);
 });
 
-gulp.task('standalone:css', ['combineCss'], function() {
+gulp.task('standalone:css', ['minifyCss'], function() {
     var styles = [
         sources.ionIconsCss,
         sources.c3Css,
@@ -395,7 +399,10 @@ gulp.task('standalone:css', ['combineCss'], function() {
 
     return gulp.src(styles)
         .pipe(concat('connect-all.css'))
-        .pipe(gulp.dest(dest.distStandalone + '/styles'));
+        .pipe(gulp.dest(dest.distStandalone + '/styles'))
+        .pipe(cssmin())
+        .pipe(rename('connect-all.min.css'))
+        .pipe(gulp.dest(dest.distStandalone + '/styles'))
 });
 
 gulp.task('standalone:fonts', function() {

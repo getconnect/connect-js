@@ -1,2 +1,2 @@
-require('./core/connect');
-require('./viz/viz');
+require('./core');
+require('./viz');
