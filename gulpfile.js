@@ -379,7 +379,7 @@ gulp.task('standalone:js', ['build'], function() {
         var b = browserify(filename, {
             basedir: dest.lib
         })
-        .ignore('tipi-connect');
+        .ignore('connect-js');
         
         return b.bundle();
     });
