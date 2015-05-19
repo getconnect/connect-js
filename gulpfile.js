@@ -172,6 +172,11 @@ gulp.task('browserify', ['build'], function() {
     return es.merge(core, viz);
 });
 
+gulp.task('fonts', function() {
+    return gulp.src(sources.ionIconsFonts)
+        .pipe(gulp.dest(dest.dist + '/fonts'));
+});
+
 gulp.task('minifyCss', ['build'], function() {
     return gulp.src(sources.compiledStyle)
         .pipe(autoprefixer())
@@ -403,15 +408,10 @@ gulp.task('standalone:css', ['minifyCss'], function() {
 
     return gulp.src(styles)
         .pipe(concat('connect-all.css'))
-        .pipe(gulp.dest(dest.distStandalone + '/styles'))
+        .pipe(gulp.dest(dest.distStandalone))
         .pipe(cssmin())
         .pipe(rename('connect-all.min.css'))
-        .pipe(gulp.dest(dest.distStandalone + '/styles'))
-});
-
-gulp.task('standalone:fonts', function() {
-    return gulp.src(sources.ionIconsFonts)
-        .pipe(gulp.dest(dest.distStandalone + '/fonts'));
+        .pipe(gulp.dest(dest.distStandalone))
 });
 
 gulp.task('watch', ['dist'], function() {
@@ -423,9 +423,9 @@ gulp.task('watch', ['dist'], function() {
 gulp.task('build', ['compile:lib', 'compile:style']);
 gulp.task('examples:build', ['examples:compile:lib', 'examples:compile:style']);
 gulp.task('test', ['compile:tests', 'test:karma', 'test:mocha']);
-gulp.task('dist:bower', ['build', 'minifyCss', 'browserify', 'uglify', 'copy-less']);
+gulp.task('dist:bower', ['build', 'fonts', 'minifyCss', 'browserify', 'uglify', 'copy-less']);
 gulp.task('dist:npm', ['npm:src', 'npm:config', 'npm:style', 'npm:readme']);
-gulp.task('dist:standalone', ['standalone:js', 'standalone:css', 'standalone:fonts']);
+gulp.task('dist:standalone', ['standalone:js', 'standalone:css']);
 gulp.task('dist', ['dist:bower', 'dist:npm', 'dist:standalone']);
 gulp.task('examples', ['examples:combineCss', 'examples:browserify', 'examples:copyHtml']);
 gulp.task('default', ['build']);
