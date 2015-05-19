@@ -1,0 +1,114 @@
+.connect-gauge{
+    box-sizing: @box-sizing;
+    position: relative;
+    height: 100%;
+    .grow-results-vertically();
+
+    .connect-error{    
+        bottom: 10px;
+        left: 0;
+        right: 0;
+    }
+
+    &.connect-viz-loading, &.connect-viz-in-error{
+        .c3-chart-arc{
+            display: none;
+        }
+
+        .c3-chart-arcs-gauge-min, .c3-chart-arcs-gauge-max{
+            visibility: hidden;
+        }
+    }
+}
+
+.c3-chart-arc, .c3-chart-arcs{
+    .c3-chart-arcs-gauge-min, .c3-chart-arcs-gauge-max{
+        fill: @gauge-label-color;
+        font-feature-settings: @font-feature;
+        font: @gauge-label-font-size @label-font-family;
+    }
+
+    .c3-gauge-value{
+        fill: @gauge-value-color;
+        font: @gauge-value-font-family;
+        font-feature-settings: @font-feature;        
+    }
+}
+
+.connect-chart{
+    box-sizing: @box-sizing;
+    position: relative;
+    height: 100%;
+    .grow-results-vertically();
+
+    .connect-error{    
+        .middle();
+    }
+
+    &.connect-viz-loading, &.connect-viz-in-error{
+        .c3 text{
+            display: none;
+        }
+        
+        .c3-axis-x .tick{
+            display: none;
+        }
+
+        .c3-legend-item{
+            display: none;
+        }
+
+        .c3-chart{
+            visibility: hidden;
+        }
+    }
+}
+
+.c3-legend-item{
+    font: @chart-legend-font-size @chart-legend-font-family;
+    color: @chart-legend-text-color;
+}
+
+.c3-axis, .c3-line{    
+    fill: @chart-axis-color;
+}
+
+.c3 path, .c3 line {
+    stroke: @chart-axis-color;
+}
+
+.c3 .c3-legend-item text{
+    font: @chart-legend-font-size @chart-legend-font-family;
+}
+
+.c3 .tick text{
+    font: @chart-tick-font-size @chart-tick-font-family;
+}
+
+.c3-tooltip-container{
+    th{
+        background-color: @text-value-color;
+        border-width: 0;
+        font: @chart-tooltip-font-size @label-font-family;
+    }
+    td{
+        padding-top: @chart-tooltip-padding;
+        padding-bottom: 0;
+        border-width: 0;
+        font: @chart-tooltip-font-size @chart-tooltip-font-family;
+    }
+    tr:last-child{
+        td{
+            padding-bottom: @chart-tooltip-padding;
+        }
+    }
+    tr{        
+        border-width: 0;
+    }
+    .name{
+        span{
+            border-radius: @chart-tooltip-color-icon-border-radius;
+        }
+    }
+    border: @chart-tooltip-border;
+}
