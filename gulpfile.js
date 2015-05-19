@@ -53,7 +53,7 @@ var sources = {
     compiledTest: dest.test + '/**/*.ts',
     ionIconsCss: './bower_components/ionicons/css/ionicons.css',
     ionIconsFonts: './bower_components/ionicons/fonts/*',
-    c3Css: './node_modules/c3/c3.css'
+    c3Css: './node_modules/connect-js-c3/c3.css'
 };
 
 var exampleSources = {
