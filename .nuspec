@@ -10,6 +10,6 @@
     <licenseUrl>http://tipihq.com/</licenseUrl>
   </metadata>
   <files>
-    <file src=".\dist\**\*" target="" />
+    <file src="dist\**\*.*" target="" />
   </files>
 </package>
