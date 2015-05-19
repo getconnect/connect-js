@@ -1,0 +1,73 @@
+.connect-text{
+    box-sizing: @box-sizing;
+    position: relative;
+
+    .vertical-middle();
+
+    .connect-viz-result{
+        position: relative;
+        display: block;
+        text-align: center;
+        font: @text-value-font-size @text-value-font-family;
+        color: @label-color;
+        line-height: @text-value-line-height;
+        
+        > span{
+            position: relative;
+        }
+
+        transition: color @text-value-animation-delay linear;
+        
+        .connect-text-value{
+            font-feature-settings: @font-feature;            
+        }
+
+        .connect-text-icon{
+            position: absolute;
+            backface-visibility: hidden;
+            opacity: 0;
+            font-size: @text-value-icon-size;
+            left: -@text-value-icon-size;
+        }
+
+        .connect-text-icon-increase{
+            bottom: @text-value-icon-position-start;
+            transform: translateY(50%);
+            transition: opacity @text-value-animation-delay linear, bottom @text-value-animation-delay linear;
+        }
+
+        .connect-text-icon-decrease{
+            top: @text-value-icon-position-start;
+            transform: translateY(-50%);
+            transition: opacity @text-value-animation-delay linear, top @text-value-animation-delay linear;
+        }
+
+        &.connect-text-value-increasing{
+            color: @text-value-increasing-color;     
+
+            .connect-text-icon-increase{
+                opacity: 1;
+                bottom: @text-value-icon-position-finish;
+            }
+        }
+
+        &.connect-text-value-decreasing{
+            color: @text-value-decreasing-color;
+
+            .connect-text-icon-decrease{
+                opacity: 1;
+                top: @text-value-icon-position-finish;
+            }
+        }
+    }
+
+    &.connect-viz-loading, &.connect-viz-in-error{
+        .connect-viz-result > span{
+            visibility: hidden;
+        }
+    }    
+
+    .connect-error{    
+        .middle();
+    }
+}
