@@ -79,7 +79,7 @@ export class TableDataset {
             var optionsForField: Config.FieldOption = options.fields[key];
             var rawValue = result[key];
             var isNumeric = _.isNumber(rawValue);
-            var defaultFormatter: Config.FormatValueFunction = isNumeric ? d3.format(',.2f') : value => value;
+            var defaultFormatter: Config.FormatValueFunction = isNumeric ? Formatters.format(',.2f') : value => value;
             var valueFormatter = optionsForField && optionsForField.valueFormatter ? optionsForField.valueFormatter : defaultFormatter;
             return {
                 isGrouped: isGrouped,
