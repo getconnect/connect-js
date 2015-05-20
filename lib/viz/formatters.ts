@@ -1,5 +1,10 @@
 import moment = require('moment-timezone');
+import d3 = require('d3');
 import _ = require('underscore');
+
+export function format(format: string): (any) => string {
+    return d3.format(format);
+}
 
 export function formatDate(dateToFormat: Date, timezone: string|number, format: string): string{
     var date = moment(dateToFormat);

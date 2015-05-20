@@ -1,3 +1,5 @@
+import Formatters = require('./formatters');
+
 module Config {
     export interface ChartColors {
         [categoryKey: string]: string;
@@ -99,7 +101,7 @@ module Config {
         },
         gauge: {
             label: {
-                format: (value) => d3.format('.0f')(value) + '%',
+                format: (value) => Formatters.format('.0f')(value) + '%',
                 formatall: true,
                 transition: false
             },

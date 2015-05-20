@@ -6,8 +6,11 @@ import Chart = require('./chart/chart');
 import Gauge = require('./chart/gauge');
 import Text = require('./text/text');
 import Table = require('./table/table');
+import Formatters = require('./formatters');
 
 module Viz {
+    export var format = Formatters.format;
+
     export class Visualizations{
         public chart(data: Queries.ConnectQuery|Api.QueryResultsFactory, targetElement: string|HTMLElement, chartOptions: Config.VisualizationOptions){
             var chart = new Chart(targetElement, chartOptions);
