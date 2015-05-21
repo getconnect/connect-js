@@ -172,7 +172,11 @@ module Dataset{
         private _mapResult(result: Api.QueryResultItem): any{
             var mappedResult = {},
                 origResult = this._metadata.interval ? result.results[0] : result;
-            _.each(this._selects, select => mappedResult[this._selectLabelFormatter(select)] = origResult[select]);
+
+            _.each(this._selects, select => {
+                mappedResult[this._selectLabelFormatter(select)] = origResult ? origResult[select] : null
+            });
+
             return mappedResult;
         }
     }    
