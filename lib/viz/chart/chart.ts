@@ -12,6 +12,7 @@ import Dom = require('../dom');
 import ResultHandling = require('../result-handling');
 import c3 = require('../c3');
 import Classes = require('../css-classes');
+import deepExtend = require('../deep-extend');
 
 class Chart implements Common.Visualization {
     public targetElement: HTMLElement;
@@ -39,23 +40,16 @@ class Chart implements Common.Visualization {
 
         var defaultOptions: Config.VisualizationOptions = {
                 transitionOnReload: true,
-                intervals: {},
+                intervals: {
+                    formats: Config.defaultTimeSeriesFormats
+                },
                 fields: {},
                 chart: {
                     type: 'bar',
                     yAxisValueFormatter: (value) => value
-                },
+                },                
             },
-            defaultIntervalOptions = {
-                formats: Config.defaultTimeSeriesFormats
-            },
-            defaultC3Options = Config.defaultC3Options,
-            options = null,
-            options = _.extend(defaultOptions, chartOptions),
-            type = options.chart.type;
-        options.intervals = _.extend(options.intervals, defaultIntervalOptions);
-
-        options[type] = _.extend(options[type] || {}, defaultC3Options[type]);
+            options = deepExtend({}, defaultOptions, chartOptions);
 
         return options;
 
@@ -167,7 +161,6 @@ class Chart implements Common.Visualization {
             titleElement = Dom.createTitle(options.title),
             tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
             config = {
-                bindto: c3Element,
                 size: {
                     height: options.chart.height
                 },
@@ -205,7 +198,9 @@ class Chart implements Common.Visualization {
         connectChartContainer.appendChild(titleElement);
         connectChartContainer.appendChild(c3Element);
         rootElement.appendChild(connectChartContainer);
-        config[options.chart.type] = options[options.chart.type];
+        config = deepExtend({}, Config.defaultC3ChartOptions, config);
+        config['bindto'] = c3Element;
+
 
         this._rendered = true;
         this._titleElement = titleElement;

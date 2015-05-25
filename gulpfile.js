@@ -70,6 +70,7 @@ var typings = {
 };
 
 var tsProject = ts.createProject({
+    typescript: require('typescript'),
     noExternalResolve: false,
     sortOutput: true,
     declarationFiles: true,
@@ -294,13 +295,23 @@ gulp.task('clean:dist', function() {
     return es.merge(del(dest.dist), del(dest.npm));
 });
 
-gulp.task('serve', function() {
+gulp.task('reload-dist', ['dist'], browserSync.reload);
+
+gulp.task('watch', ['dist'], function() {
+    errorsFatal = false;
+
+    gulp.watch([sources.lib, sources.style], ['dist']);
+});
+
+gulp.task('serve', ['dist'], function() {
     browserSync({
         server: {
             baseDir: dest.dist,
             https: true
         }
     });
+
+    gulp.watch([sources.lib, sources.style], ['reload-dist']);
 });
 
 gulp.task('examples:compile:lib',  function() {
@@ -412,12 +423,6 @@ gulp.task('standalone:css', ['minifyCss'], function() {
         .pipe(cssmin())
         .pipe(rename('connect-all.min.css'))
         .pipe(gulp.dest(dest.distStandalone))
-});
-
-gulp.task('watch', ['dist'], function() {
-    errorsFatal = false;
-
-    gulp.watch([sources.lib, sources.style], ['dist']);
 });
 
 gulp.task('build', ['compile:lib', 'compile:style']);
