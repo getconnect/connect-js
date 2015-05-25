@@ -87,11 +87,14 @@
 
 .c3-tooltip-container{
     th{
-        background-color: @text-value-color;
+        background-color: difference(#fff, @chart-tooltip-background-color);
+        color: difference(#fff, @chart-tooltip-text-color);
         border-width: 0;
         font: @chart-tooltip-font-size @label-font-family;
     }
     td{
+        background-color: @chart-tooltip-background-color;
+        color: @chart-tooltip-text-color;
         padding-top: @chart-tooltip-padding;
         padding-bottom: 0;
         border-width: 0;
