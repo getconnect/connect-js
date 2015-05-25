@@ -4,11 +4,11 @@ var salesOver15MinsProvider = require('./query-results.js').salesOver15Mins;
 var fieldOptions = {
     'sellPriceTotal': {
         label: 'Sell Price',
-        valueFormatter: d3.format('$,.2f')
+        valueFormatter: Connect.Viz.format('$,.2f')
     },
     'costPriceTotal': {
         label: 'Cost Price',
-        valueFormatter: d3.format('$,.2f')
+        valueFormatter: Connect.Viz.format('$,.2f')
     }
 }
 
@@ -16,7 +16,7 @@ var bar = connect.chart(salesOver15MinsProvider, '#sales-over-15-mins-bar', {
     title: 'Sales Over 15 Minutes',    
     chart: {
         type: 'bar',        
-        yAxisValueFormatter: d3.format('$,.2f'),
+        yAxisValueFormatter: Connect.Viz.format('$,.2f'),
     }, 
     fields: fieldOptions,
 });
@@ -25,7 +25,7 @@ var line = connect.chart(salesOver15MinsProvider, '#sales-over-15-mins-line', {
     title: 'Sales Over 15 Minutes',
     chart: {
         type: 'line',        
-        yAxisValueFormatter: d3.format('$,.2f'),
+        yAxisValueFormatter: Connect.Viz.format('$,.2f'),
     }, 
     fields: fieldOptions,
 });
@@ -34,7 +34,7 @@ var spline = connect.chart(salesOver15MinsProvider, '#sales-over-15-mins-spline'
     title: 'Sales Over 15 Minutes',
     chart: {
         type: 'spline',        
-        yAxisValueFormatter: d3.format('$,.2f'),
+        yAxisValueFormatter: Connect.Viz.format('$,.2f'),
     }, 
     fields: fieldOptions,
 });
@@ -43,7 +43,7 @@ var areaLine = connect.chart(salesOver15MinsProvider, '#sales-over-15-mins-area-
     title: 'Sales Over 15 Minutes',
     chart: {
         type: 'area',        
-        yAxisValueFormatter: d3.format('$,.2f'),
+        yAxisValueFormatter: Connect.Viz.format('$,.2f'),
     }, 
     fields: fieldOptions,
 });
@@ -52,7 +52,7 @@ var areaSpline = connect.chart(salesOver15MinsProvider, '#sales-over-15-mins-are
     title: 'Sales Over 15 Minutes',    
     chart: {
         type: 'area-spline',        
-        yAxisValueFormatter: d3.format('$,.2f'),
+        yAxisValueFormatter: Connect.Viz.format('$,.2f'),
     }, 
     fields: fieldOptions,    
 });
@@ -62,7 +62,7 @@ var timezone = connect.chart(salesOver15MinsProvider, '#sales-over-15-mins-timez
     title: 'Sales Over 15 Minutes in Asia/Tokyo Timezone',  
     chart: {
         type: 'line',        
-        yAxisValueFormatter: d3.format('$,.2f'),
+        yAxisValueFormatter: Connect.Viz.format('$,.2f'),
     }, 
     timezone: 'Asia/Tokyo',
     fields: fieldOptions,

@@ -1,5 +1,5 @@
 import moment = require('moment-timezone');
-import d3 = require('d3');
+import d3 = require('./d3');
 import _ = require('underscore');
 
 export function format(format: string): (any) => string {

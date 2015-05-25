@@ -12,7 +12,7 @@ var dollarsFieldOptions = {
     share: {
         label: 'Share',
         valueFormatter: function(value){
-        	return d3.format('$,.0f')(value) + 'M'
+        	return Connect.Viz.format('$,.0f')(value) + 'M'
         }
     }
 }
