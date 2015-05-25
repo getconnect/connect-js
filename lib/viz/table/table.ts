@@ -10,6 +10,7 @@ import ErrorHandling = require('../error-handling');
 import Dom = require('../dom');
 import ResultHandling = require('../result-handling');
 import Classes = require('../css-classes');
+import deepExtend = require('deep-extend');
 
 class Table implements Common.Visualization {
     public targetElement: HTMLElement;
@@ -20,17 +21,15 @@ class Table implements Common.Visualization {
     private _tableWrapper: HTMLElement;
     private _resultHandler: ResultHandling.ResultHandler;
 
-    constructor(targetElement: string|HTMLElement, suppliedOptions: Config.VisualizationOptions) {
+    constructor(targetElement: string|HTMLElement, tableOptions: Config.VisualizationOptions) {
         var defaultTableOptions: Config.VisualizationOptions = { 
                 fields: {},
-                intervals: {}
-            },
-            defaultIntervalOptions = {
-                formats: Config.defaultTimeSeriesFormats
+                intervals: {
+                    formats: Config.defaultTimeSeriesFormats
+                }
             };
         this.targetElement = Dom.getElement(targetElement);
-        this._options = _.extend(defaultTableOptions, suppliedOptions);
-        this._options.intervals = _.extend(this._options.intervals, defaultIntervalOptions);
+        this._options = deepExtend({}, defaultTableOptions, tableOptions);
         this.loader = new Loader(this.targetElement);
         this._resultHandler = new ResultHandling.ResultHandler();
     }

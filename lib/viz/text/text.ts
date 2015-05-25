@@ -9,6 +9,7 @@ import ResultHandling = require('../result-handling');
 import Dom = require('../dom');
 import Counter = require('./counter');
 import Classes = require('../css-classes');
+import deepExtend = require('deep-extend');
 
 class Text implements Common.Visualization {
     public targetElement: HTMLElement;
@@ -24,14 +25,15 @@ class Text implements Common.Visualization {
     private _resultHandler: ResultHandling.ResultHandler;
 
     constructor(targetElement: string|HTMLElement, textOptions: Config.VisualizationOptions) {
-        this._options = _.extend({ 
+        var defaultOptions = { 
             transitionOnReload: true,
             text: {
                 counterDurationMs: 800
             },
             fields: {} 
-        }, textOptions);
+        };
 
+        this._options = deepExtend({}, defaultOptions, textOptions);
         this.targetElement = Dom.getElement(targetElement);
         this.loader = new Loader(this.targetElement);
         this._currentValue = 0;

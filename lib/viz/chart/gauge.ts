@@ -12,6 +12,7 @@ import Dom = require('../dom');
 import ResultHandling = require('../result-handling');
 import c3 = require('../c3');
 import Classes = require('../css-classes');
+import deepExtend = require('deep-extend');
 
 class Gauge implements Common.Visualization {
     public targetElement: HTMLElement;
@@ -25,6 +26,7 @@ class Gauge implements Common.Visualization {
     private _currentDataset: Dataset.ChartDataset;
     private _transitionDuration;
     private _resultHandler: ResultHandling.ResultHandler;
+    private _loadsMinMaxFromResult: boolean;
     
     constructor(targetElement: string|HTMLElement, gaugeOptions: Config.VisualizationOptions) {     
         this._options = this._parseOptions(gaugeOptions);
@@ -43,21 +45,15 @@ class Gauge implements Common.Visualization {
                 transitionOnReload: true,
                 fields: {},                
                 gauge: {},
-            },
-            defaultC3Options = Config.defaultC3Options,            
-            options = null,
-            loadsMinMaxFromResult = null,
-            minMaxFromResultsOptions = _.extend(Config.defaultC3Options.minMaxFromResults, defaultC3Options.gauge);
+            },         
+            options = null;
 
-        options = _.extend(defaultOptions, gaugeOptions);
-        loadsMinMaxFromResult = _.isString(options.gauge.min + options.gauge.max);
+        options = deepExtend({}, defaultOptions, gaugeOptions);
+        this._loadsMinMaxFromResult = _.isString(options.gauge.min + options.gauge.max);
 
-        if (loadsMinMaxFromResult){
+        if (this._loadsMinMaxFromResult){
             this._minSelectName = _.isString(options.gauge.min) ? options.gauge.min : null;
             this._maxSelectName = _.isString(options.gauge.max) ? options.gauge.max : null;
-            options.gauge = _.extend(options.gauge || {}, minMaxFromResultsOptions);
-        }else{
-            options.gauge = _.extend(options.gauge || {}, defaultC3Options.gauge);
         }
 
         return options;
@@ -161,8 +157,9 @@ class Gauge implements Common.Visualization {
         var dataset = this._currentDataset,
             select = this._currentDataset.getSelect(label),
             options = this._options,
+            defaultFormatter = Config.defaultC3GaugeOptions.gauge.label.format,
             fieldOption = options.fields[select] || Config.defaulField,
-            valueFormatter = fieldOption.valueFormatter;
+            valueFormatter = fieldOption.valueFormatter || defaultFormatter;
 
         if (valueFormatter){
             return valueFormatter(value);
@@ -193,8 +190,8 @@ class Gauge implements Common.Visualization {
             titleElement = Dom.createTitle(options.title),
             dateFormat = null,
             tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
+            defaultC3GaugeOptions = this._loadsMinMaxFromResult ? Config.defaultC3MinMaxFromResultsGaugeOptions : Config.defaultC3GaugeOptions,
             config = {
-                bindto: c3Element,
                 padding: options.gauge.padding,
                 data: {
                     json: [],
@@ -207,6 +204,10 @@ class Gauge implements Common.Visualization {
                     format: {
                         value: tooltipValueFormatter
                     }                   
+                },
+                gauge: {
+                    min: !this._minSelectName ? options.gauge.min : undefined,
+                    max: !this._maxSelectName ? options.gauge.max : undefined
                 }
             };
 
@@ -214,7 +215,8 @@ class Gauge implements Common.Visualization {
         connectGaugeContainer.appendChild(titleElement);
         connectGaugeContainer.appendChild(c3Element);
         rootElement.appendChild(connectGaugeContainer);
-        config['gauge'] = options['gauge'];
+        config = deepExtend({}, defaultC3GaugeOptions, config);
+        config['bindto'] = c3Element;
 
         this._rendered = true;
         this._titleElement = titleElement;

@@ -1,4 +1,5 @@
 import Formatters = require('./formatters');
+import deepExtend = require('deep-extend');
 
 module Config {
     export interface ChartColors {
@@ -92,30 +93,35 @@ module Config {
         yearly: 'YYYY'
     }
 
-    export var defaultC3Options = {
+    export var defaultC3ChartOptions = {
         line: {
             connectNull: true
         },
         spline: {
             connectNull: true
-        },
+        }
+    }
+
+    export var defaultC3GaugeOptions = {
         gauge: {
             label: {
                 format: (value) => Formatters.format('.0f')(value) + '%',
                 formatall: true,
                 transition: false
             },
-            expand: true
-        },
-        minMaxFromResults: {
+            expand: true,
+            min: 0,
+            max: 100
+        }
+    }
+
+    export var defaultC3MinMaxFromResultsGaugeOptions = deepExtend({}, {
+        gauge: {
             label: {
                 show: false
-            },
-            min: 0,
-            max: 100          
-        },
-        bar: {}
-    }
+            }        
+        }
+    }, defaultC3GaugeOptions);
 
     export var defaulField = {
         label: undefined,
