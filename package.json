@@ -68,9 +68,10 @@
   "dependencies": {
     "connect-js-c3": "0.4.11",
     "d3": "3.5.5",
+    "deep-extend": "^0.4.0",
+    "moment-timezone": "0.3.0",
     "q": "1.1.2",
     "superagent": "0.21.0",
-    "underscore": "1.7.0",
-    "moment-timezone": "0.3.0"
+    "underscore": "1.7.0"
   }
 }

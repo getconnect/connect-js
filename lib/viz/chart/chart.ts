@@ -12,7 +12,7 @@ import Dom = require('../dom');
 import ResultHandling = require('../result-handling');
 import c3 = require('../c3');
 import Classes = require('../css-classes');
-import deepExtend = require('../deep-extend');
+import deepExtend = require('deep-extend');
 
 class Chart implements Common.Visualization {
     public targetElement: HTMLElement;

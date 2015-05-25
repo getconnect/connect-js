@@ -10,7 +10,7 @@ import ErrorHandling = require('../error-handling');
 import Dom = require('../dom');
 import ResultHandling = require('../result-handling');
 import Classes = require('../css-classes');
-import deepExtend = require('../deep-extend');
+import deepExtend = require('deep-extend');
 
 class Table implements Common.Visualization {
     public targetElement: HTMLElement;

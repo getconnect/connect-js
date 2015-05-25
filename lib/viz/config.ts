@@ -1,5 +1,5 @@
 import Formatters = require('./formatters');
-import deepExtend = require('./deep-extend');
+import deepExtend = require('deep-extend');
 
 module Config {
     export interface ChartColors {

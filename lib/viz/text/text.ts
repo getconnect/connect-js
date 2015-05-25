@@ -9,7 +9,7 @@ import ResultHandling = require('../result-handling');
 import Dom = require('../dom');
 import Counter = require('./counter');
 import Classes = require('../css-classes');
-import deepExtend = require('../deep-extend');
+import deepExtend = require('deep-extend');
 
 class Text implements Common.Visualization {
     public targetElement: HTMLElement;
