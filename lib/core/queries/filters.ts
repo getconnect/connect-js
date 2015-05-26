@@ -2,8 +2,6 @@ import Api = require('../api');
 import _ = require('underscore');
 
 module Filters {
-	export type QueryFilters = Array<QueryFilter>;
-
 	export class QueryFilter {
 		field: string;
 		operator: string;

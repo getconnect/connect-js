@@ -6,7 +6,6 @@ import Api = require('../../../lib/core/api');
 import Queries = require('../../../lib/core/queries/queries');
 import Selects = require('../../../lib/core/queries/selects');
 import Filters = require('../../../lib/core/queries/filters');
-import Timeframes = require('../../../lib/core/queries/timeframes');
 import QueryBuilder = require('../../../lib/core/queries/query-builder');
 
 var expect = chai.expect,
@@ -147,23 +146,13 @@ describe('Queries', () => {
 			});
 
 			it('should set complex timeframe', () => {
-				var builder = sinon.createStubInstance(Timeframes.TimeframeBuilder),
-					QueriesProxy = proxyquire('../../../lib/core/queries/queries', {
-						'./timeframes': {
-							TimeframeBuilder: () => builder
-						}	
-					}),
-					query = new QueriesProxy.ConnectQuery('test');
+				var query = new Queries.ConnectQuery(client, 'test'),
+					timeframe = {
+						start: new Date(), 
+						end: new Date()
+					};
 
-				var start = new Date(),
-					end = new Date(),
-					timeframe = sinon.createStubInstance(Timeframes.AbsoluteTimeframe);
-
-				builder['between'].withArgs(start, end).returns(timeframe);
-
-				query = query.timeframe(x => {
-					return x.between(start, end);	
-				});
+				query = query.timeframe(timeframe);
 
 				expect(query._timeframe).to.equal(timeframe);
 			});

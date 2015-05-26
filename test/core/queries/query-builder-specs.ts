@@ -2,7 +2,6 @@ import chai = require('chai');
 import QueryBuilder = require('../../../lib/core/queries/query-builder');
 import Selects = require('../../../lib/core/queries/selects');
 import Filters = require('../../../lib/core/queries/filters');
-import Timeframes = require('../../../lib/core/queries/timeframes');
 
 var expect = chai.expect;
 
@@ -54,7 +53,10 @@ describe('QueryBuilder', () => {
 		});
 
 		it('should add absolute timeframe to query', () => {
-			var timeframe = new Timeframes.AbsoluteTimeframe(new Date(), new Date()),
+			var timeframe = {
+					start: new Date(),
+					end: new Date()
+				},
 				result = builder.build({}, [], [], timeframe, null, null);
 
 			expect(result.timeframe).to.deep.equal({
@@ -64,7 +66,9 @@ describe('QueryBuilder', () => {
 		});
 
 		it('should add absolute timeframe with only start to query', () => {
-			var timeframe = new Timeframes.AbsoluteTimeframe(new Date(), null),
+			var timeframe = {
+					start: new Date()
+				},
 				result = builder.build({}, [], [], timeframe, null, null);
 
 			expect(result.timeframe).to.deep.equal({
@@ -73,7 +77,9 @@ describe('QueryBuilder', () => {
 		});
 
 		it('should add absolute timeframe with only end to query', () => {
-			var timeframe = new Timeframes.AbsoluteTimeframe(null, new Date()),
+			var timeframe = {
+                    end: new Date()
+                },
 				result = builder.build({}, [], [], timeframe, null, null);
 
 			expect(result.timeframe).to.deep.equal({
@@ -82,7 +88,9 @@ describe('QueryBuilder', () => {
 		});
 
 		it('should add current relative timeframe to query', () => {
-			var timeframe = new Timeframes.RelativeTimeframe(true, 2, 'days'),
+			var timeframe = {
+                    current: { days: 2 }
+                },
 				result = builder.build({}, [], [], timeframe, null, null);
 
 			expect(result.timeframe).to.deep.equal({
@@ -91,7 +99,9 @@ describe('QueryBuilder', () => {
 		});
 
 		it('should add last relative timeframe to query', () => {
-			var timeframe = new Timeframes.RelativeTimeframe(false, 2, 'weeks'),
+			var timeframe = {
+                    previous: { weeks: 2 }
+                },
 				result = builder.build({}, [], [], timeframe, null, null);
 
 			expect(result.timeframe).to.deep.equal({
@@ -101,16 +111,14 @@ describe('QueryBuilder', () => {
 
 		it('should add string based timezone', () => {
 			var timezone = 'Australia/Brisbane',
-				timeframe = new Timeframes.RelativeTimeframe(false, 2, 'weeks'),
-				result = builder.build({}, [], [], timeframe, null, timezone);
+				result = builder.build({}, [], [], {}, null, timezone);
 
 			expect(result.timezone).to.equal(timezone);
 		});
 
 		it('should add offset based timezone', () => {
 			var timezone = -5,
-				timeframe = new Timeframes.RelativeTimeframe(false, 2, 'weeks'),
-				result = builder.build({}, [], [], timeframe, null, timezone);
+				result = builder.build({}, [], [], {}, null, timezone);
 
 			expect(result.timezone).to.equal(timezone);
 		});

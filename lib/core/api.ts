@@ -4,13 +4,36 @@ import _ = require('underscore');
 
 module Api {    
     export interface Query {
-        select?: Api.QuerySelects;
-        filter?: Api.QueryFilters;
+        select?: QuerySelects;
+        filter?: QueryFilters;
         groupBy?: string[];
-        timeframe?: string|Api.QueryTimeframe;
+        timeframe?: Timeframe;
         interval?: string;
-        timezone?: string|number;
+        timezone?: Timezone;
     }
+
+    export type Timeframe = string|AbsoluteTimeframe|RelativeTimeframe;
+    export type Timezone = string|number;
+
+    export interface AbsoluteTimeframe {
+        start?: Date|string;
+        end?: Date|string;
+    }
+
+    export interface Period {
+        minutes?: number;
+        hours?: number;
+        days?: number;
+        weeks?: number;
+        months?: number;
+        quarters?: number;
+        years?: number;
+    }
+
+    export interface RelativeTimeframe {
+        previous?: Period;
+        current?: Period;
+    }    
 
     export interface Metadata {
         groups: string[];
@@ -32,12 +55,6 @@ module Api {
 
     export interface QueryFilters {
         [index: string]: Api.QueryFilter;   
-    }
-
-    export interface QueryTimeframe {
-        timeframe?: string;
-        from?: Date;
-        to?: Date;
     }
 
     export interface QueryResultInterval {
