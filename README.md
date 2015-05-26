@@ -1,4 +1,6 @@
 # Connect Javascript SDK
+
+[![Join the chat at https://gitter.im/getconnect/connect-js](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/getconnect/connect-js?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![NPM version](http://img.shields.io/npm/v/connect-js.svg?style=flat)](https://www.npmjs.org/package/connect-js)
 ![Bower version](http://img.shields.io/bower/v/connect-js.svg?style=flat)
 
