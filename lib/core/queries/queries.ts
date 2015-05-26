@@ -1,33 +1,30 @@
 import Api = require('../api')
 import Filters = require('./filters');
 import Selects = require('./selects');
-import Timeframes = require('./timeframes');
 import QueryBuilder = require('./query-builder');
 import Q = require('q');
 import _ = require('underscore');
 
 module Queries {
-	export type TimeframeFactory = (builder: Timeframes.TimeframeBuilder) => Timeframes.Timeframe;
-
 	export class ConnectQuery {
 		_client: Api.Client;
 		_collection: string;
 		_selects: Selects.QuerySelects;
-		_filters: Filters.QueryFilters;
+		_filters: Filters.QueryFilter[];
 		_groups: string[];
-		_timeframe: Timeframes.Timeframe;
+		_timeframe: Api.Timeframe;
 		_interval: string;
-		_timezone: Timeframes.Timezone;
+		_timezone: Api.Timezone;
 
 		constructor(
 			client: Api.Client,
 			collection: string, 
 			selects?: Selects.QuerySelects, 
-			filters?: Filters.QueryFilters, 
+			filters?: Filters.QueryFilter[], 
 			groups?: string[], 
-			timeframe?: Timeframes.Timeframe, 
+			timeframe?: Api.Timeframe, 
 			interval?: string,
-			timezone?: Timeframes.Timezone) {
+			timezone?: Api.Timezone) {
 			this._client = client;
 			this._collection = collection;
 			this._selects = selects || {};
@@ -77,15 +74,7 @@ module Queries {
 			return new ConnectQuery(this._client, this._collection, this._selects, this._filters, groups, this._timeframe, this._interval, this._timezone);
 		}
 
-		public timeframe(factory: string|TimeframeFactory): ConnectQuery {
-			var timeframe;
-
-			if(typeof factory === 'string') {
-				timeframe = factory;
-			} else {
-				var builder = new Timeframes.TimeframeBuilder();
-				timeframe = factory(builder);
-			}
+		public timeframe(timeframe: Api.Timeframe): ConnectQuery {
 
 			return new ConnectQuery(this._client, this._collection, this._selects, this._filters, this._groups, timeframe, this._interval, this._timezone);
 		}
@@ -94,7 +83,7 @@ module Queries {
 			return new ConnectQuery(this._client, this._collection, this._selects, this._filters, this._groups, this._timeframe, interval, this._timezone);
 		}
 
-		public timezone(timezone: Timeframes.Timezone): ConnectQuery {
+		public timezone(timezone: Api.Timezone): ConnectQuery {
 			if(!this._timeframe && !this._interval)
 				throw new Error('You can only set a timezone when a valid timeframe or interval has been set.');
 			
