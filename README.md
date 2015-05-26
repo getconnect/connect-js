@@ -28,10 +28,9 @@ npm install connect-js-viz
 npm install connect-js
 ```
 
-# static
+# CDN
 ```
-https://cdn.rawgit.com/getconnect/connect-js/{VERSION}/dist/core/connect.min.js
-https://cdn.rawgit.com/getconnect/connect-js/{VERSION}/dist/viz/connect-viz.min.js
+https://cdn.getconnect.io/connect-js/{version}/standalone/connect-all.min.js
 ```
 
 ## Module support
