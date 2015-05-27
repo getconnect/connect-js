@@ -55,7 +55,15 @@ module Config {
         colors?: ChartColors|string[];
         padding?: PaddingOptions;
         showLegend?: boolean; 
-        yAxisValueFormatter?: (value: any) => any;
+        yAxis?: {
+            valueFormatter?: (value: any) => any;
+            startAtZero?: boolean;
+            min?: boolean;
+            max?: boolean;
+        };
+        tooltip?: {
+            valueFormatter?: (value: any) => any;
+        };
     }
 
     export interface GaugeOptions {
@@ -99,6 +107,12 @@ module Config {
         },
         spline: {
             connectNull: true
+        },
+        area: {
+            zerobased: false
+        },
+        bar: {
+            zerobased: true
         }
     }
 

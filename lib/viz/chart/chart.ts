@@ -38,7 +38,8 @@ class Chart implements Common.Visualization {
 
     private _parseOptions(chartOptions: Config.VisualizationOptions): Config.VisualizationOptions{
 
-        var defaultOptions: Config.VisualizationOptions = {
+        var defaultFormatter = (value: any) => value,
+            defaultOptions: Config.VisualizationOptions = {
                 transitionOnReload: true,
                 intervals: {
                     formats: Config.defaultTimeSeriesFormats
@@ -46,7 +47,12 @@ class Chart implements Common.Visualization {
                 fields: {},
                 chart: {
                     type: 'bar',
-                    yAxisValueFormatter: (value) => value
+                    yAxis: {
+                        valueFormatter: defaultFormatter
+                    },
+                    tooltip: {
+                        valueFormatter: defaultFormatter
+                    }
                 },                
             },
             options = deepExtend({}, defaultOptions, chartOptions);
@@ -159,6 +165,9 @@ class Chart implements Common.Visualization {
             c3Element = Dom.createElement('div', Classes.result),
             rootElement = this.targetElement,
             titleElement = Dom.createTitle(options.title),
+            yAxisOptions = options.chart.yAxis,
+            isStartAtZeroSpecified = yAxisOptions.startAtZero != null,
+            tooltipOptions = options.chart.tooltip,
             tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
             config = {
                 size: {
@@ -178,18 +187,24 @@ class Chart implements Common.Visualization {
                         }
                     },
                     y:{
+                        padding: {
+                            top: 0, 
+                            bottom: 0
+                        },
                         tick: {
                             outer: false,
-                            format: options.chart.yAxisValueFormatter
+                            format: yAxisOptions.valueFormatter
                         }
                     }
                 },
+                bar: {},
+                area: {},
                 transition: {
                     duration: this._transitionDuration.none
                 },
                 tooltip: {
                     format: {
-                        value: tooltipValueFormatter
+                        value: tooltipOptions.valueFormatter
                     }                   
                 }
             };
@@ -201,6 +216,10 @@ class Chart implements Common.Visualization {
         config = deepExtend({}, Config.defaultC3ChartOptions, config);
         config['bindto'] = c3Element;
 
+        if (isStartAtZeroSpecified){
+             config.area['zerobased'] = yAxisOptions.startAtZero;
+             config.bar['zerobased'] = yAxisOptions.startAtZero;
+        }
 
         this._rendered = true;
         this._titleElement = titleElement;

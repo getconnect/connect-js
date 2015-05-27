@@ -2,24 +2,32 @@ var connect = require('./connection.js');
 var salesByPaymentProvider = require('./query-results.js').salesByPayment;
 
 var fieldOptions = {
-    'sellPriceTotal': {
-        label: 'Sell Price',
-        valueFormatter: d3.format('$,.2f')
+        'sellPriceTotal': {
+            label: 'Sell Price',
+            valueFormatter: d3.format('$,.2f')
+        },
+        'costPriceTotal': {
+            label: 'Cost Price',
+            valueFormatter: d3.format('$,.2f')
+        },
+        'paymentType': {
+            label: 'Payment Type'
+        }
     },
-    'costPriceTotal': {
-        label: 'Cost Price',
-        valueFormatter: d3.format('$,.2f')
+    valueFormatter = Connect.Viz.format('$,.2f'),
+    yAxis = {
+        valueFormatter: valueFormatter
     },
-    'paymentType': {
-        label: 'Payment Type'
-    }
-}
+    tooltip = {
+        valueFormatter: valueFormatter        
+    };
 
 var bar = connect.chart(salesByPaymentProvider, '#sales-by-payment-bar', {
     title: 'Sales by Payment Type',
     chart: {
-        type: 'bar',        
-        yAxisValueFormatter: Connect.Viz.format('$,.2f')
+        type: 'bar',
+        yAxis: yAxis,
+        tooltip: tooltip,
     },
     fields: fieldOptions
 });
@@ -27,8 +35,9 @@ var bar = connect.chart(salesByPaymentProvider, '#sales-by-payment-bar', {
 var barNoLegend = connect.chart(salesByPaymentProvider, '#sales-by-payment-bar-no-legend', {
     title: 'Sales by Payment Type (No Legend)',
     chart: {
-        type: 'bar',
-        yAxisValueFormatter: Connect.Viz.format('$,.2f'),
+        type: 'bar',  
+        yAxis: yAxis,
+        tooltip: tooltip,
         showLegend: false
     },
     fields: fieldOptions
@@ -37,8 +46,9 @@ var barNoLegend = connect.chart(salesByPaymentProvider, '#sales-by-payment-bar-n
 var line = connect.chart(salesByPaymentProvider, '#sales-by-payment-line', {
     title: 'Sales by Payment Type',
     chart: {
-        type: 'line',
-        yAxisValueFormatter: Connect.Viz.format('$,.2f')
+        type: 'line',  
+        yAxis: yAxis,
+        tooltip: tooltip,
     },
     fields: fieldOptions
 });
