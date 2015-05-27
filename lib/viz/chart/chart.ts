@@ -188,8 +188,8 @@ class Chart implements Common.Visualization {
                     },
                     y:{
                         padding: {
-                            top: 0, 
-                            bottom: 0
+                            top: 4, 
+                            bottom: 4
                         },
                         tick: {
                             outer: false,
