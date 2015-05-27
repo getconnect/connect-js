@@ -3,21 +3,29 @@ var salesProvider = require('./query-results.js').sales;
 var sellPriceProvider = require('./query-results.js').salesSellPrice;
 
 var fieldOptions = {
-    'sellPriceTotal': {
-        label: 'Sell Price',
-        valueFormatter: Connect.Viz.format('$,.2f')
+        'sellPriceTotal': {
+            label: 'Sell Price',
+            valueFormatter: Connect.Viz.format('$,.2f')
+        },
+        'costPriceTotal': {
+            label: 'Cost Price',
+            valueFormatter: Connect.Viz.format('$,.2f')
+        }
     },
-    'costPriceTotal': {
-        label: 'Cost Price',
-        valueFormatter: Connect.Viz.format('$,.2f')
-    }
-}
+    valueFormatter = Connect.Viz.format('$,.2f'),
+    yAxis = {
+        valueFormatter: valueFormatter
+    },
+    tooltip = {
+        valueFormatter: valueFormatter        
+    };
 
 var bar = connect.chart(salesProvider, '#sales-bar', {
     title: 'Sales',
     chart: {
-        type: 'bar',        
-        yAxisValueFormatter: Connect.Viz.format('$,.2f'),
+        type: 'bar',
+        yAxis: yAxis,
+        tooltip: tooltip,
     }, 
     fields: fieldOptions,
 });
@@ -25,8 +33,9 @@ var bar = connect.chart(salesProvider, '#sales-bar', {
 var line = connect.chart(salesProvider, '#sales-line', {
     title: 'Sales',
     chart: {
-        type: 'line',        
-        yAxisValueFormatter: Connect.Viz.format('$,.2f'),
+        type: 'line',
+        yAxis: yAxis,
+        tooltip: tooltip,
     },
     fields: fieldOptions,
 });
