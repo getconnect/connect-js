@@ -32,7 +32,7 @@
     "homepage": "http://getconnect.io/",
     "dependencies": {
         "d3": "~3.5.0",
-        "c3": "~0.4.10",
+        "connect-js-c3": "~0.4.12",
         "ionicons": "~2.0.1"
     }
 }
