@@ -1,4 +1,5 @@
 import Api = require('../../core/api');
+import Config = require('../config');
 import _ = require('underscore');
 
 module Dataset{
@@ -13,6 +14,15 @@ module Dataset{
     export interface SelectLabel {
         select: string;
         label: string;
+    }
+
+    interface KeyedContext {
+        [resultPropertyName: string]: Config.ChartDataContext;
+    }
+
+    interface ResultWithContext {
+        result: any;
+        contexts: KeyedContext;
     }
 
     interface DatasetMapper {
@@ -31,17 +41,21 @@ module Dataset{
         private _groupValueFormatter: GroupValueFormatter;
 
         private _selectLabels: Dataset.SelectLabel[] = [];
-        private _data: any = [];
+        private _data: any[] = [];
+        private _contexts: KeyedContext[] = [];
 
         constructor(results: Api.QueryResults, formatters: Formatters) {
-            var metadata = results.metadata;
-
-            var isGroupedInterval = metadata.interval && metadata.groups.length,
+            var metadata = results.metadata,
+                mappedData,
+                isGroupedInterval = metadata.interval && metadata.groups.length,
                 mapper = isGroupedInterval ? new GroupedIntervalMapper(results, formatters)
                                            : new StandardMapper(results, formatters);
 
+            mappedData = mapper.mapData();
+
             this._selectLabels = mapper.mapLabels();
-            this._data = mapper.mapData();
+            this._data = _.pluck(mappedData, 'result');
+            this._contexts = _.pluck(mappedData, 'contexts')
         }
 
         public getLabels(){
@@ -52,8 +66,29 @@ module Dataset{
             return _.find(this._selectLabels, (selectLabel) => selectLabel.label === label).select;
         }
 
-        public getData(): any{
+        public getData(): any[]{
             return this._data;
+        }
+
+        public getContext(datum: any): Config.ChartDataContext{
+            if (_.isString(datum)){
+                return this._buildGenericContext(datum);
+            }
+
+            return this._contexts[datum.index][datum.id];
+        }
+
+        private _buildGenericContext(propertyName: string): Config.ChartDataContext {
+            var matchingKeyedContext = _.find(this._contexts, (context) => context[propertyName] != null),
+                matchingContext = matchingKeyedContext[propertyName],
+                groupByValues = matchingContext.intervalValue ? matchingContext.groupByValues : [];
+
+            return {
+                intervalValue: null,
+                groupByValues: groupByValues,
+                select: matchingContext.select,
+                value: null
+            };
         }
     }
 
@@ -83,44 +118,59 @@ module Dataset{
                     var groupPath = getGroupPath(result, metadata.groups, this._groupValueFormatter);
                     return _.map(this._selects, select => <SelectLabel>{
                         select: select,
-                        label: this._generateLabelForResult(metadata, result, select, groupPath)
+                        label: this._generateLabelForResult(metadata, select, groupPath)
                     });
                 })
                 .flatten()  
                 .value();        
         }
 
-        public mapData(): any {    
+        public mapData(): ResultWithContext[] {    
             var metadata = this._metadata,
                 results = this._results;
 
             return _.chain(results)
                 .map(result => {
                     var start = result.interval.start,
-                        mappedResult = this._mapResult(result);
-                        mappedResult['_x'] = start;
+                        mappedResultWithContext = this._mapResult(result),
+                        mappedResult = mappedResultWithContext.result;
 
-                    return mappedResult;
+                    mappedResult['_x'] = start;
+
+                    return mappedResultWithContext;
                 })
                 .value();
         }
 
-        private _mapResult(result: Api.QueryResultItem): any {        
-            var metadata = this._metadata;
+        private _mapResult(result: Api.QueryResultItem): ResultWithContext {        
+            var metadata = this._metadata,
+                resultWithContext = {
+                    result: {},
+                    contexts: <KeyedContext>{}
+                };
 
             return _.reduce<Api.QueryResultItem, any>(result.results, (mappedResult, intervalResult) => {
-                var groupPath = getGroupPath(intervalResult, metadata.groups, this._groupValueFormatter);
+                var groupPath = getGroupPath(intervalResult, metadata.groups, this._groupValueFormatter),
+                    groupByValues = metadata.groups.map(group => this._groupValueFormatter(group, intervalResult[group]))
 
                 _.each(this._selects, select => {
-                    var label = this._generateLabelForResult(metadata, mappedResult, select, groupPath);
-                    mappedResult[label] = intervalResult[select];
+                    var label = this._generateLabelForResult(metadata, select, groupPath);
+                    
+                    resultWithContext.result[label] = intervalResult[select];
+
+                    resultWithContext.contexts[label] = {
+                        intervalValue: <Date>result.interval['start'],
+                        groupByValues: groupByValues,
+                        select: label,
+                        value: intervalResult[select]
+                    };
                 });
 
-                return mappedResult;
-            }, {});
+                return resultWithContext;
+            }, resultWithContext);
         }
 
-        private _generateLabelForResult(metadata: Api.Metadata, result: Api.QueryResultItem, select: string, groupPath: string): string{
+        private _generateLabelForResult(metadata: Api.Metadata, select: string, groupPath: string): string{
             return this._selects.length > 1 ? groupPath + ' - ' + this._selectLabelFormatter(select) : groupPath;
         }
     }
@@ -149,14 +199,15 @@ module Dataset{
             });
         }
 
-        public mapData(): any {     
+        public mapData(): ResultWithContext[] {
             var metadata = this._metadata,
                 results = this._results;
 
             return _.map(results, result => {
                 var isGrouped = this._metadata.groups.length > 0,
                     interval = result['interval'],
-                    mappedResult = this._mapResult(result),
+                    mappedResultWithContext = this._mapResult(result),
+                    mappedResult = mappedResultWithContext.result,
                     groupPath = getGroupPath(result, metadata.groups, this._groupValueFormatter);
 
                 if(interval) {
@@ -165,19 +216,36 @@ module Dataset{
                     mappedResult['_x'] = isGrouped ? groupPath : ' ';
                 }
 
-                return mappedResult;
+                return mappedResultWithContext;
             });
         }
 
-        private _mapResult(result: Api.QueryResultItem): any{
+        private _mapResult(result: Api.QueryResultItem): ResultWithContext{
             var mappedResult = {},
-                origResult = this._metadata.interval ? result.results[0] : result;
+                resultWithContext = {
+                    result: null,
+                    contexts: <KeyedContext>{}
+                },
+                intervalStart = result.interval ? result.interval.start : null,
+                origResult = intervalStart ? result.results[0] : result,
+                groupByValues = this._metadata.groups.map(group => this._groupValueFormatter(group, result[group]));
 
             _.each(this._selects, select => {
-                mappedResult[this._selectLabelFormatter(select)] = origResult ? origResult[select] : null
+                var formattedSelect = this._selectLabelFormatter(select);
+                
+                mappedResult[formattedSelect] = origResult ? origResult[select] : null;
+
+                resultWithContext.contexts[formattedSelect] = {
+                    intervalValue: <Date>intervalStart,
+                    groupByValues: groupByValues,
+                    select: formattedSelect,
+                    value: mappedResult[formattedSelect],
+                };
             });
 
-            return mappedResult;
+            resultWithContext.result = mappedResult;
+
+            return resultWithContext;
         }
     }    
 }

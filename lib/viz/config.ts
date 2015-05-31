@@ -2,10 +2,6 @@ import Formatters = require('./formatters');
 import deepExtend = require('deep-extend');
 
 module Config {
-    export interface ChartColors {
-        [categoryKey: string]: string;
-    }
-
     export interface IntervalFormats {
         [interval: string]: string;
     }
@@ -16,7 +12,11 @@ module Config {
 
     export interface FormatTitleFunction {
         (container: HTMLElement): void;
-    }    
+    }
+
+    export interface ColorModifier {
+        (currentColor: string, context: ChartDataContext|ChartDataContext[]): string
+    }
 
     export interface FormatIntervalFunction {
         (start: Date, end?: Date): any;
@@ -31,6 +31,13 @@ module Config {
         label?: string;
         formats?: IntervalFormats;
         valueFormatter?: FormatIntervalFunction;
+    }
+
+    export interface ChartDataContext {
+        select: string;
+        groupByValues: string[];
+        intervalValue: Date;
+        value: number;
     }
 
     export interface FieldOptions {
@@ -52,7 +59,8 @@ module Config {
     export interface ChartOptions {
         type: string;
         height?: number;
-        colors?: ChartColors|string[];
+        colors?: string[];
+        colorModifier: ColorModifier;
         padding?: PaddingOptions;
         showLegend?: boolean; 
         yAxis?: {
