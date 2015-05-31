@@ -30,10 +30,17 @@ module Dataset{
         mapData(results: Api.QueryResults): any;
     }
 
-    function getGroupPath(result: Api.QueryResultItem, groups: string[], formatter: GroupValueFormatter): string {
+    function getGroupValues(result: Api.QueryResultItem, groups: string[], formatter: GroupValueFormatter): string[] {
         return groups
-            .map(group => formatter(group, result[group]))
-            .join(' / ');
+            .map(group => formatter(group, result[group]));
+    }
+
+    function getGroupPath(result: Api.QueryResultItem, groups: string[], formatter: GroupValueFormatter): string {
+        return formatGroupValuesAsGroupPath(getGroupValues(result, groups, formatter));
+    }
+
+    function formatGroupValuesAsGroupPath(groupValues: string[]): string {
+        return groupValues.join(' / ');
     }
 
     export class ChartDataset {
@@ -150,8 +157,8 @@ module Dataset{
                 };
 
             return _.reduce<Api.QueryResultItem, any>(result.results, (mappedResult, intervalResult) => {
-                var groupPath = getGroupPath(intervalResult, metadata.groups, this._groupValueFormatter),
-                    groupByValues = metadata.groups.map(group => this._groupValueFormatter(group, intervalResult[group]))
+                var groupByValues = getGroupValues(intervalResult, metadata.groups, this._groupValueFormatter),
+                    groupPath = formatGroupValuesAsGroupPath(groupByValues);
 
                 _.each(this._selects, select => {
                     var label = this._generateLabelForResult(metadata, select, groupPath);
@@ -228,7 +235,7 @@ module Dataset{
                 },
                 intervalStart = result.interval ? result.interval.start : null,
                 origResult = intervalStart ? result.results[0] : result,
-                groupByValues = this._metadata.groups.map(group => this._groupValueFormatter(group, result[group]));
+                groupByValues = getGroupValues(origResult, this._metadata.groups, this._groupValueFormatter);
 
             _.each(this._selects, select => {
                 var formattedSelect = this._selectLabelFormatter(select);
