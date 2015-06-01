@@ -207,10 +207,9 @@ class Chart implements Common.Visualization {
                             format: undefined
                         }
                     },
-                    y:{
+                    y: {
                         padding: {
-                            top: 4, 
-                            bottom: 4
+                            bottom: 5
                         },
                         tick: {
                             outer: false,

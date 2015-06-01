@@ -117,7 +117,7 @@ module Config {
             connectNull: true
         },
         area: {
-            zerobased: false
+            zerobased: true
         },
         bar: {
             zerobased: true
