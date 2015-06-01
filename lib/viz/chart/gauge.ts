@@ -104,8 +104,6 @@ class Gauge implements Common.Visualization {
             resultItems = results.results,
             dataset = this._buildDataset(results),
             keys = dataset.getLabels(),
-            uniqueKeys = _.unique(keys),
-            colors = Palette.getSwatch(uniqueKeys, options.gauge.color ? [options.gauge.color] : null),
             transitionDuration = !options.transitionOnReload && reRender ? this._transitionDuration.none : this._transitionDuration.some;
             
         if (!this._checkMetaDataIsApplicable(metadata, selects)){
@@ -125,8 +123,7 @@ class Gauge implements Common.Visualization {
             keys: {
                 x: '_x',
                 value: keys
-            },
-            colors: colors
+            }
         });
     }
 
@@ -189,6 +186,7 @@ class Gauge implements Common.Visualization {
             rootElement = this.targetElement,
             titleElement = Dom.createTitle(options.title),
             dateFormat = null,
+            colors = Palette.getSwatch(options.gauge.color ? [options.gauge.color] : null),
             tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
             defaultC3GaugeOptions = this._loadsMinMaxFromResult ? Config.defaultC3MinMaxFromResultsGaugeOptions : Config.defaultC3GaugeOptions,
             config = {
@@ -196,6 +194,9 @@ class Gauge implements Common.Visualization {
                 data: {
                     json: [],
                     type: 'gauge'
+                },
+                color: {
+                    pattern: colors
                 },
                 transition: {
                     duration: this._transitionDuration.none

@@ -9,7 +9,6 @@
 /// <reference path="./typings/underscore/underscore.d.ts" />
 /// <reference path="./typings/d3/d3.d.ts" />
 /// <reference path="./typings/c3/c3.d.ts" />
-/// <reference path="./typings/c3/c3.d.ts" />
 /// <reference path="./typings/moment/moment.d.ts" />
 /// <reference path="./typings/moment-timezone/moment-timezone.d.ts" />
 /// <reference path="./typings/deep-extend/deep-extend.d.ts" />

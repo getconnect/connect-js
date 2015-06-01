@@ -52,7 +52,8 @@ class Chart implements Common.Visualization {
                     },
                     tooltip: {
                         valueFormatter: defaultFormatter
-                    }
+                    },
+                    colorModifier: (currentColor, dataContext) => currentColor
                 },                
             },
             options = deepExtend({}, defaultOptions, chartOptions);
@@ -81,14 +82,13 @@ class Chart implements Common.Visualization {
             resultItems = results.results,
             typeOptions = options[type],
             dataset = this._buildDataset(results),
+            data = dataset.getData(),
             keys = dataset.getLabels(),
-            uniqueKeys = _.unique(keys),
             metadata = results.metadata,
             dateFormat = null,
             standardDateformatter = null,
             customDateFormatter = null,
             timezone = options.timezone || metadata.timezone,
-            colors = Palette.getSwatch(uniqueKeys, options.chart.colors),
             internalChartConfig = (<any>this._chart).internal.config,
             useTransition = this._chart.data().length && (options.transitionOnReload || !reRender),
             transitionDuration = useTransition ? this._transitionDuration.some : this._transitionDuration.none,
@@ -103,16 +103,17 @@ class Chart implements Common.Visualization {
             customDateFormatter = options.intervals.valueFormatter;
             internalChartConfig.axis_x_tick_format = customDateFormatter || standardDateformatter;
             internalChartConfig.axis_x_type = 'timeseries';
+        }else{
+            internalChartConfig.axis_x_categories = _.pluck(data, '_x')
         }
-     
+        
         this._currentDataset = dataset;
         this._chart.load({
-            json: dataset.getData(),
+            json: data,
             keys: {
                 x: '_x',
                 value: keys
-            },
-            colors: colors
+            }
         });
     }
 
@@ -156,6 +157,19 @@ class Chart implements Common.Visualization {
         return groupValue;
     }
 
+    private _modifyColor(currentColor: string, datum: any): string {
+        var context = null,
+            contexts = [],
+            colorModifier = this._options.chart.colorModifier;
+
+        if (_.isArray(datum.values))
+            contexts = _.map(datum.values, (datumValue) => this._currentDataset.getContext(datumValue));
+        else
+            context = this._currentDataset.getContext(datum);
+
+        return colorModifier(currentColor, context || contexts);
+    }
+
     private _renderChart() {
         if(this._rendered)
             return;
@@ -166,6 +180,7 @@ class Chart implements Common.Visualization {
             rootElement = this.targetElement,
             titleElement = Dom.createTitle(options.title),
             yAxisOptions = options.chart.yAxis,
+            colors = Palette.getSwatch(options.chart.colors),
             isStartAtZeroSpecified = yAxisOptions.startAtZero != null,
             tooltipOptions = options.chart.tooltip,
             tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
@@ -176,7 +191,13 @@ class Chart implements Common.Visualization {
                 padding: options.chart.padding,
                 data: {
                     json: [],
-                    type: options.chart.type
+                    type: options.chart.type,
+                    color: (color, datum) => {
+                        return this._modifyColor(color, datum);
+                    }
+                },
+                color: {
+                    pattern: colors
                 },
                 axis: {
                     x: {   
@@ -210,6 +231,7 @@ class Chart implements Common.Visualization {
             };
 
         this.clear();
+
         connectChartContainer.appendChild(titleElement);
         connectChartContainer.appendChild(c3Element);
         rootElement.appendChild(connectChartContainer);

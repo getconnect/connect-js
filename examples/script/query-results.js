@@ -53,6 +53,16 @@ function salesByPayment(){
     });
 }
 
+function salesByPaymentSellPrice(){
+    var metadata = {"selects":["sellPriceTotal","costPriceTotal"],"groups":["paymentType"],"interval":null,"timezone":"UTC"};
+    return q.fcall(function(){
+        return createResponse([
+        {"paymentType":"cash","sellPriceTotal":13.7793,"_count":1974313.0},
+        {"paymentType":"card","sellPriceTotal":37.7793,"_count":336411.0}
+        ], metadata);
+    });
+}
+
 function salesOver15Mins(){
     var metadata = {"groups":[],"interval":"minutely","timezone":"UTC"};
     return q.fcall(function(){
@@ -163,6 +173,7 @@ module.exports = {
     sales: sales,
     salesSellPrice: salesSellPrice,
     salesByPayment: salesByPayment,
+    salesByPaymentSellPrice: salesByPaymentSellPrice,
     salesOver15Mins: salesOver15Mins,
     salesOver15MinsByPayment: salesOver15MinsByPayment,
     sellPriceOver15MinsByPayment: sellPriceOver15MinsByPayment

@@ -1,5 +1,5 @@
 var connect = require('./connection.js');
-var salesByPaymentProvider = require('./query-results.js').salesByPayment;
+var salesByPaymentResults = require('./query-results.js');
 
 var fieldOptions = {
         'sellPriceTotal': {
@@ -22,7 +22,7 @@ var fieldOptions = {
         valueFormatter: valueFormatter        
     };
 
-var bar = connect.chart(salesByPaymentProvider, '#sales-by-payment-bar', {
+var bar = connect.chart(salesByPaymentResults.salesByPayment, '#sales-by-payment-bar', {
     title: 'Sales by Payment Type',
     chart: {
         type: 'bar',
@@ -32,7 +32,22 @@ var bar = connect.chart(salesByPaymentProvider, '#sales-by-payment-bar', {
     fields: fieldOptions
 });
 
-var barNoLegend = connect.chart(salesByPaymentProvider, '#sales-by-payment-bar-no-legend', {
+var barWithColorMod = connect.chart(salesByPaymentResults.salesByPaymentSellPrice, '#sales-by-payment-colored-bar', {
+    title: 'Sales by Payment Type',
+    chart: {
+        type: 'bar',
+        yAxis: yAxis,
+        tooltip: tooltip,
+        colorModifier: function(currentColor, context) {
+            if (context.groupByValues[0] === 'cash')
+                return '#f39c12'
+            return currentColor;
+        }
+    },
+    fields: fieldOptions
+});
+
+var barNoLegend = connect.chart(salesByPaymentResults.salesByPayment, '#sales-by-payment-bar-no-legend', {
     title: 'Sales by Payment Type (No Legend)',
     chart: {
         type: 'bar',  
@@ -43,7 +58,7 @@ var barNoLegend = connect.chart(salesByPaymentProvider, '#sales-by-payment-bar-n
     fields: fieldOptions
 });
 
-var line = connect.chart(salesByPaymentProvider, '#sales-by-payment-line', {
+var line = connect.chart(salesByPaymentResults.salesByPayment, '#sales-by-payment-line', {
     title: 'Sales by Payment Type',
     chart: {
         type: 'line',  
@@ -53,13 +68,14 @@ var line = connect.chart(salesByPaymentProvider, '#sales-by-payment-line', {
     fields: fieldOptions
 });
 
-var table = connect.table(salesByPaymentProvider, '#sales-by-payment-table', {
+var table = connect.table(salesByPaymentResults.salesByPayment, '#sales-by-payment-table', {
     title: 'Sales by Payment Type',
     fields: fieldOptions,
 });
 
 module.exports = {
     bar: bar,
+    barWithColorMod: barWithColorMod,
     barNoLegend: barNoLegend,
     line: line,
     table: table
