@@ -158,16 +158,18 @@ class Chart implements Common.Visualization {
     }
 
     private _modifyColor(currentColor: string, datum: any): string {
-        var context = null,
-            contexts = [],
+        var contexts = null,
             colorModifier = this._options.chart.colorModifier;
 
         if (_.isArray(datum.values))
             contexts = _.map(datum.values, (datumValue) => this._currentDataset.getContext(datumValue));
         else
-            context = this._currentDataset.getContext(datum);
+            contexts = this._currentDataset.getContext(datum);
 
-        return colorModifier(currentColor, context || contexts);
+        if (contexts)
+            return colorModifier(currentColor, contexts);
+        else
+            currentColor;
     }
 
     private _renderChart() {

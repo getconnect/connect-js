@@ -82,27 +82,29 @@ module Dataset{
                 return this._buildGenericContext(datum);
             }
 
-            return this._contexts[datum.index][datum.id];
+            if (this._contexts[datum.index]){
+                return this._contexts[datum.index][datum.id];
+            }
+
+            return null;
         }
 
         private _buildGenericContext(propertyName: string): Config.ChartDataContext {
             var matchingKeyedContext = _.find(this._contexts, (context) => context[propertyName] != null),
                 matchingContext = matchingKeyedContext ? matchingKeyedContext[propertyName] : null,
                 hasInterval = matchingContext && matchingContext.intervalValue,
-                groupByValues = hasInterval ? matchingContext.groupByValues : [],
-                genericContext = {
-                    intervalValue: null,
-                    groupByValues: [],
-                    select: null,
-                    value: null
-                };
+                groupByValues = hasInterval ? matchingContext.groupByValues : [];
 
             if (matchingContext){
-                genericContext.groupByValues = groupByValues;
-                genericContext.select = matchingContext.select;
+                return {
+                    intervalValue: null,
+                    groupByValues: groupByValues,
+                    select: matchingContext.select,
+                    value: null
+                };
             }
 
-            return genericContext;
+            return null;
         }
     }
 
