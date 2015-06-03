@@ -50,7 +50,7 @@ var sources = {
     style: './style/**/connect-viz.less',
     less: './style/**/*.less',
     test: './test/**/*.ts',
-    compiledTest: dest.test + '/**/*.ts',
+    compiledTest: dest.test + '/**/*.js',
     ionIconsCss: './bower_components/ionicons/css/ionicons.css',
     ionIconsFonts: './bower_components/ionicons/fonts/*',
     c3Css: './node_modules/connect-js-c3/c3.css'
