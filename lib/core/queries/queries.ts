@@ -57,7 +57,7 @@ module Queries {
 				.value()
 				.concat(this._filters);
 
-			filters = _.uniq(filters, filter => filter.operator);
+			filters = _.uniq(filters, filter => filter.field + '|' + filter.operator);
 
 			return new ConnectQuery(this._client, this._collection, this._selects, filters, this._groups, this._timeframe, this._interval, this._timezone);
 		}

@@ -193,10 +193,7 @@ class Chart implements Common.Visualization {
                 padding: options.chart.padding,
                 data: {
                     json: [],
-                    type: options.chart.type,
-                    color: (color, datum) => {
-                        return this._modifyColor(color, datum);
-                    }
+                    type: options.chart.type
                 },
                 color: {
                     pattern: colors
