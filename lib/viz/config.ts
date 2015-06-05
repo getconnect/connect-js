@@ -103,7 +103,7 @@ module Config {
         minutely: 'HH:mm',
         hourly: 'HH:mm',
         daily: 'DD/MM',
-        weekly: '',
+        weekly: 'DD/MM',
         monthly: 'MMM YY',
         quarterly: '[Q]Q YY',
         yearly: 'YYYY'
