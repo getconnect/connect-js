@@ -22,6 +22,7 @@ class Gauge implements Common.Visualization {
     private _maxSelectName: string;
     private _gauge: C3.Chart;
     private _rendered: boolean;
+    private _destroyDom: () => void;
     private _titleElement: HTMLElement;
     private _currentDataset: Dataset.ChartDataset;
     private _transitionDuration;
@@ -127,9 +128,9 @@ class Gauge implements Common.Visualization {
         });
     }
 
-    public clear(): void{        
+    public destroy(): void{        
         this._rendered = false;
-        Dom.removeAllChildren(this.targetElement)
+        this._destroyDom();
     }    
 
     private _checkMetaDataIsApplicable(metadata: Api.Metadata, selects: string[]): boolean {
@@ -212,16 +213,16 @@ class Gauge implements Common.Visualization {
                 }
             };
 
-        this.clear();
         connectGaugeContainer.appendChild(titleElement);
         connectGaugeContainer.appendChild(c3Element);
         rootElement.appendChild(connectGaugeContainer);
         config = deepExtend({}, defaultC3GaugeOptions, config);
         config['bindto'] = c3Element;
-
+        
         this._rendered = true;
         this._titleElement = titleElement;
         this._gauge = c3.generate(config);
+        this._destroyDom = Dom.getDestroyer(connectGaugeContainer, this._gauge);
     }
 
     private _renderQueryNotApplicable(){

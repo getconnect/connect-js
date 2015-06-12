@@ -20,6 +20,7 @@ class Chart implements Common.Visualization {
     private _options: Config.VisualizationOptions;
     private _chart: C3.Chart;
     private _rendered: boolean;
+    private _destroyDom: () => void;
     private _titleElement: HTMLElement;
     private _currentDataset: Dataset.ChartDataset;
     private _transitionDuration;
@@ -116,10 +117,10 @@ class Chart implements Common.Visualization {
             }
         });
     }
-
-    public clear(): void{        
+    
+    public destroy(): void{        
         this._rendered = false;
-        Dom.removeAllChildren(this.targetElement)
+        this._destroyDom();
     }
 
     private _buildDataset(results: Api.QueryResults): Dataset.ChartDataset{
@@ -231,8 +232,6 @@ class Chart implements Common.Visualization {
                 }
             };
 
-        this.clear();
-
         connectChartContainer.appendChild(titleElement);
         connectChartContainer.appendChild(c3Element);
         rootElement.appendChild(connectChartContainer);
@@ -247,6 +246,7 @@ class Chart implements Common.Visualization {
         this._rendered = true;
         this._titleElement = titleElement;
         this._chart = c3.generate(config);
+        this._destroyDom = Dom.getDestroyer(connectChartContainer, this._chart);
     }
 }
 
