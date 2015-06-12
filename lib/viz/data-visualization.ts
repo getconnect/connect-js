@@ -38,7 +38,11 @@ class DataVisualization{
         this.refresh(reRender);
     }
 
-    private getQueryResultsFactory(data: Queries.ConnectQuery|Api.QueryResultsFactory) : Api.QueryResultsFactory{
+    public destroy() {
+        this._visualization.destroy();
+    }
+
+    private getQueryResultsFactory(data: Queries.ConnectQuery|Api.QueryResultsFactory) : Api.QueryResultsFactory {
         return (<Queries.ConnectQuery>data).execute ? () => (<Queries.ConnectQuery>data).execute() : <Api.QueryResultsFactory>data
     }
 }

@@ -7,5 +7,5 @@ export interface Visualization{
     targetElement: HTMLElement;
     loader: Loader;
     displayData(resultsPromise: Q.IPromise<Api.QueryResults>, reRender?: boolean): void; 
-    clear(): void;   
+    destroy(): void;
 }

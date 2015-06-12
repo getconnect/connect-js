@@ -17,6 +17,7 @@ class Table implements Common.Visualization {
     public loader: Loader;
     private _options: Config.VisualizationOptions;
     private _rendered: boolean;
+    private _destroyDom: () => void;
     private _titleElement: HTMLElement;
     private _tableWrapper: HTMLElement;
     private _resultHandler: ResultHandling.ResultHandler;
@@ -39,14 +40,14 @@ class Table implements Common.Visualization {
         this._resultHandler.handleResult(resultsPromise, this, this._loadData, reRender);
     }
 
+    public destroy(): void{        
+        this._rendered = false;
+        this._destroyDom();
+    } 
+
     private _loadData(results: Api.QueryResults, reRender: boolean) {
         var dataset = new Dataset.TableDataset(results, this._options);
         this._tableWrapper.innerHTML = TableRenderer.renderDataset(dataset);
-    }
-
-    public clear() {        
-        this._rendered = false;
-        Dom.removeAllChildren(this.targetElement)
     }
 
     private _renderTable() {
@@ -60,7 +61,6 @@ class Table implements Common.Visualization {
             rootElement = this.targetElement,
             titleElement = Dom.createTitle(options.title);
 
-        this.clear();
         tableContainer.appendChild(titleElement);
         tableContainer.appendChild(results);
         results.appendChild(tableWrapper);
@@ -68,6 +68,7 @@ class Table implements Common.Visualization {
 
         this._rendered = true;
 
+        this._destroyDom = Dom.getDestroyer(tableContainer);
         this._tableWrapper = tableWrapper;
         this._titleElement = titleElement;
     }

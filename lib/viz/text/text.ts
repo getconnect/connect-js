@@ -17,6 +17,7 @@ class Text implements Common.Visualization {
     private _options: Config.VisualizationOptions;
     private _currentValue: number;
     private _rendered: boolean;
+    private _destroyDom: () => void;
     private _valueTextElement: HTMLElement;
     private _valueContainerElement: HTMLElement;
     private _titleElement: HTMLElement;
@@ -82,9 +83,9 @@ class Text implements Common.Visualization {
         }
     }
 
-    public clear(): void {
+    public destroy(): void {
         this._rendered = false;
-        Dom.removeAllChildren(this.targetElement);
+        this._destroyDom();
     }
 
     private _checkMetaDataIsApplicable(metadata: Api.Metadata, selects: string[]): boolean {
@@ -100,7 +101,7 @@ class Text implements Common.Visualization {
             return;
 
         var options = this._options,
-            container = Dom.createElement('div', Classes.viz, Classes.text),
+            textVizContainer = Dom.createElement('div', Classes.viz, Classes.text),
             titleElement = Dom.createTitle(options.title),
             elementForWidget = this.targetElement,
             spanForValues = Dom.createElement('span'),
@@ -109,15 +110,15 @@ class Text implements Common.Visualization {
             valueDecreaseIconElement = Dom.createElement('span', Classes.textIcon, Classes.textIconDec, Classes.arrowDown),
             result = Dom.createElement('div', Classes.result);
 
-        this.clear();
         spanForValues.appendChild(valueIncreaseIconElement);
         spanForValues.appendChild(valueDecreaseIconElement);
         spanForValues.appendChild(valueTextElement);
         result.appendChild(spanForValues);
-        container.appendChild(titleElement);
-        container.appendChild(result);
-        elementForWidget.appendChild(container);
+        textVizContainer.appendChild(titleElement);
+        textVizContainer.appendChild(result);
+        elementForWidget.appendChild(textVizContainer);
 
+        this._destroyDom = Dom.getDestroyer(textVizContainer);
         this._valueContainerElement = result;
         this._valueTextElement = valueTextElement;
         this._valueTextElement.innerHTML = '&nbsp;';
