@@ -43,7 +43,7 @@ class Connect implements Viz.Visualizations {
     }
 
     private _createClient(): Api.Client {
-        return new Api.Client(this._config.baseUrl, this._config.apiKey);
+        return new Api.Client(this._config.baseUrl, this._config.projectId, this._config.apiKey);
     }
 
     private _buildBatchFromArray(collection: string, events: [any]){
