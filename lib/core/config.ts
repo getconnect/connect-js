@@ -1,6 +1,7 @@
 module Config {
 	export interface ConnectConfig {
-		baseUrl?: string; 
+		baseUrl?: string;
+		projectId: string;
 		apiKey: string;
 	}
 }

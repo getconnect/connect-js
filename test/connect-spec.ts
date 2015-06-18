@@ -14,7 +14,8 @@ describe('Connect', () => {
 
 	before(() => {
 		connect = new Connect({
-			apiKey: 'abc'
+			apiKey: 'abc',
+			projectId: 'abc'
 		});
 	});
 

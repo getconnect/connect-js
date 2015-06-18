@@ -37,6 +37,7 @@ class Connect implements Viz.Visualizations {
     private getConfig(config: Config.ConnectConfig): Config.ConnectConfig {
         return {
             baseUrl: config.baseUrl || 'https://api.getconnect.io',
+            projectId: config.projectId,
             apiKey: config.apiKey
         };  
     }

@@ -108,10 +108,12 @@ module Api {
     
     export class Client {
         _baseUrl: string;
+        _projectId: string;
         _apiKey: string;
 
-        constructor(baseUrl: string, apiKey: string) {
+        constructor(baseUrl: string, projectId: string, apiKey: string) {
             this._baseUrl = baseUrl;
+            this._projectId = projectId;
             this._apiKey = apiKey;
         }
 
@@ -142,7 +144,8 @@ module Api {
             var deferred = Q.defer();
 
             requestToSend
-                .set('X-API-Key', this._apiKey)
+                .set('X-Project-Id', this._projectId)
+                .set('X-Api-Key', this._apiKey)
                 .end((err: any, res: request.Response) => {
                     if(err) {
                         if(!err.status) {
