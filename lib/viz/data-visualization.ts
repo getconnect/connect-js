@@ -38,6 +38,11 @@ class DataVisualization{
         this.refresh(reRender);
     }
 
+    public recalculateSize() {
+        if (this._visualization.recalculateSize)
+            this._visualization.recalculateSize();
+    }
+
     public destroy() {
         this._visualization.destroy();
     }

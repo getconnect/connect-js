@@ -8,4 +8,5 @@ export interface Visualization{
     loader: Loader;
     displayData(resultsPromise: Q.IPromise<Api.QueryResults>, reRender?: boolean): void; 
     destroy(): void;
+    recalculateSize?: () => void;
 }

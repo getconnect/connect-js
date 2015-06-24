@@ -68,6 +68,10 @@ class Chart implements Common.Visualization {
         this._resultHandler.handleResult(resultsPromise, this, this._loadData, reRender);
     }
 
+    public recalculateSize(): void {
+        this._chart.flush();
+    }
+
     private getDefaultLegendVisibility(results: Api.QueryResults): boolean {
         var metadata = results.metadata,
             selects = results.selects(),
