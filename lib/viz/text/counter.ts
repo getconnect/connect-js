@@ -35,6 +35,7 @@ class Counter {
     private duration: number;
     private animationId: number;
     private animationTimestamp: number;
+    private finishedCallback: () => void;
     private valueFormatter: (value: number) => any;
 
     constructor(target: HTMLElement, duration: number, valueFormatter: (value: number) => any) {
@@ -51,9 +52,9 @@ class Counter {
         return c * (-Math.pow(2, -10 * t / d) + 1) * 1024 / 1023 + b;
     }
 
-    private count(timestamp,  finished: () => void): void {
+    private count(timestamp): void {
         var progress = 0;
-        var isFinished = false;
+        var isInProgress = false;
 
         if (this.startTime == null) 
             this.startTime = timestamp;
@@ -79,13 +80,15 @@ class Counter {
 
         this.printCurrentValue();
 
-        isFinished = progress < this.duration
-        if (isFinished) {
-            this.animationId = requestAnimationFrame((timestamp) => this.count(timestamp, finished));
+        isInProgress = progress < this.duration
+        if (isInProgress) {
+            this.animationId = requestAnimationFrame((timestamp) => this.count(timestamp));
         }else{
             this.animationId = null;
-            if (finished)
-                finished();
+            if (this.finishedCallback){
+                this.finishedCallback();
+                this.finishedCallback = null;
+            }
         }
     }
 
@@ -95,12 +98,16 @@ class Counter {
     }
 
     public update(endValue: number, finished?: () => void) {
+        if (this.finishedCallback)
+            this.finishedCallback();
+
         this.stop();
+        this.finishedCallback = finished;
         this.startTime = null;
         this.startValue = this.endValue || 0;
         this.endValue = endValue;
         this.countDown = (this.startValue > this.endValue) ? true : false;
-        this.animationId = requestAnimationFrame((timestamp) => this.count(timestamp, finished));
+        this.animationId = requestAnimationFrame((timestamp) => this.count(timestamp));
     }
 
     public setValue(newValue) {
