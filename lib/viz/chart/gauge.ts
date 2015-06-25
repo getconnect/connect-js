@@ -191,6 +191,10 @@ class Gauge implements Common.Visualization {
             tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
             defaultC3GaugeOptions = this._loadsMinMaxFromResult ? Config.defaultC3MinMaxFromResultsGaugeOptions : Config.defaultC3GaugeOptions,
             config = {
+                size: {
+                    height: options.gauge.height,
+                    width: options.gauge.width
+                },
                 padding: options.gauge.padding,
                 data: {
                     json: [],

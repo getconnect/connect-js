@@ -189,7 +189,8 @@ class Chart implements Common.Visualization {
             tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
             config = {
                 size: {
-                    height: options.chart.height
+                    height: options.chart.height,
+                    width: options.chart.width
                 },
                 padding: options.chart.padding,
                 data: {

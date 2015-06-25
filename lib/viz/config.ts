@@ -59,6 +59,7 @@ module Config {
     export interface ChartOptions {
         type: string;
         height?: number;
+        width?: number;
         colors?: string[];
         colorModifier: ColorModifier;
         padding?: PaddingOptions;
@@ -74,7 +75,9 @@ module Config {
         };
     }
 
-    export interface GaugeOptions {
+    export interface GaugeOptions {        
+        height?: number;
+        width?: number;
         label?: {
             format?: (value: any) => any;
         };
