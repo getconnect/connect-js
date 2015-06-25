@@ -70,6 +70,10 @@ class Gauge implements Common.Visualization {
         this._resultHandler.handleResult(resultsPromise, this, this._loadData, reRender);
     }
 
+    public recalculateSize(): void {
+        this._gauge.flush();
+    }
+
     private _loadMinMax(results: Api.QueryResults){
         var resultItems = results.results,
             internalGaugeConfig = (<any>this._gauge).internal.config,

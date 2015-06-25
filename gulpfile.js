@@ -307,7 +307,7 @@ gulp.task('serve', ['dist'], function() {
     browserSync({
         server: {
             baseDir: dest.dist,
-            https: true
+            https: false
         }
     });
 
@@ -385,7 +385,7 @@ gulp.task('examples:serve', ['examples'], function() {
     browserSync({
         server: {
             baseDir: exampleDest.dist,
-            https: true
+            https: false
         }
     });
 });
