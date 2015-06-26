@@ -1,12 +1,9 @@
 import Api = require('./api');
 import Queries = require('./queries/queries');
 import Config = require('./config');
-import VizConfig = require('../viz/config');
-import Viz = require('../viz/viz');
-import DataVisualization = require('../viz/data-visualization');
 import _ = require('underscore');
 
-class Connect implements Viz.Visualizations {
+class Connect {
     static QueryResults = Api.QueryResults;
 
     private _config: Config.ConnectConfig;
@@ -52,12 +49,6 @@ class Connect implements Viz.Visualizations {
         batch[collection] = events;
         return batch;
     }
-
-    //mixins
-    chart: (query: Queries.ConnectQuery, targetElementId: string, chartOptions: VizConfig.VisualizationOptions) => DataVisualization;
-    text: (query: Queries.ConnectQuery, targetElementId: string, textOptions: VizConfig.VisualizationOptions) => DataVisualization;
-    table: (query: Queries.ConnectQuery, targetElementId: string, tableOptions: VizConfig.VisualizationOptions) => DataVisualization;    
-    gauge: (query: Queries.ConnectQuery, targetElementId: string, tableOptions: VizConfig.VisualizationOptions) => DataVisualization;
 }
 
 export = Connect;

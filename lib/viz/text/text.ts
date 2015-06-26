@@ -12,20 +12,16 @@ import Classes = require('../css-classes');
 import deepExtend = require('deep-extend');
 
 class Text implements Common.Visualization {
-    public targetElement: HTMLElement;
-    public loader: Loader;
     private _options: Config.VisualizationOptions;
     private _currentValue: number;
     private _rendered: boolean;
     private _destroyDom: () => void;
     private _valueTextElement: HTMLElement;
     private _valueContainerElement: HTMLElement;
-    private _titleElement: HTMLElement;
     private _counter: Counter;
     private _counterDuration: number;
-    private _resultHandler: ResultHandling.ResultHandler;
 
-    constructor(targetElement: string|HTMLElement, textOptions: Config.VisualizationOptions) {
+    constructor(textOptions: Config.VisualizationOptions) {
         var defaultOptions = { 
             transitionOnReload: true,
             text: {
@@ -35,18 +31,28 @@ class Text implements Common.Visualization {
         };
 
         this._options = deepExtend({}, defaultOptions, textOptions);
-        this.targetElement = Dom.getElement(targetElement);
-        this.loader = new Loader(this.targetElement);
         this._currentValue = 0;
-        this._resultHandler = new ResultHandling.ResultHandler();
     }
 
-    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, reRender: boolean = true): void {
-        this._renderText();
-        this._resultHandler.handleResult(resultsPromise, this, this._loadData, reRender);
+    public renderDom(vizElement: HTMLElement, resultsElement: HTMLElement){
+        var spanForValues = Dom.createElement('span'),
+            valueTextElement = Dom.createElement('span', Classes.textValue),
+            valueIncreaseIconElement = Dom.createElement('span', Classes.textIcon, Classes.textIconInc, Classes.arrowUp),
+            valueDecreaseIconElement = Dom.createElement('span', Classes.textIcon, Classes.textIconDec, Classes.arrowDown);
+
+        vizElement.classList.add(Classes.text)
+
+        spanForValues.appendChild(valueIncreaseIconElement);
+        spanForValues.appendChild(valueDecreaseIconElement);
+        spanForValues.appendChild(valueTextElement);
+        resultsElement.appendChild(spanForValues);
+
+        this._valueContainerElement = resultsElement;
+        this._valueTextElement = valueTextElement;
+        this._valueTextElement.innerHTML = '&nbsp;';
     }
 
-    private _loadData(results: Api.QueryResults, reRender: boolean): void {
+    public displayResults(results: Api.QueryResults, reRender: boolean): void {
         var options = this._options,
             metadata = results.metadata,
             selects = results.selects(),
@@ -60,12 +66,7 @@ class Text implements Common.Visualization {
             isIncreasing = value > this._currentValue,
             hasChanged = valueFormatter(this._currentValue) !== valueFormatter(value),
             duration = options.text.counterDurationMs,
-            transitionClass = isIncreasing ? Classes.textValueInc : Classes.textValueDec;        
-
-        if (!this._checkMetaDataIsApplicable(metadata, selects)){
-            this._renderQueryNotApplicable();
-            return;
-        }        
+            transitionClass = isIncreasing ? Classes.textValueInc : Classes.textValueDec; 
 
         this._currentValue = value;
         this._counter = this._counter || new Counter(this._valueTextElement, duration, valueFormatter);
@@ -83,52 +84,12 @@ class Text implements Common.Visualization {
         }
     }
 
-    public destroy(): void {
-        this._rendered = false;
-        this._destroyDom();
-    }
-
-    private _checkMetaDataIsApplicable(metadata: Api.Metadata, selects: string[]): boolean {
+    public isValidResultSet(metadata: Api.Metadata, selects: string[]): boolean {
         var exactlyOneSelect = selects.length === 1,
             noGroupBys = metadata.groups.length === 0,
             noInterval = metadata.interval == null;
 
         return exactlyOneSelect && noGroupBys && noInterval;
-    }
-
-    private _renderText(){
-        if (this._rendered)
-            return;
-
-        var options = this._options,
-            textVizContainer = Dom.createElement('div', Classes.viz, Classes.text),
-            titleElement = Dom.createTitle(options.title),
-            elementForWidget = this.targetElement,
-            spanForValues = Dom.createElement('span'),
-            valueTextElement = Dom.createElement('span', Classes.textValue),
-            valueIncreaseIconElement = Dom.createElement('span', Classes.textIcon, Classes.textIconInc, Classes.arrowUp),
-            valueDecreaseIconElement = Dom.createElement('span', Classes.textIcon, Classes.textIconDec, Classes.arrowDown),
-            result = Dom.createElement('div', Classes.result);
-
-        spanForValues.appendChild(valueIncreaseIconElement);
-        spanForValues.appendChild(valueDecreaseIconElement);
-        spanForValues.appendChild(valueTextElement);
-        result.appendChild(spanForValues);
-        textVizContainer.appendChild(titleElement);
-        textVizContainer.appendChild(result);
-        elementForWidget.appendChild(textVizContainer);
-
-        this._destroyDom = Dom.getDestroyer(textVizContainer);
-        this._valueContainerElement = result;
-        this._valueTextElement = valueTextElement;
-        this._valueTextElement.innerHTML = '&nbsp;';
-        this._titleElement = titleElement;
-        this._rendered = true;
-    }
-
-    private _renderQueryNotApplicable(){
-        this._rendered = false;
-        ErrorHandling.displayFriendlyError(this.targetElement, 'unsupportedQuery');
     }
 }
 

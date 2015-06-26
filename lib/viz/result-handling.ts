@@ -6,21 +6,26 @@ import ErrorHandling = require('./error-handling');
 
 module ResultHandling{
     export type LoadDataFunction = (results: Api.QueryResults, reRender: boolean) => void;
+    export type IsValidResultSetFunction = (metadata: Api.Metadata, selects: string[]) => boolean;
 
     export class ResultHandler{
         private _lastReloadTime: number;
         private _lastRequestProcessed: number;
         private _currentRequestCount: number;
+        private _loader: Loader;
+        private _targetElement: HTMLElement;
 
-        constructor() {
+        constructor(targetElement: HTMLElement) {
             this._currentRequestCount = 0;
             this._lastRequestProcessed = 0;
             this._lastReloadTime = 0;
+            this._targetElement = targetElement;
+            this._loader = new Loader(targetElement); 
         }
 
-        handleResult(resultsPromise: Q.IPromise<Api.QueryResults>, visualization: Common.Visualization, loadData: LoadDataFunction, reRender: boolean){
-            var loader = visualization.loader,
-                targetElement = visualization.targetElement,   
+        handleResult(resultsPromise: Q.IPromise<Api.QueryResults>, isValidResultSet: IsValidResultSetFunction, loadData: LoadDataFunction, reRender: boolean){
+            var loader = this._loader,
+                targetElement = this._targetElement,
                 requestNumber,
                 lastReloadTime;  
 
@@ -47,11 +52,18 @@ module ResultHandling{
                 this._lastRequestProcessed = requestNumber;
                 try{
                     ErrorHandling.clearError(targetElement);
+
                     if (results == null || results.results == null || !results.results.length){
                         ErrorHandling.displayFriendlyError(targetElement, 'noResults');
                         return;
                     }
-                    loadData.call(visualization, results, reRender);
+
+                    if (!isValidResultSet(results.metadata, results.selects())){
+                        ErrorHandling.displayFriendlyError(targetElement, 'unsupportedQuery');
+                        return;
+                    }
+                    
+                    loadData(results, reRender);
                 }catch(error){
                     ErrorHandling.logError(error);
                     ErrorHandling.displayFriendlyError(targetElement);
