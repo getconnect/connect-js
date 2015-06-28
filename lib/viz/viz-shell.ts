@@ -20,7 +20,7 @@ class VizShell {
     private _destroyDom: () => void;
     private _resultHandler: ResultHandling.ResultHandler;
 
-    constructor(targetElement: string|HTMLElement, data: Queries.ConnectQuery|Api.QueryResultsFactory, options: Config.VisualizationOptions, visualization: any) {
+    constructor(targetElement: string|HTMLElement, data: Queries.ConnectQuery|Api.QueryResultsFactory, options: Config.VisualizationOptions, visualization: Common.Visualization) {
         this._queryResultsFactory = this._getQueryResultsFactory(data);
         this._targetElement = Dom.getElement(targetElement);
         this._visualization = visualization;
@@ -39,10 +39,7 @@ class VizShell {
             modifiedResultsPromise = this._visualization.chainPromise ? this._visualization.chainPromise(resultsPromise) : resultsPromise;
 
         this._renderDom();
-        this._resultHandler.handleResult(modifiedResultsPromise, 
-                (metadata: Api.Metadata, selects: string[]) => !this._visualization.isValidResultSet || this._visualization.isValidResultSet(metadata, selects),
-                (results: any, reRender: boolean) => this._visualization.displayResults(results, reRender), 
-                reRender);
+        this._resultHandler.handleResult(this._visualization, modifiedResultsPromise, reRender);
 
     }
 

@@ -1,4 +1,4 @@
-import Common = require('./visualization');
+import Viz  = require('./visualization');
 import Queries = require('../core/queries/queries');
 import Api = require('../core/api');
 import Loader = require('./loader');
@@ -23,9 +23,10 @@ module ResultHandling{
             this._loader = new Loader(targetElement); 
         }
 
-        handleResult(resultsPromise: Q.IPromise<Api.QueryResults>, isValidResultSet: IsValidResultSetFunction, loadData: LoadDataFunction, reRender: boolean){
+        handleResult(visualization: Viz.Visualization, resultsPromise: Q.IPromise<Api.QueryResults>, reRender: boolean){
             var loader = this._loader,
-                targetElement = this._targetElement,
+                targetElement = this._targetElement,                
+                isResultSetSupported = (metadata: Api.Metadata, selects: string[]) => !visualization.isResultSetSupported || visualization.isResultSetSupported(metadata, selects),                
                 requestNumber,
                 lastReloadTime;  
 
@@ -58,12 +59,12 @@ module ResultHandling{
                         return;
                     }
 
-                    if (!isValidResultSet(results.metadata, results.selects())){
+                    if (!isResultSetSupported(results.metadata, results.selects())){
                         ErrorHandling.displayFriendlyError(targetElement, 'unsupportedQuery');
                         return;
                     }
                     
-                    loadData(results, reRender);
+                    visualization.displayResults(results, reRender);
                 }catch(error){
                     ErrorHandling.logError(error);
                     ErrorHandling.displayFriendlyError(targetElement);
