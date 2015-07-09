@@ -1,22 +1,19 @@
 var connect = require('./connection.js');
 var salesOver15MinsProvider = require('./query-results.js').salesOver15Mins;
 
-var fieldOptions = {
+var valueFormatter = Connect.Viz.format('$,.2f'),
+    fieldOptions = {
         'sellPriceTotal': {
             label: 'Sell Price',
-            valueFormatter: Connect.Viz.format('$,.2f')
+            valueFormatter: valueFormatter
         },
         'costPriceTotal': {
             label: 'Cost Price',
-            valueFormatter: Connect.Viz.format('$,.2f')
+            valueFormatter: valueFormatter
         }
     },
-    valueFormatter = Connect.Viz.format('$,.2f'),
     yAxis = {
         valueFormatter: valueFormatter
-    },
-    tooltip = {
-        valueFormatter: valueFormatter        
     };
 
 var yAxis = {
@@ -28,7 +25,6 @@ var bar = connect.chart(salesOver15MinsProvider, '#sales-over-15-mins-bar', {
     chart: {
         type: 'bar',
         yAxis: yAxis,
-        tooltip: tooltip,
     }, 
     fields: fieldOptions,
 });
@@ -38,7 +34,6 @@ var line = connect.chart(salesOver15MinsProvider, '#sales-over-15-mins-line', {
     chart: {
         type: 'line',
         yAxis: yAxis,
-        tooltip: tooltip,
     }, 
     fields: fieldOptions,
 });
@@ -48,7 +43,6 @@ var spline = connect.chart(salesOver15MinsProvider, '#sales-over-15-mins-spline'
     chart: {
         type: 'spline',
         yAxis: yAxis,
-        tooltip: tooltip,
     }, 
     fields: fieldOptions,
 });
@@ -58,7 +52,6 @@ var areaLine = connect.chart(salesOver15MinsProvider, '#sales-over-15-mins-area-
     chart: {
         type: 'area',
         yAxis: yAxis,
-        tooltip: tooltip,
     }, 
     fields: fieldOptions,
 });
@@ -68,7 +61,6 @@ var areaSpline = connect.chart(salesOver15MinsProvider, '#sales-over-15-mins-are
     chart: {
         type: 'area-spline',        
         yAxis: yAxis,
-        tooltip: tooltip,
     }, 
     fields: fieldOptions,    
 });
@@ -79,7 +71,6 @@ var timezone = connect.chart(salesOver15MinsProvider, '#sales-over-15-mins-timez
     chart: {
         type: 'line',
         yAxis: yAxis,
-        tooltip: tooltip,
     }, 
     timezone: 'Asia/Tokyo',
     fields: fieldOptions,

@@ -51,9 +51,6 @@ class Chart implements Common.Visualization {
                     yAxis: {
                         valueFormatter: defaultFormatter
                     },
-                    tooltip: {
-                        valueFormatter: defaultFormatter
-                    },
                     colorModifier: (currentColor, dataContext) => currentColor
                 },                
             },
@@ -189,7 +186,6 @@ class Chart implements Common.Visualization {
             yAxisOptions = options.chart.yAxis,
             colors = Palette.getSwatch(options.chart.colors),
             isStartAtZeroSpecified = yAxisOptions.startAtZero != null,
-            tooltipOptions = options.chart.tooltip,
             tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
             config = {
                 size: {
@@ -232,7 +228,7 @@ class Chart implements Common.Visualization {
                 },
                 tooltip: {
                     format: {
-                        value: tooltipOptions.valueFormatter
+                        value: tooltipValueFormatter
                     }                   
                 }
             };
