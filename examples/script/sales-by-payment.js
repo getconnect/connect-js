@@ -1,25 +1,22 @@
 var connect = require('./connection.js');
 var salesByPaymentResults = require('./query-results.js');
 
-var fieldOptions = {
+var valueFormatter = Connect.Viz.format('$,.2f'),
+    fieldOptions = {
         'sellPriceTotal': {
             label: 'Sell Price',
-            valueFormatter: d3.format('$,.2f')
+            valueFormatter: valueFormatter
         },
         'costPriceTotal': {
             label: 'Cost Price',
-            valueFormatter: d3.format('$,.2f')
+            valueFormatter: valueFormatter
         },
         'paymentType': {
             label: 'Payment Type'
         }
     },
-    valueFormatter = Connect.Viz.format('$,.2f'),
     yAxis = {
         valueFormatter: valueFormatter
-    },
-    tooltip = {
-        valueFormatter: valueFormatter        
     };
 
 var bar = connect.chart(salesByPaymentResults.salesByPayment, '#sales-by-payment-bar', {
@@ -27,7 +24,6 @@ var bar = connect.chart(salesByPaymentResults.salesByPayment, '#sales-by-payment
     chart: {
         type: 'bar',
         yAxis: yAxis,
-        tooltip: tooltip,
     },
     fields: fieldOptions
 });
@@ -37,7 +33,6 @@ var barWithColorMod = connect.chart(salesByPaymentResults.salesByPaymentSellPric
     chart: {
         type: 'bar',
         yAxis: yAxis,
-        tooltip: tooltip,
         colorModifier: function(currentColor, context) {
             if (context.groupByValues[0] === 'cash')
                 return '#f39c12'
@@ -52,7 +47,6 @@ var barNoLegend = connect.chart(salesByPaymentResults.salesByPayment, '#sales-by
     chart: {
         type: 'bar',  
         yAxis: yAxis,
-        tooltip: tooltip,
         showLegend: false
     },
     fields: fieldOptions
@@ -63,7 +57,6 @@ var line = connect.chart(salesByPaymentResults.salesByPayment, '#sales-by-paymen
     chart: {
         type: 'line',  
         yAxis: yAxis,
-        tooltip: tooltip,
     },
     fields: fieldOptions
 });

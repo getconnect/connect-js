@@ -2,22 +2,19 @@ var connect = require('./connection.js');
 var salesOver15MinsByPaymentProvider = require('./query-results.js').salesOver15MinsByPayment;
 var sellPriceOver15MinsByPaymentProvider = require('./query-results.js').sellPriceOver15MinsByPayment;
 
-var fieldOptions = {
+var valueFormatter = Connect.Viz.format('$,.2f'),
+    fieldOptions = {
         'sellPriceTotal': {
             label: 'Sell Price',
-            valueFormatter: Connect.Viz.format('$,.2f')
+            valueFormatter: valueFormatter
         },
         'costPriceTotal': {
             label: 'Cost Price',
-            valueFormatter: Connect.Viz.format('$,.2f')
+            valueFormatter: valueFormatter
         }
     },
-    valueFormatter = Connect.Viz.format('$,.2f'),
     yAxis = {
         valueFormatter: valueFormatter
-    },
-    tooltip = {
-        valueFormatter: valueFormatter        
     };
 
 var bar = connect.chart(salesOver15MinsByPaymentProvider, '#sales-over-15-mins-by-payment-bar', {
@@ -25,7 +22,6 @@ var bar = connect.chart(salesOver15MinsByPaymentProvider, '#sales-over-15-mins-b
     chart: {
         type: 'bar',
         yAxis: yAxis,
-        tooltip: tooltip,
         colors: ['#9b59b6', '#34495e', '#1abc9c', '#bdc3c7', '#95a5a6', '#e74c3c', '#e67e22', '#f1c40f', '#1abc9c', '#3498db'],
     },
     fields: fieldOptions 
@@ -36,7 +32,6 @@ var line = connect.chart(salesOver15MinsByPaymentProvider, '#sales-over-15-mins-
     chart: {
         type: 'line',
         yAxis: yAxis,
-        tooltip: tooltip,
     },    
     fields: fieldOptions,
 });
@@ -46,7 +41,6 @@ var sellPriceLine = connect.chart(sellPriceOver15MinsByPaymentProvider, '#sell-p
     chart: {
         type: 'line',
         yAxis: yAxis,
-        tooltip: tooltip,
     }, 
     fields: fieldOptions,
 });
@@ -56,7 +50,6 @@ var spline = connect.chart(salesOver15MinsByPaymentProvider, '#sales-over-15-min
     chart: {
         type: 'spline',
         yAxis: yAxis,
-        tooltip: tooltip,
     }, 
     type: 'spline',
     fields: fieldOptions,

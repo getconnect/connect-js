@@ -70,9 +70,6 @@ module Config {
             min?: boolean;
             max?: boolean;
         };
-        tooltip?: {
-            valueFormatter?: (value: any) => any;
-        };
     }
 
     export interface GaugeOptions {        
