@@ -1,0 +1,27 @@
+.grow-results-vertically(){    
+    display: flex;
+    flex-direction: column;
+    .connect-viz-result {
+        flex-grow: 1;
+        position: relative;
+        min-height: 0;
+        flex-basis: 0;
+    }
+}
+
+.middle(){
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%,-50%);
+}
+
+.vertical-middle(){
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.flex-children-vertical-middle(){
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
