@@ -26,7 +26,7 @@ class Table implements Common.Visualization {
         this._options = deepExtend({}, defaultTableOptions, tableOptions);
     }
 
-    public displayResults(results: Api.QueryResults, reRender: boolean): void {
+    public displayResults(results: Api.QueryResults, isQueryUpdate: boolean): void {
         var dataset = new Dataset.TableDataset(results, this._options);
         this._tableWrapper.innerHTML = TableRenderer.renderDataset(dataset);
     }

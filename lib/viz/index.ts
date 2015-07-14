@@ -1,35 +1,14 @@
 import Formatters = require('./formatters');
-import Config = require('./config');
-import VizShell = require('./viz-shell');
-import Chart = require('./chart/chart');
-import Gauge = require('./chart/gauge');
-import Text = require('./text/text');
-import Table = require('./table/table');
-import Visualization = require('./table/table');
-import Queries = require('../core/queries/queries');
-import Api = require('../core/api');
+import Registrar = require('./registrar');
 
-type VizFactory = (options: Config.VisualizationOptions) => Visualization;
-
-function extendConnect(existingConnect: any){
-    existingConnect['Viz'] = {
+function extendConnect(Connect: any){
+    Connect['Viz'] = {
         format: Formatters.format
     };
 
-    existingConnect.registerViz = function(name: string, vizFactory: VizFactory): void{
-        var buildVizShell = (data: Queries.ConnectQuery|Api.QueryResultsFactory, targetElement: string|HTMLElement, options: Config.VisualizationOptions) => {
-            return new VizShell(targetElement, data, options, vizFactory(options));
-        }
+    Registrar.extendConnectWithVizualizations(Connect);
 
-        existingConnect[name] = existingConnect.prototype[name] = buildVizShell;
-    };
-
-    existingConnect.registerViz('chart', (options: Config.VisualizationOptions) => new Chart(options));
-    existingConnect.registerViz('gauge', (options: Config.VisualizationOptions) => new Gauge(options));
-    existingConnect.registerViz('text', (options: Config.VisualizationOptions) => new Text(options));
-    existingConnect.registerViz('table', (options: Config.VisualizationOptions) => new Table(options));
-
-    return existingConnect;
+    return Connect;
 }
 
 declare var define: any;

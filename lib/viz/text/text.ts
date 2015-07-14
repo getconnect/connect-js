@@ -52,7 +52,7 @@ class Text implements Common.Visualization {
         this._valueTextElement.innerHTML = '&nbsp;';
     }
 
-    public displayResults(results: Api.QueryResults, reRender: boolean): void {
+    public displayResults(results: Api.QueryResults, isQueryUpdate: boolean): void {
         var options = this._options,
             metadata = results.metadata,
             selects = results.selects(),
@@ -74,7 +74,7 @@ class Text implements Common.Visualization {
         if (!hasChanged)
             return;
         
-        if (!options.transitionOnReload && reRender){
+        if (!options.transitionOnReload && isQueryUpdate){
             this._counter.setValue(value);
         }else{
             animationElementClassList.add(transitionClass);

@@ -8,7 +8,7 @@ import Dom = require('./dom');
 import Config = require('./config');
 import Classes = require('./css-classes');
 
-class VizShell {
+class VizRenderer {
     private _visualization: Common.Visualization;
     private _options: Config.VisualizationOptions;
     private _loader: Loader;
@@ -20,7 +20,9 @@ class VizShell {
     private _destroyDom: () => void;
     private _resultHandler: ResultHandling.ResultHandler;
 
-    constructor(targetElement: string|HTMLElement, data: Queries.ConnectQuery|Api.QueryResultsFactory, options: Config.VisualizationOptions, visualization: Common.Visualization) {
+    constructor(targetElement: string|HTMLElement, data: Queries.ConnectQuery|Api.QueryResultsFactory, 
+        options: Config.VisualizationOptions, visualization: Common.Visualization) {
+
         this._queryResultsFactory = this._getQueryResultsFactory(data);
         this._targetElement = Dom.getElement(targetElement);
         this._visualization = visualization;
@@ -31,15 +33,16 @@ class VizShell {
     }
 
     public refresh() {
-        this._displayResults(false);       
+        this._displayResults(false);
     }
 
-    public _displayResults(reRender: boolean) {
+    public _displayResults(isQueryUpdate: boolean) {
         var resultsPromise = this._queryResultsFactory(),
-            modifiedResultsPromise = this._visualization.chainPromise ? this._visualization.chainPromise(resultsPromise) : resultsPromise;
+            canModifyPromise = this._visualization.modifyResults != null,
+            modifiedResultsPromise = canModifyPromise ? this._visualization.modifyResults(resultsPromise) : resultsPromise;
 
         this._renderDom();
-        this._resultHandler.handleResult(this._visualization, modifiedResultsPromise, reRender);
+        this._resultHandler.handleResult(this._visualization, modifiedResultsPromise, isQueryUpdate);
 
     }
 
@@ -55,15 +58,13 @@ class VizShell {
     }
 
     public destroy() {
-        var vizElementParent = this._vizElement ? this._vizElement.parentNode : null;
         
-        this._rendered = false;
-
-        if (vizElementParent)
-            vizElementParent.removeChild(this._vizElement);
+        this._targetElement.removeChild(this._vizElement);
 
         if (this._visualization.destroy)
             this._visualization.destroy();
+
+        this._rendered = false;
     }
 
     private _getQueryResultsFactory(data: Queries.ConnectQuery|Api.QueryResultsFactory) : Api.QueryResultsFactory {
@@ -90,4 +91,4 @@ class VizShell {
     }
 }
 
-export = VizShell;
+export = VizRenderer;

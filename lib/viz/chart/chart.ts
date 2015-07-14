@@ -135,7 +135,7 @@ class Chart implements Common.Visualization {
         return hasMultipleSelects || isGroupedInterval;
     }
 
-    public displayResults(results: Api.QueryResults, reRender: boolean): void {
+    public displayResults(results: Api.QueryResults, isQueryUpdate: boolean): void {
         var options = this._options,
             type = options.chart.type,
             resultItems = results.results,
@@ -149,7 +149,7 @@ class Chart implements Common.Visualization {
             customDateFormatter = null,
             timezone = options.timezone || metadata.timezone,
             internalChartConfig = (<any>this._chart).internal.config,
-            useTransition = this._chart.data().length && (options.transitionOnReload || !reRender),
+            useTransition = this._chart.data().length && (options.transitionOnReload || !isQueryUpdate),
             transitionDuration = useTransition ? this._transitionDuration.some : this._transitionDuration.none,
             showLegend = options.chart.showLegend != null ? options.chart.showLegend : this.getDefaultLegendVisibility(results);
  

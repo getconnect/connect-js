@@ -70,7 +70,7 @@ class Gauge implements Common.Visualization {
         this._gauge = c3.generate(config);
     }
 
-    public displayResults(results: Api.QueryResults, reRender: boolean): void {
+    public displayResults(results: Api.QueryResults, isQueryUpdate: boolean): void {
         var options = this._options,
             internalGaugeConfig = (<any>this._gauge).internal.config,
             metadata = results.metadata,
@@ -80,7 +80,7 @@ class Gauge implements Common.Visualization {
             resultItems = results.results,
             dataset = this._buildDataset(results),
             keys = dataset.getLabels(),
-            transitionDuration = !options.transitionOnReload && reRender ? this._transitionDuration.none : this._transitionDuration.some;
+            transitionDuration = !options.transitionOnReload && isQueryUpdate ? this._transitionDuration.none : this._transitionDuration.some;
 
         internalGaugeConfig.transition_duration = transitionDuration;
 
@@ -98,7 +98,7 @@ class Gauge implements Common.Visualization {
         });
     }
 
-    public chainPromise(resultsPromise: Q.IPromise<Api.QueryResults>): Q.IPromise<Api.QueryResults>{
+    public modifyResults(resultsPromise: Q.IPromise<Api.QueryResults>): Q.IPromise<Api.QueryResults>{
         return resultsPromise.then((results) => {
             var resultsCopy = results.clone();
             return this._loadMinMax(resultsCopy);
