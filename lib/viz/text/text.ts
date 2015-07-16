@@ -84,7 +84,7 @@ class Text implements Common.Visualization {
         }
     }
 
-    public isValidResultSet(metadata: Api.Metadata, selects: string[]): boolean {
+    public isResultSetSupported(metadata: Api.Metadata, selects: string[]): boolean {
         var exactlyOneSelect = selects.length === 1,
             noGroupBys = metadata.groups.length === 0,
             noInterval = metadata.interval == null;

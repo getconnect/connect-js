@@ -105,7 +105,7 @@ class Gauge implements Common.Visualization {
         });
     }
 
-    public isValidResultSet(metadata: Api.Metadata, selects: string[]): boolean {
+    public isResultSetSupported(metadata: Api.Metadata, selects: string[]): boolean {
         var exactlyOneSelect = selects.length === 1,
             noGroupBys = metadata.groups.length === 0,
             noInterval = metadata.interval == null;
@@ -117,7 +117,7 @@ class Gauge implements Common.Visualization {
         this._gauge.flush();
     }
 
-    public destroy(): void{        
+    public destroy(): void {
         this._gauge.destroy();
     }
 

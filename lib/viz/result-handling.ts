@@ -51,25 +51,20 @@ module ResultHandling{
 
                 loader.hide();
                 this._lastRequestProcessed = requestNumber;
-                try{
-                    ErrorHandling.clearError(targetElement);
+                ErrorHandling.clearError(targetElement);
 
-                    if (results == null || results.results == null || !results.results.length){
-                        ErrorHandling.displayFriendlyError(targetElement, 'noResults');
-                        return;
-                    }
-
-                    if (!isResultSetSupported(results.metadata, results.selects())){
-                        ErrorHandling.displayFriendlyError(targetElement, 'unsupportedQuery');
-                        return;
-                    }
-                    
-                    visualization.displayResults(results, isQueryUpdate);
-                }catch(error){
-                    ErrorHandling.logError(error);
-                    ErrorHandling.displayFriendlyError(targetElement);
+                if (results == null || results.results == null || !results.results.length){
+                    ErrorHandling.displayFriendlyError(targetElement, 'noResults');
+                    return;
                 }
-            }, error => {
+                
+                if (!isResultSetSupported(results.metadata, results.selects())){
+                    ErrorHandling.displayFriendlyError(targetElement, 'unsupportedQuery');
+                    return;
+                }
+                
+                visualization.displayResults(results, isQueryUpdate);
+            }).then(null, error => {
                 loader.hide();
                 ErrorHandling.clearError(targetElement);
                 ErrorHandling.logError(error);

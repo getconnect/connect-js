@@ -64,17 +64,14 @@ class VizRenderer {
         if (this._visualization.destroy)
             this._visualization.destroy();
 
-        this._rendered = false;
+        this._renderDom = VizRenderer.prototype._renderDom;
     }
 
     private _getQueryResultsFactory(data: Queries.ConnectQuery|Api.QueryResultsFactory) : Api.QueryResultsFactory {
         return (<Queries.ConnectQuery>data).execute ? () => (<Queries.ConnectQuery>data).execute() : <Api.QueryResultsFactory>data
     }
 
-    private _renderDom() {
-        if(this._rendered)
-            return;
-            
+    private _renderDom() {            
         var options = this._options,
             vizElement = Dom.createElement('div', Classes.viz),
             resultsElement = Dom.createElement('div', Classes.result),
@@ -87,7 +84,7 @@ class VizRenderer {
         this._titleElement = titleElement;
         this._vizElement = vizElement;
         this._visualization.renderDom(vizElement, resultsElement);
-        this._rendered = true;
+        this._renderDom = () => {};
     }
 }
 
