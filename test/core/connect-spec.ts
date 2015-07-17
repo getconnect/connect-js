@@ -1,10 +1,10 @@
 import chai = require('chai');
 import proxyquire = require('proxyquire');
 import sinon = require('sinon');
-import Connect = require('../lib/core/connect');
-import Api = require('../lib/core/api');
-import Queries = require('../lib/core/queries/queries');
-import QueryBuilder = require('../lib/core/queries/query-builder');
+import Connect = require('../../lib/core/connect');
+import Api = require('../../lib/core/api');
+import Queries = require('../../lib/core/queries/queries');
+import QueryBuilder = require('../../lib/core/queries/query-builder');
 
 var expect = chai.expect,
 	Q = require('Q');

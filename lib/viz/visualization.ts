@@ -4,9 +4,10 @@ import Config = require('./config');
 import Loader = require('./Loader');
 
 export interface Visualization{
-    targetElement: HTMLElement;
-    loader: Loader;
-    displayData(resultsPromise: Q.IPromise<Api.QueryResults>, reRender?: boolean): void; 
-    destroy(): void;
+    renderDom(targetElement: HTMLElement, resultsElement: HTMLElement): void;
+    displayResults(results: Api.QueryResults, isQueryUpdate?: boolean): void;
+    isResultSetSupported?: (metadata: Api.Metadata, selects: string[]) => boolean;
+    modifyResults?: (resultsPromise: Q.IPromise<Api.QueryResults>) => Q.IPromise<Api.QueryResults>;
+    destroy?: () => void;
     recalculateSize?: () => void;
 }

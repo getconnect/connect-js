@@ -1,10 +1,14 @@
-import Viz = require('./viz');
-import applyMixins = require('./apply-mixins');
+import Formatters = require('./formatters');
+import Registrar = require('./registrar');
 
-function extendConnect(existingConnect: any){
-    applyMixins(existingConnect, Viz.Visualizations);
-    existingConnect['Viz'] = Viz;
-    return existingConnect;
+function extendConnect(Connect: any){
+    Connect['Viz'] = {
+        format: Formatters.format
+    };
+
+    Registrar.extendConnectWithVizualizations(Connect);
+
+    return Connect;
 }
 
 declare var define: any;
@@ -14,7 +18,7 @@ declare var global: any;
 declare var self: any;
 
 // RequireJS
-if(typeof define === "function" && define.amd) {		
+if(typeof define === "function" && define.amd) {
 	define(["connect"], function (Connect) { 
         return extendConnect(Connect); 
     });

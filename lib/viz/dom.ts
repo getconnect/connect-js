@@ -41,15 +41,3 @@ export function createTitle(title: string|Config.FormatTitleFunction): HTMLEleme
 
     return titleContainer;
 }
-
-export function getDestroyer(vizContainer: HTMLElement, chart: C3.Chart = null): () => void {
-    return () => {        
-        var currentVizInstanceContainerParent = vizContainer ? vizContainer.parentNode : null;
-
-        if (currentVizInstanceContainerParent)
-            currentVizInstanceContainerParent.removeChild(vizContainer);
-
-        if (chart)
-            chart.destroy();
-    }
-}

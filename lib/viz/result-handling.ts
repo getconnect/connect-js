@@ -1,30 +1,36 @@
-import Common = require('./visualization');
+import Viz  = require('./visualization');
 import Queries = require('../core/queries/queries');
 import Api = require('../core/api');
 import Loader = require('./loader');
 import ErrorHandling = require('./error-handling');
 
 module ResultHandling{
-    export type LoadDataFunction = (results: Api.QueryResults, reRender: boolean) => void;
+    export type LoadDataFunction = (results: Api.QueryResults, isQueryUpdate: boolean) => void;
+    export type IsValidResultSetFunction = (metadata: Api.Metadata, selects: string[]) => boolean;
 
     export class ResultHandler{
         private _lastReloadTime: number;
         private _lastRequestProcessed: number;
         private _currentRequestCount: number;
+        private _loader: Loader;
+        private _targetElement: HTMLElement;
 
-        constructor() {
+        constructor(targetElement: HTMLElement) {
             this._currentRequestCount = 0;
             this._lastRequestProcessed = 0;
             this._lastReloadTime = 0;
+            this._targetElement = targetElement;
+            this._loader = new Loader(targetElement); 
         }
 
-        handleResult(resultsPromise: Q.IPromise<Api.QueryResults>, visualization: Common.Visualization, loadData: LoadDataFunction, reRender: boolean){
-            var loader = visualization.loader,
-                targetElement = visualization.targetElement,   
+        handleResult(visualization: Viz.Visualization, resultsPromise: Q.IPromise<Api.QueryResults>, isQueryUpdate: boolean){
+            var loader = this._loader,
+                targetElement = this._targetElement,                
+                isResultSetSupported = (metadata: Api.Metadata, selects: string[]) => !visualization.isResultSetSupported || visualization.isResultSetSupported(metadata, selects),                
                 requestNumber,
                 lastReloadTime;  
 
-            if (reRender || this._lastReloadTime === 0){
+            if (isQueryUpdate || this._lastReloadTime === 0){
                 ErrorHandling.clearError(targetElement);
                 loader.show();
                 this._lastReloadTime = Date.now();
@@ -45,18 +51,20 @@ module ResultHandling{
 
                 loader.hide();
                 this._lastRequestProcessed = requestNumber;
-                try{
-                    ErrorHandling.clearError(targetElement);
-                    if (results == null || results.results == null || !results.results.length){
-                        ErrorHandling.displayFriendlyError(targetElement, 'noResults');
-                        return;
-                    }
-                    loadData.call(visualization, results, reRender);
-                }catch(error){
-                    ErrorHandling.logError(error);
-                    ErrorHandling.displayFriendlyError(targetElement);
+                ErrorHandling.clearError(targetElement);
+
+                if (results == null || results.results == null || !results.results.length){
+                    ErrorHandling.displayFriendlyError(targetElement, 'noResults');
+                    return;
                 }
-            }, error => {
+                
+                if (!isResultSetSupported(results.metadata, results.selects())){
+                    ErrorHandling.displayFriendlyError(targetElement, 'unsupportedQuery');
+                    return;
+                }
+                
+                visualization.displayResults(results, isQueryUpdate);
+            }).then(null, error => {
                 loader.hide();
                 ErrorHandling.clearError(targetElement);
                 ErrorHandling.logError(error);

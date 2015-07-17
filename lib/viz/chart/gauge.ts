@@ -9,35 +9,116 @@ import Palette = require('../palette');
 import Loader = require('../loader');
 import Formatters = require('../formatters');
 import Dom = require('../dom');
-import ResultHandling = require('../result-handling');
 import c3 = require('../c3');
 import Classes = require('../css-classes');
 import deepExtend = require('deep-extend');
 
 class Gauge implements Common.Visualization {
-    public targetElement: HTMLElement;
-    public loader: Loader;
     private _options: Config.VisualizationOptions;
     private _minSelectName: string;
     private _maxSelectName: string;
     private _gauge: C3.Chart;
-    private _rendered: boolean;
-    private _destroyDom: () => void;
-    private _titleElement: HTMLElement;
     private _currentDataset: Dataset.ChartDataset;
     private _transitionDuration;
-    private _resultHandler: ResultHandling.ResultHandler;
     private _loadsMinMaxFromResult: boolean;
     
-    constructor(targetElement: string|HTMLElement, gaugeOptions: Config.VisualizationOptions) {     
+    constructor(gaugeOptions: Config.VisualizationOptions) {     
         this._options = this._parseOptions(gaugeOptions);
-        this.targetElement = Dom.getElement(targetElement);
-        this.loader = new Loader(this.targetElement);
-        this._resultHandler = new ResultHandling.ResultHandler();
         this._transitionDuration = {
             none: null,
             some: 300
         }
+    }
+
+    public renderDom(vizElement: HTMLElement, resultsElement: HTMLElement){            
+        var options = this._options,
+            dateFormat = null,
+            colors = Palette.getSwatch(options.gauge.color ? [options.gauge.color] : null),
+            tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
+            defaultC3GaugeOptions = this._loadsMinMaxFromResult ? Config.defaultC3MinMaxFromResultsGaugeOptions : Config.defaultC3GaugeOptions,
+            config = {
+                size: {
+                    height: options.gauge.height,
+                    width: options.gauge.width
+                },
+                padding: options.gauge.padding,
+                data: {
+                    json: [],
+                    type: 'gauge'
+                },
+                color: {
+                    pattern: colors
+                },
+                transition: {
+                    duration: this._transitionDuration.none
+                },
+                tooltip: {
+                    format: {
+                        value: tooltipValueFormatter
+                    }                   
+                },
+                gauge: {
+                    min: !this._minSelectName ? options.gauge.min : undefined,
+                    max: !this._maxSelectName ? options.gauge.max : undefined
+                }
+            };
+
+        config = deepExtend({}, defaultC3GaugeOptions, config);
+        config['bindto'] = resultsElement;
+        
+        vizElement.classList.add(Classes.gauge);
+        this._gauge = c3.generate(config);
+    }
+
+    public displayResults(results: Api.QueryResults, isQueryUpdate: boolean): void {
+        var options = this._options,
+            internalGaugeConfig = (<any>this._gauge).internal.config,
+            metadata = results.metadata,
+            selects = results.selects(),
+            select = _.first(selects),
+            typeOptions = options.gauge,
+            resultItems = results.results,
+            dataset = this._buildDataset(results),
+            keys = dataset.getLabels(),
+            transitionDuration = !options.transitionOnReload && isQueryUpdate ? this._transitionDuration.none : this._transitionDuration.some;
+
+        internalGaugeConfig.transition_duration = transitionDuration;
+
+        if ((options.fields[select] || Config.defaulField).valueFormatter){
+            internalGaugeConfig.gauge_label_format = options.fields[select].valueFormatter;
+        }
+
+        this._currentDataset = dataset;
+        this._gauge.load({
+            json: dataset.getData(),
+            keys: {
+                x: '_x',
+                value: keys
+            }
+        });
+    }
+
+    public modifyResults(resultsPromise: Q.IPromise<Api.QueryResults>): Q.IPromise<Api.QueryResults>{
+        return resultsPromise.then((results) => {
+            var resultsCopy = results.clone();
+            return this._loadMinMax(resultsCopy);
+        });
+    }
+
+    public isResultSetSupported(metadata: Api.Metadata, selects: string[]): boolean {
+        var exactlyOneSelect = selects.length === 1,
+            noGroupBys = metadata.groups.length === 0,
+            noInterval = metadata.interval == null;
+
+        return exactlyOneSelect && noGroupBys && noInterval;
+    }
+
+    public recalculateSize(): void {
+        this._gauge.flush();
+    }
+
+    public destroy(): void {
+        this._gauge.destroy();
     }
 
     private _parseOptions(gaugeOptions: Config.VisualizationOptions): Config.VisualizationOptions{
@@ -58,20 +139,6 @@ class Gauge implements Common.Visualization {
         }
 
         return options;
-    }
-
-    public displayData(resultsPromise: Q.IPromise<Api.QueryResults>, reRender: boolean = true): void {        
-        resultsPromise = resultsPromise.then((results) => {
-            var resultsCopy = results.clone();
-            return this._loadMinMax(resultsCopy);
-        });
-
-        this._renderGauge();
-        this._resultHandler.handleResult(resultsPromise, this, this._loadData, reRender);
-    }
-
-    public recalculateSize(): void {
-        this._gauge.flush();
     }
 
     private _loadMinMax(results: Api.QueryResults){
@@ -97,52 +164,6 @@ class Gauge implements Common.Visualization {
         }
 
         return results;
-    }
-
-    private _loadData(results: Api.QueryResults, reRender: boolean): void {
-        var options = this._options,
-            internalGaugeConfig = (<any>this._gauge).internal.config,
-            metadata = results.metadata,
-            selects = results.selects(),
-            select = _.first(selects),
-            typeOptions = options.gauge,
-            resultItems = results.results,
-            dataset = this._buildDataset(results),
-            keys = dataset.getLabels(),
-            transitionDuration = !options.transitionOnReload && reRender ? this._transitionDuration.none : this._transitionDuration.some;
-            
-        if (!this._checkMetaDataIsApplicable(metadata, selects)){
-            this._renderQueryNotApplicable();
-            return;
-        } 
-
-        internalGaugeConfig.transition_duration = transitionDuration;
-
-        if ((options.fields[select] || Config.defaulField).valueFormatter){
-            internalGaugeConfig.gauge_label_format = options.fields[select].valueFormatter;
-        }
-
-        this._currentDataset = dataset;
-        this._gauge.load({
-            json: dataset.getData(),
-            keys: {
-                x: '_x',
-                value: keys
-            }
-        });
-    }
-
-    public destroy(): void{        
-        this._rendered = false;
-        this._destroyDom();
-    }    
-
-    private _checkMetaDataIsApplicable(metadata: Api.Metadata, selects: string[]): boolean {
-        var exactlyOneSelect = selects.length === 1,
-            noGroupBys = metadata.groups.length === 0,
-            noInterval = metadata.interval == null;
-
-        return exactlyOneSelect && noGroupBys && noInterval;
     }
 
     private _buildDataset(results: Api.QueryResults): Dataset.ChartDataset{
@@ -179,63 +200,6 @@ class Gauge implements Common.Visualization {
         }
 
         return groupValue;
-    }
-
-    private _renderGauge() {
-        if(this._rendered)
-            return;
-            
-        var options = this._options,
-            connectGaugeContainer = Dom.createElement('div', Classes.viz, Classes.gauge),
-            c3Element = Dom.createElement('div', Classes.result),
-            rootElement = this.targetElement,
-            titleElement = Dom.createTitle(options.title),
-            dateFormat = null,
-            colors = Palette.getSwatch(options.gauge.color ? [options.gauge.color] : null),
-            tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
-            defaultC3GaugeOptions = this._loadsMinMaxFromResult ? Config.defaultC3MinMaxFromResultsGaugeOptions : Config.defaultC3GaugeOptions,
-            config = {
-                size: {
-                    height: options.gauge.height,
-                    width: options.gauge.width
-                },
-                padding: options.gauge.padding,
-                data: {
-                    json: [],
-                    type: 'gauge'
-                },
-                color: {
-                    pattern: colors
-                },
-                transition: {
-                    duration: this._transitionDuration.none
-                },
-                tooltip: {
-                    format: {
-                        value: tooltipValueFormatter
-                    }                   
-                },
-                gauge: {
-                    min: !this._minSelectName ? options.gauge.min : undefined,
-                    max: !this._maxSelectName ? options.gauge.max : undefined
-                }
-            };
-
-        connectGaugeContainer.appendChild(titleElement);
-        connectGaugeContainer.appendChild(c3Element);
-        rootElement.appendChild(connectGaugeContainer);
-        config = deepExtend({}, defaultC3GaugeOptions, config);
-        config['bindto'] = c3Element;
-        
-        this._rendered = true;
-        this._titleElement = titleElement;
-        this._gauge = c3.generate(config);
-        this._destroyDom = Dom.getDestroyer(connectGaugeContainer, this._gauge);
-    }
-
-    private _renderQueryNotApplicable(){
-        this._rendered = false;
-        ErrorHandling.displayFriendlyError(this.targetElement, 'unsupportedQuery');
     }
 }
 

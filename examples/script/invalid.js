@@ -5,6 +5,11 @@ var text = connect.text(salesByPaymentProvider, '#invalid-text', {
     title: 'Sales'
 });
 
+var gauge = connect.gauge(salesByPaymentProvider, '#invalid-gauge', {
+    title: 'Sales'
+});
+
 module.exports = {
-    text: text
+    text: text,
+    gauge: gauge
 };
