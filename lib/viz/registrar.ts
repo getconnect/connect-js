@@ -11,14 +11,19 @@ import Config = require('./config');
 type VizFactory = (options: Config.VisualizationOptions) => Viz.Visualization;
 
 interface BuildVizRenderer {
-     (data: Queries.ConnectQuery|Api.QueryResultsFactory, 
-      targetElement: string|HTMLElement, 
-      options: Config.VisualizationOptions): VizRenderer
+    (data: Queries.ConnectQuery|Api.QueryResultsFactory, 
+        targetElement: string|HTMLElement, 
+        options: Config.VisualizationOptions): VizRenderer
 }
 
 function registerViz(name: string, vizFactory: VizFactory) {
+    if (this[name]){
+        console.warn(`There is already a visualization registered under ${name}, this registration will be ignored`);
+        return;
+    }
+
     var buildVizRenderer: BuildVizRenderer = (data, targetElement, options) => {
-        return new VizRenderer(targetElement, data, options, vizFactory(options));
+            return new VizRenderer(targetElement, data, options, vizFactory(options));
     }
 
     this[name] = this.prototype[name] = buildVizRenderer;
