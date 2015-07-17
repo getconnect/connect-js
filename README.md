@@ -44,7 +44,7 @@ All of the documentation can be found at [http://docs.getconnect.io](http://docs
 
 ## Support
 
-Get your questions answered and join in with the connect community at [http://docs.getconnect.io/v1.0/discuss](http://docs.getconnect.io/v1.0/discuss).
+Get your questions answered and join in with the connect community at [http://docs.getconnect.io/discuss](http://docs.getconnect.io/discuss).
 
 ## Contributing
 
