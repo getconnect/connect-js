@@ -1,7 +1,11 @@
 @import "variables";
 
-.connect-viz{
-    .connect-viz-title{
+.connect-viz {
+    height: 100%;
+    box-sizing: @box-sizing;
+    position: relative;
+
+    .connect-viz-title {
         display: @title-display;
         text-align: @title-text-align;
         font: @strong @title-size @label-font-family;
@@ -9,9 +13,31 @@
         padding: @title-padding;
     }
 
+    .connect-viz-result {
+        position: relative;
+    }
+
     font-family: @label-font-family;
 
-    svg{
+    svg {
         font-family: @label-font-family;
     }
+}
+
+.grow-results {    
+    display: flex;
+    flex-direction: column;
+
+    .connect-viz-result {
+        flex-grow: 1;
+        position: relative;
+        min-height: 0;
+        flex-basis: 0;
+    }
+}
+
+.center-results {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
