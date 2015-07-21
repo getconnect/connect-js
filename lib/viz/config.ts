@@ -63,7 +63,8 @@ module Config {
         colors?: string[];
         colorModifier: ColorModifier;
         padding?: PaddingOptions;
-        showLegend?: boolean; 
+        showLegend?: boolean;
+        stack?: boolean;
         yAxis?: {
             valueFormatter?: (value: any) => any;
             startAtZero?: boolean;

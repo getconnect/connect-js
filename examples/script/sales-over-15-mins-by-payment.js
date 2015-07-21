@@ -22,7 +22,6 @@ var bar = connect.chart(salesOver15MinsByPaymentProvider, '#sales-over-15-mins-b
     chart: {
         type: 'bar',
         yAxis: yAxis,
-        colors: ['#9b59b6', '#34495e', '#1abc9c', '#bdc3c7', '#95a5a6', '#e74c3c', '#e67e22', '#f1c40f', '#1abc9c', '#3498db'],
     },
     fields: fieldOptions 
 });
@@ -50,6 +49,17 @@ var spline = connect.chart(salesOver15MinsByPaymentProvider, '#sales-over-15-min
     chart: {
         type: 'spline',
         yAxis: yAxis,
+    }, 
+    type: 'spline',
+    fields: fieldOptions,
+});
+
+var areaSpline = connect.chart(salesOver15MinsByPaymentProvider, '#sales-over-15-mins-by-payment-stacked', {
+    title: 'Sales Over 15 Minutes by Payment Type',
+    chart: {
+        type: 'area-spline',
+        yAxis: yAxis,
+        stack: true
     }, 
     type: 'spline',
     fields: fieldOptions,

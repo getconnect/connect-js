@@ -137,8 +137,9 @@ module Dataset{
                         label: this._generateLabelForResult(metadata, select, groupPath)
                     });
                 })
-                .flatten()  
-                .value();        
+                .flatten()
+                .unique((selectLabel: SelectLabel) => selectLabel.label)
+                .value();
         }
 
         public mapData(): ResultWithContext[] {    
