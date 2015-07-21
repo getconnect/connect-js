@@ -155,6 +155,10 @@ class Chart implements Common.Visualization {
         internalChartConfig.transition_duration = transitionDuration;
         internalChartConfig.legend_show = showLegend;
 
+        if (options.chart.stack){
+            this._chart.groups([dataset.getLabels()])
+        }
+
         if(metadata.interval) {
             dateFormat = options.intervals.formats[metadata.interval];
             standardDateformatter = (value) => Formatters.formatDate(value, timezone, dateFormat);
