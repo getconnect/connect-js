@@ -50,7 +50,8 @@ var sources = {
     style: './style/**/connect-viz.less',
     less: './style/**/*.less',
     test: './test/**/*.ts',
-    compiledTest: dest.test + '/**/*.js',
+    compiledCoreTest: dest.test + '/core/**/*-spec.js',
+    compiledTest: dest.test + '/**/*-spec.js',
     ionIconsCss: './bower_components/ionicons/css/ionicons.css',
     ionIconsFonts: './bower_components/ionicons/fonts/*',
     c3Css: './node_modules/connect-js-c3/c3.css'
@@ -131,7 +132,7 @@ gulp.task('test:mocha', ['compile:tests'], function () {
         ? 'mocha-teamcity-reporter' 
         : 'list';
 
-    return gulp.src(sources.compiledTest)
+    return gulp.src(sources.compiledCoreTest)
         .pipe(mocha({ 
             reporter: reporter
         }))
