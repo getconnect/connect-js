@@ -43,7 +43,7 @@ export class TableDataset {
                 return _.isNumber(firstRowWithDesiredCol[key]);
             }
             var firstRowWithDesiredCol = _(results).find(result => result[key]);
-            return _.isNumber(firstRowWithDesiredCol[key]);
+            return firstRowWithDesiredCol != null ? _.isNumber(firstRowWithDesiredCol[key]) : false;
         };
 
         var createHeaderCell = (isGrouped: boolean, key: string): HeaderCell => {
