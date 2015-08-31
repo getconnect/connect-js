@@ -23,8 +23,13 @@ class VizRenderer {
     constructor(targetElement: string|HTMLElement, data: Queries.ConnectQuery|Api.QueryResultsFactory, 
         options: Config.VisualizationOptions, visualization: Common.Visualization) {
 
-        this._queryResultsFactory = this._getQueryResultsFactory(data);
         this._targetElement = Dom.getElement(targetElement);
+        if (!this._targetElement) {
+            console.warn(`Warning: The supplied container ${targetElement} could not be found.`);
+            return;
+        }
+
+        this._queryResultsFactory = this._getQueryResultsFactory(data);
         this._visualization = visualization;
         this._resultHandler = new ResultHandling.ResultHandler(this._targetElement);
         this._options = options;
