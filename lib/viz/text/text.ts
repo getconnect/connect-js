@@ -60,7 +60,7 @@ class Text implements Common.Visualization {
             aliasOfSelect = selects[0],
             defaultFieldOption = { valueFormatter: (value) => value },
             fieldOption = options.fields[aliasOfSelect] || defaultFieldOption,
-            valueFormatter = fieldOption.valueFormatter,
+            valueFormatter = fieldOption.valueFormatter || defaultFieldOption.valueFormatter,
             value = onlyResult[aliasOfSelect],
             animationElementClassList = this._valueContainerElement.classList,
             isIncreasing = value > this._currentValue,
