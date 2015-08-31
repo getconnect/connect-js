@@ -126,13 +126,10 @@
 // Solid background
 .connect-table-solid-header {
     .connect-table {
-        &.connect-viz-loading {
+        &:not(.connect-viz-loading) {
             .connect-table-wrapper {
                 background-color: @table-header-bg;
             }
-            .connect-table-wrapper.isLoading {
-                background-color: transparent;
-            }            
         }
     }
 }
