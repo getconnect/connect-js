@@ -50,8 +50,8 @@ var sources = {
     style: './style/**/connect-viz.less',
     less: './style/**/*.less',
     test: './test/**/*.ts',
-    compiledCoreTest: dest.test + '/core/**/*-spec.js',
-    compiledTest: dest.test + '/**/*-spec.js',
+    compiledCoreTest: dest.test + '/**/*-spec.js',
+    compiledUITest: dest.test + '/**/*-spec-ui.js',
     ionIconsCss: './bower_components/ionicons/css/ionicons.css',
     ionIconsFonts: './bower_components/ionicons/fonts/*',
     c3Css: './node_modules/connect-js-c3/c3.css'
@@ -119,7 +119,7 @@ gulp.task('compile:tests', ['clean:test', 'build'], function() {
 });
 
 gulp.task('test:karma', ['compile:tests'], function () {
-    return gulp.src(sources.compiledTest)
+    return gulp.src(sources.compiledUITest)
         .pipe(karma({
             action: 'run',
             configFile: 'karma.conf.js'
