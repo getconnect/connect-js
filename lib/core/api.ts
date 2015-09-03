@@ -36,9 +36,9 @@ module Api {
     }    
 
     export interface Metadata {
-        groups: string[];
-        interval: string;
-        timezone: string | number;
+        groups?: string[];
+        interval?: string;
+        timezone?: string | number;
     }
 
     export interface QuerySelect {

@@ -15,7 +15,7 @@ module Config {
     }
 
     export interface ColorModifier {
-        (currentColor: string, context: ChartDataContext|ChartDataContext[]): string
+        (context: ChartDataContext): string
     }
 
     export interface FormatIntervalFunction {
@@ -33,11 +33,13 @@ module Config {
         valueFormatter?: FormatIntervalFunction;
     }
 
+    export interface GroupByNameValuePairs {
+        [groupBy: string]: string;
+    }
+
     export interface ChartDataContext {
         select: string;
-        groupByValues: string[];
-        intervalValue: Date;
-        value: number;
+        groupBys: GroupByNameValuePairs;
     }
 
     export interface FieldOptions {
@@ -60,8 +62,7 @@ module Config {
         type: string;
         height?: number;
         width?: number;
-        colors?: string[];
-        colorModifier: ColorModifier;
+        colors?: string[] | ColorModifier;
         padding?: PaddingOptions;
         showLegend?: boolean;
         stack?: boolean;

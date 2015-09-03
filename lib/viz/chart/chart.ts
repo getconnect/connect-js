@@ -30,7 +30,8 @@ class Chart implements Common.Visualization {
     public renderDom(vizElement: HTMLElement, resultsElement: HTMLElement) {
         var options = this._options,
             yAxisOptions = options.chart.yAxis,
-            colors = Palette.getSwatch(options.chart.colors),
+            suppliedColors = options.chart.colors,
+            colors = Palette.getSwatch(_.isArray(suppliedColors) ? <string[]>suppliedColors : undefined),
             isStartAtZeroSpecified = yAxisOptions.startAtZero != null,
             tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value),
             config = {
@@ -115,8 +116,7 @@ class Chart implements Common.Visualization {
                     },
                     tooltip: {
                         valueFormatter: defaultFormatter
-                    },
-                    colorModifier: (currentColor, dataContext) => currentColor
+                    }
                 },                
             },
             options = deepExtend({}, defaultOptions, chartOptions);
@@ -125,7 +125,7 @@ class Chart implements Common.Visualization {
 
     }
 
-    private getDefaultLegendVisibility(results: Api.QueryResults): boolean {
+    private _getDefaultLegendVisibility(results: Api.QueryResults): boolean {
         var metadata = results.metadata,
             selects = results.selects(),
             hasMultipleSelects = selects.length > 1,
@@ -150,7 +150,7 @@ class Chart implements Common.Visualization {
             internalChartConfig = (<any>this._chart).internal.config,
             useTransition = this._chart.data().length && (options.transitionOnReload || !isQueryUpdate),
             transitionDuration = useTransition ? this._transitionDuration.some : this._transitionDuration.none,
-            showLegend = options.chart.showLegend != null ? options.chart.showLegend : this.getDefaultLegendVisibility(results);
+            showLegend = options.chart.showLegend != null ? options.chart.showLegend : this._getDefaultLegendVisibility(results);
  
         internalChartConfig.transition_duration = transitionDuration;
         internalChartConfig.legend_show = showLegend;
@@ -215,18 +215,32 @@ class Chart implements Common.Visualization {
     }
 
     private _modifyColor(currentColor: string, datum: any): string {
-        var contexts = null,
-            colorModifier = this._options.chart.colorModifier;
+        var context = null,
+            modifiedColor = null,
+            colorModifier = this._options.chart.colors,
+            showLegend = (<any>this._chart).internal.config.legend_show;
+      
+        if (!showLegend && _.isString(datum)) {
+            return currentColor;
+        }
+        
+        if (!colorModifier || !_.isFunction(colorModifier)) {
+            return currentColor;
+        }
 
-        if (_.isArray(datum.values))
-            contexts = _.map(datum.values, (datumValue) => this._currentDataset.getContext(datumValue));
-        else
-            contexts = this._currentDataset.getContext(datum);
-
-        if (contexts)
-            return colorModifier(currentColor, contexts);
-        else
-            currentColor;
+        if (_.isArray(datum.values)) {
+            context = this._currentDataset.getContext(_.first(datum.values));
+        } else {
+            context = this._currentDataset.getContext(datum);
+        }
+        
+        if (context) {
+            modifiedColor = (<Config.ColorModifier>colorModifier)(context);
+            if (modifiedColor) {
+                return modifiedColor;
+            }
+        }
+        return currentColor;
     }
 }
 
