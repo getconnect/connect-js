@@ -31,12 +31,6 @@ var dest = {
     distNpmViz: './dist-modules/connect-js-viz',
 };
 
-var exampleDest = {
-    lib: './examples/build/lib',
-    style: './examples/build/css',
-    dist: './examples/dist'
-};
-
 var sources = {
     readme: './README.md',
     npmConfig: './package.json',
@@ -55,14 +49,6 @@ var sources = {
     ionIconsCss: './bower_components/ionicons/css/ionicons.css',
     ionIconsFonts: './bower_components/ionicons/fonts/*',
     c3Css: './node_modules/connect-js-c3/c3.css'
-};
-
-var exampleSources = {
-    connectJs: dest.dist + '/**/*.js',
-    connectCss: dest.dist + '/**/*.css',
-    lib: './examples/script/*.js',
-    html: './examples/*.html',
-    style: './examples/style/**/*.less'
 };
 
 var typings = {
@@ -315,82 +301,6 @@ gulp.task('serve', ['dist'], function() {
     gulp.watch([sources.lib, sources.style], ['reload-dist']);
 });
 
-gulp.task('examples:compile:lib',  function() {
-    return gulp.src([exampleSources.lib])
-       .pipe(gulp.dest(exampleDest.lib))
-       .on('error', handleError);
-});
-
-gulp.task('examples:compile:style',  function() {
-    var css = gulp.src(exampleSources.style)
-       .pipe(less())
-       .pipe(gulp.dest(exampleDest.style))
-       .on('error', handleError);
-
-    var copyConnect = gulp.src([exampleSources.connectCss])
-       .pipe(gulp.dest(exampleDest.dist))
-       .on('error', handleError);
-
-   return es.merge(css, copyConnect);
-});
-
-gulp.task('examples:browserify', ['examples:build'], function() {
-    var browserified = transform(function(filename) {
-        var b = browserify(filename, {
-            basedir: exampleDest.lib
-        });
-        
-        return b.bundle();
-    });
-
-    var browserfy = gulp.src(exampleDest.lib + '/visualizations.js')
-        .pipe(browserified)
-        .pipe(rename('examples.js'))
-        .pipe(gulp.dest(exampleDest.dist))
-        .on('error', handleError);
-
-    var copyConnect = gulp.src([exampleSources.connectJs])
-       .pipe(gulp.dest(exampleDest.dist))
-       .on('error', handleError);
-
-    return es.merge(browserfy, copyConnect);
-});
-
-gulp.task('examples:combineCss', ['examples:build'], function() {
-    return gulp.src(exampleDest.style + '/*.css')
-        .pipe(autoprefixer())
-        .pipe(concat('examples.css'))
-        .pipe(gulp.dest(exampleDest.dist))
-        .on('error', handleError);
-});
-
-gulp.task('examples:copyHtml', ['examples:build'], function() {
-    return gulp.src(exampleSources.html)
-        .pipe(gulp.dest(exampleDest.dist))
-        .on('error', handleError);
-});
-
-gulp.task('examples:clean:dist', function() {
-    return del(exampleDest.dist);
-});
-
-gulp.task('examples:clean:lib', function() {
-    return del(exampleDest.lib);
-});
-
-gulp.task('examples:clean:style', function() {
-    return del(exampleDest.style);
-});
-
-gulp.task('examples:serve', ['examples'], function() {
-    browserSync({
-        server: {
-            baseDir: exampleDest.dist,
-            https: false
-        }
-    });
-});
-
 gulp.task('standalone:js', ['build'], function() {
     var browserifiedStandalone = transform(function(filename) {
         var b = browserify(filename, {
@@ -427,11 +337,9 @@ gulp.task('standalone:css', ['minifyCss'], function() {
 });
 
 gulp.task('build', ['compile:lib', 'compile:style']);
-gulp.task('examples:build', ['examples:compile:lib', 'examples:compile:style']);
 gulp.task('test', ['compile:tests', 'test:karma', 'test:mocha']);
 gulp.task('dist:bower', ['build', 'fonts', 'minifyCss', 'browserify', 'uglify', 'copy-less']);
 gulp.task('dist:npm', ['npm:src', 'npm:config', 'npm:style', 'npm:readme']);
 gulp.task('dist:standalone', ['standalone:js', 'standalone:css']);
 gulp.task('dist', ['dist:bower', 'dist:npm', 'dist:standalone']);
-gulp.task('examples', ['examples:combineCss', 'examples:browserify', 'examples:copyHtml']);
 gulp.task('default', ['build']);
