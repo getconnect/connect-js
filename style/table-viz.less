@@ -123,13 +123,16 @@
     }
 }
 
-// Solid background
+// Solid table header
 .connect-table-solid-header {
-    .connect-table {
-        &:not(.connect-viz-loading) {
-            .connect-table-wrapper {
-                background-color: @table-header-bg;
-            }
+    &:not(.connect-table-fixed-header) {
+        .connect-table thead {
+            background-color: @table-header-bg;
+        }
+    }
+    &.connect-table-fixed-header {
+        .connect-table .header-background {
+            background-color: @table-header-bg;
         }
     }
 }
