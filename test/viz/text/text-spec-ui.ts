@@ -32,7 +32,7 @@ describe('When text is rendered', () => {
                 title: 'Hello World',
                 transitionOnReload: false
             },
-            text = new Text(options),
+            text = new Text(),
             renderer = new VizRenderer(container, getResults, options, text),
             vizContainer = helper.getVizContainer(container),
             results = helper.getResultContainer(vizContainer),
