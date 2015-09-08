@@ -1,3 +1,4 @@
+
 import chai = require('chai');
 import proxyquire = require('proxyquire');
 import sinon = require('sinon');
@@ -18,24 +19,25 @@ function getResults() {
     });
 }
 
-describe('When viz is rendered', () => {
+describe('VizRenderer', () => {
     var container: HTMLElement;
 
     beforeEach(() => {
         container = document.createElement('div');
     });
 
-    describe('When title configured', () => {
+    describe('When a title configured', () => {
         it("should render a title", () => {
             var options = {
                     title: 'Hello World'
                 },
-                text = new Text(options),
+                text = new Text(),
                 renderer = new VizRenderer(container, getResults, options, text),
                 vizContainer = container.childNodes[0],
                 title = <HTMLSpanElement>vizContainer.childNodes[0];
 
             expect(title.textContent).to.be.equal('Hello World');
-        });        
+        });
     });
+ 
 });

@@ -3,11 +3,13 @@ import Queries = require('../core/queries/queries');
 import Config = require('./config');
 import Loader = require('./Loader');
 
-export interface Visualization{
-    renderDom(targetElement: HTMLElement, resultsElement: HTMLElement): void;
-    displayResults(results: Api.QueryResults, isQueryUpdate?: boolean): void;
-    isResultSetSupported?: (metadata: Api.Metadata, selects: string[]) => boolean;
-    modifyResults?: (resultsPromise: Q.IPromise<Api.QueryResults>) => Q.IPromise<Api.QueryResults>;
+export interface Visualization {
+    init?(container: HTMLElement, options: Config.VisualizationOptions): void;
+    render(container: HTMLElement, results: Api.QueryResults, options: Config.VisualizationOptions, hasQueryChanged?: boolean): void;
+    redraw?: () => void;
     destroy?: () => void;
-    recalculateSize?: () => void;
+    defaultOptions?: () => Config.VisualizationOptions;
+    modifyResults?: (resultsPromise: Q.IPromise<Api.QueryResults>) => Q.IPromise<Api.QueryResults>;
+    isSupported?: (metadata: Api.Metadata, selects: string[]) => boolean;
+    cssClasses?: (options: Config.VisualizationOptions) => string[];
 }

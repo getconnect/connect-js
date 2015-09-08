@@ -12,49 +12,34 @@ import Classes = require('../css-classes');
 import deepExtend = require('deep-extend');
 
 class Text implements Common.Visualization {
-    private _options: Config.VisualizationOptions;
     private _currentValue: number;
     private _rendered: boolean;
     private _destroyDom: () => void;
     private _valueTextElement: HTMLElement;
-    private _valueContainerElement: HTMLElement;
     private _counter: Counter;
     private _counterDuration: number;
 
-    constructor(textOptions: Config.VisualizationOptions) {
-        var defaultOptions = { 
-            transitionOnReload: true,
-            text: {
-                counterDurationMs: 800
-            },
-            fields: {} 
-        };
-
-        this._options = deepExtend({}, defaultOptions, textOptions);
+    constructor() {
         this._currentValue = 0;
     }
 
-    public renderDom(vizElement: HTMLElement, resultsElement: HTMLElement){
+    public init(container: HTMLElement, options: Config.VisualizationOptions) {
         var spanForValues = Dom.createElement('span'),
             valueTextElement = Dom.createElement('span', Classes.textValue),
             valueIncreaseIconElement = Dom.createElement('span', Classes.textIcon, Classes.textIconInc, Classes.arrowUp),
             valueDecreaseIconElement = Dom.createElement('span', Classes.textIcon, Classes.textIconDec, Classes.arrowDown);
 
-        vizElement.classList.add(Classes.text)
-
         spanForValues.appendChild(valueIncreaseIconElement);
         spanForValues.appendChild(valueDecreaseIconElement);
         spanForValues.appendChild(valueTextElement);
-        resultsElement.appendChild(spanForValues);
+        container.appendChild(spanForValues);
 
-        this._valueContainerElement = resultsElement;
         this._valueTextElement = valueTextElement;
         this._valueTextElement.innerHTML = '&nbsp;';
     }
 
-    public displayResults(results: Api.QueryResults, isQueryUpdate: boolean): void {
-        var options = this._options,
-            metadata = results.metadata,
+    public render(container: HTMLElement, results: Api.QueryResults, options: Config.VisualizationOptions, hasQueryChanged: boolean) {
+        var metadata = results.metadata,
             selects = results.selects(),
             onlyResult = results.results[0],
             aliasOfSelect = selects[0],
@@ -62,7 +47,7 @@ class Text implements Common.Visualization {
             fieldOption = options.fields[aliasOfSelect] || defaultFieldOption,
             valueFormatter = fieldOption.valueFormatter || defaultFieldOption.valueFormatter,
             value = onlyResult[aliasOfSelect],
-            animationElementClassList = this._valueContainerElement.classList,
+            animationElementClassList = container.classList,
             isIncreasing = value > this._currentValue,
             hasChanged = valueFormatter(this._currentValue) !== valueFormatter(value),
             duration = options.text.counterDurationMs,
@@ -74,22 +59,37 @@ class Text implements Common.Visualization {
         if (!hasChanged)
             return;
         
-        if (!options.transitionOnReload && isQueryUpdate){
+        if (!options.transitionOnReload && hasQueryChanged) {
             this._counter.setValue(value);
-        }else{
+        } else {
             animationElementClassList.add(transitionClass);
             this._counter.update(value, () => {
                 animationElementClassList.remove(transitionClass);
             });           
         }
     }
+    
+    public defaultOptions() {
+        var defaultOptions: Config.VisualizationOptions  = { 
+            transitionOnReload: true,
+            text: {
+                counterDurationMs: 800
+            },
+            fields: {}
+        };
+        return defaultOptions;
+    }
 
-    public isResultSetSupported(metadata: Api.Metadata, selects: string[]): boolean {
+    public isSupported(metadata: Api.Metadata, selects: string[]): boolean {
         var exactlyOneSelect = selects.length === 1,
             noGroupBys = metadata.groups.length === 0,
             noInterval = metadata.interval == null;
 
         return exactlyOneSelect && noGroupBys && noInterval;
+    }
+    
+    public cssClasses(options: Config.VisualizationOptions) {
+        return [Classes.text];
     }
 }
 
