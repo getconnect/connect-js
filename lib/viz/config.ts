@@ -1,14 +1,11 @@
-import Formatters = require('./formatters');
-import deepExtend = require('deep-extend');
 
 module Config {
+    export type ValueFormatter = (any) => string;
+    export type IntervalValueFormatter = (start: Date, end?: Date) => string;
+    
     export interface IntervalFormats {
         [interval: string]: string;
-    }
-
-    export interface FormatValueFunction {
-        (value: any): any;
-    }    
+    }  
 
     export interface FormatTitleFunction {
         (container: HTMLElement): void;
@@ -18,19 +15,14 @@ module Config {
         (context: ChartDataContext): string
     }
 
-    export interface FormatIntervalFunction {
-        (start: Date, end?: Date): any;
-    }
-
     export interface FieldOption {
         label?: string;
-        valueFormatter?: FormatValueFunction;
+        format?: string|ValueFormatter;
     }
 
     export interface IntervalOptions {
         label?: string;
-        formats?: IntervalFormats;
-        valueFormatter?: FormatIntervalFunction;
+        format: string|IntervalFormats|IntervalValueFormatter;
     }
 
     export interface GroupByNameValuePairs {
@@ -67,18 +59,21 @@ module Config {
         showLegend?: boolean;
         stack?: boolean;
         yAxis?: {
-            valueFormatter?: (value: any) => any;
+            format?: string|ValueFormatter;
             startAtZero?: boolean;
             min?: boolean;
             max?: boolean;
         };
+        tooltip?: {
+            format?: string|ValueFormatter;
+        }
     }
 
     export interface GaugeOptions {        
         height?: number;
         width?: number;
         label?: {
-            format?: (value: any) => any;
+            format?: string|ValueFormatter;
         };
         min?: number|string;
         max?: number|string;
@@ -109,48 +104,12 @@ module Config {
         monthly: 'MMM YY',
         quarterly: '[Q]Q YY',
         yearly: 'YYYY'
-    }
-
-    export var defaultC3ChartOptions = {
-        line: {
-            connectNull: true
-        },
-        spline: {
-            connectNull: true
-        },
-        area: {
-            zerobased: true
-        },
-        bar: {
-            zerobased: true
-        }
-    }
-
-    export var defaultC3GaugeOptions = {
-        gauge: {
-            label: {
-                format: (value) => Formatters.format('.0f')(value) + '%',
-                formatall: true,
-                transition: false
-            },
-            expand: true,
-            min: 0,
-            max: 100
-        }
-    }
-
-    export var defaultC3MinMaxFromResultsGaugeOptions = deepExtend({}, {
-        gauge: {
-            label: {
-                show: false
-            }        
-        }
-    }, defaultC3GaugeOptions);
-
-    export var defaulField = {
+    };
+    
+    export var defaultField: FieldOption = {
         label: undefined,
-        valueFormatter: undefined
-    }
+        format: undefined
+    };
 }
 
 export = Config;

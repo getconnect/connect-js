@@ -1,12 +1,9 @@
 import Config = require('../config');
 import Dataset = require('../chart/dataset');
-import Queries = require('../../core/queries/queries');
 import Api = require('../../core/api');
 import _ = require('underscore');
 import Common = require('../visualization');
-import ErrorHandling = require('../error-handling');
 import Palette = require('../palette');
-import Loader = require('../loader');
 import Formatters = require('../formatters');
 import Dom = require('../dom');
 import c3 = require('../c3');
@@ -20,19 +17,42 @@ class Gauge implements Common.Visualization {
     private _currentDataset: Dataset.ChartDataset;
     private _transitionDuration;
     private _loadsMinMaxFromResult: boolean;
+    private _defaultC3GaugeOptions: any; 
+    private _defaultC3MinMaxFromResultsGaugeOptions: any;
     
     constructor() {     
         this._transitionDuration = {
             none: null,
             some: 300
         }
+        
+        this._defaultC3GaugeOptions = {
+            gauge: {
+                label: {
+                    format: (value) => Formatters.format('.0f')(value) + '%',
+                    formatall: true,
+                    transition: false
+                },
+                expand: true,
+                min: 0,
+                max: 100
+            }
+        };
+     
+        this._defaultC3MinMaxFromResultsGaugeOptions = deepExtend({}, {
+            gauge: {
+                label: {
+                    show: false
+                }        
+            }
+        }, this._defaultC3GaugeOptions);
     }
 
     public init(container: HTMLElement, options: Config.VisualizationOptions) {         
         var dateFormat = null,
             colors = Palette.getSwatch(options.gauge.color ? [options.gauge.color] : null),
             tooltipValueFormatter = (value, ratio, id, index) => this._formatValueForLabel(id, value, options),
-            defaultC3GaugeOptions = this._loadsMinMaxFromResult ? Config.defaultC3MinMaxFromResultsGaugeOptions : Config.defaultC3GaugeOptions,
+            defaultC3GaugeOptions = this._loadsMinMaxFromResult ? this._defaultC3MinMaxFromResultsGaugeOptions : this._defaultC3GaugeOptions,
             config = {
                 size: {
                     height: options.gauge.height,
@@ -77,12 +97,14 @@ class Gauge implements Common.Visualization {
             resultItems = results.results,
             dataset = this._buildDataset(results, options),
             keys = dataset.getLabels(),
+            fieldOption = options.fields[select] || Config.defaultField,
+            valueFormatter = Formatters.format(fieldOption.format),
             transitionDuration = !options.transitionOnReload && hasQueryChanged ? this._transitionDuration.none : this._transitionDuration.some;
 
         internalGaugeConfig.transition_duration = transitionDuration;
 
-        if ((options.fields[select] || Config.defaulField).valueFormatter) {
-            internalGaugeConfig.gauge_label_format = options.fields[select].valueFormatter;
+        if (fieldOption.format) {
+            internalGaugeConfig.gauge_label_format = valueFormatter;
         }
 
         this._currentDataset = dataset;
@@ -168,7 +190,7 @@ class Gauge implements Common.Visualization {
 
     private _buildDataset(results: Api.QueryResults, options: Config.VisualizationOptions): Dataset.ChartDataset{
         var formatters = {        
-            selectLabelFormatter: select => (options.fields[select] || Config.defaulField).label || select,
+            selectLabelFormatter: select => (options.fields[select] || Config.defaultField).label || select,
             groupValueFormatter: (groupByName, groupValue) => this._formatGroupValue(groupByName, groupValue, options)
         };
 
@@ -178,26 +200,18 @@ class Gauge implements Common.Visualization {
     private _formatValueForLabel(label: string, value: any, options: Config.VisualizationOptions){ 
         var dataset = this._currentDataset,
             select = this._currentDataset.getSelect(label),
-            defaultFormatter = Config.defaultC3GaugeOptions.gauge.label.format,
-            fieldOption = options.fields[select] || Config.defaulField,
-            valueFormatter = fieldOption.valueFormatter || defaultFormatter;
+            defaultFormatter = this._defaultC3GaugeOptions.gauge.label.format,
+            fieldOption = options.fields[select] || Config.defaultField,
+            valueFormatter = Formatters.format(fieldOption.format || defaultFormatter);
 
-        if (valueFormatter) {
-            return valueFormatter(value);
-        }
-        
-        return value;
+        return valueFormatter(value);
     }
 
     private _formatGroupValue(groupByName: string, groupValue: any, options: Config.VisualizationOptions){
-        var fieldOption = options.fields[groupByName] || Config.defaulField,
-            valueFormatter = fieldOption.valueFormatter;
+        var fieldOption = options.fields[groupByName] || Config.defaultField,
+            valueFormatter = Formatters.format(fieldOption.format);
 
-        if (valueFormatter) {
-            return valueFormatter(groupValue);
-        }
-
-        return groupValue;
+        return valueFormatter(groupValue);
     }
 }
 

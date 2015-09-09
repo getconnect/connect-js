@@ -1,11 +1,8 @@
 import Config = require('../config');
 import Dataset = require('./dataset');
-import Queries = require('../../core/queries/queries');
 import Api = require('../../core/api');
 import _ = require('underscore');
-import ErrorHandling = require('../error-handling');
 import Palette = require('../palette');
-import Loader = require('../loader');
 import Formatters = require('../formatters');
 import c3 = require('../c3');
 import Classes = require('../css-classes');
@@ -60,12 +57,22 @@ class Chart implements Common.Visualization {
                         },
                         tick: {
                             outer: false,
-                            format: yAxisOptions.valueFormatter
+                            format: Formatters.format(yAxisOptions.format)
                         }
                     }
                 },
-                bar: {},
-                area: {},
+                line: {
+                    connectNull: true
+                },
+                spline: {
+                    connectNull: true
+                },
+                area: {
+                    zerobased: true
+                },
+                bar: {
+                    zerobased: true
+                },
                 transition: {
                     duration: this._transitionDuration.none
                 },
@@ -75,8 +82,7 @@ class Chart implements Common.Visualization {
                     }                   
                 }
             };
-
-        config = deepExtend({}, Config.defaultC3ChartOptions, config);
+            
         config['bindto'] = container;
 
         if (isStartAtZeroSpecified) {
@@ -95,9 +101,6 @@ class Chart implements Common.Visualization {
             data = dataset.getData(),
             keys = dataset.getLabels(),
             metadata = results.metadata,
-            dateFormat = null,
-            standardDateformatter = null,
-            customDateFormatter = null,
             timezone = options.timezone || metadata.timezone,
             internalChartConfig = (<any>this._chart).internal.config,
             useTransition = this._chart.data().length && (options.transitionOnReload || !hasQueryChanged),
@@ -112,13 +115,10 @@ class Chart implements Common.Visualization {
         }
 
         if (metadata.interval) {
-            dateFormat = options.intervals.formats[metadata.interval];
-            standardDateformatter = (value) => Formatters.formatDate(value, timezone, dateFormat);
-            customDateFormatter = options.intervals.valueFormatter;
-            internalChartConfig.axis_x_tick_format = customDateFormatter || standardDateformatter;
+            internalChartConfig.axis_x_tick_format = Formatters.formatForInterval(options.intervals.format, metadata.interval, timezone);
             internalChartConfig.axis_x_type = 'timeseries';
         } else {
-            internalChartConfig.axis_x_categories = _.pluck(data, '_x')
+            internalChartConfig.axis_x_categories = _.pluck(data, '_x');
         }
         
         this._currentDataset = dataset;
@@ -144,16 +144,16 @@ class Chart implements Common.Visualization {
             defaultOptions: Config.VisualizationOptions = {
                 transitionOnReload: true,
                 intervals: {
-                    formats: Config.defaultTimeSeriesFormats
+                    format: Config.defaultTimeSeriesFormats
                 },
                 fields: {},
                 chart: {
                     type: 'bar',
                     yAxis: {
-                        valueFormatter: defaultFormatter
+                        format: defaultFormatter
                     },
                     tooltip: {
-                        valueFormatter: defaultFormatter
+                        format: defaultFormatter
                     }
                 },                
             };
@@ -175,7 +175,7 @@ class Chart implements Common.Visualization {
     
     private _buildDataset(results: Api.QueryResults, options: Config.VisualizationOptions): Dataset.ChartDataset {
         var formatters = {        
-            selectLabelFormatter: select => (options.fields[select] || Config.defaulField).label || select,
+            selectLabelFormatter: select => (options.fields[select] || Config.defaultField).label || select,
             groupValueFormatter: (groupByName, groupValue) => this._formatGroupValue(groupByName, groupValue, options)
         };
 
@@ -185,25 +185,17 @@ class Chart implements Common.Visualization {
     private _formatValueForLabel(label: string, value: any, options: Config.VisualizationOptions) { 
         var dataset = this._currentDataset,
             select = this._currentDataset.getSelect(label),
-            fieldOption = options.fields[select] || Config.defaulField,
-            valueFormatter = fieldOption.valueFormatter;
+            fieldOption = options.fields[select] || Config.defaultField,
+            valueFormatter = Formatters.format(fieldOption.format);
 
-        if (valueFormatter) {
-            return valueFormatter(value);
-        }
-        
-        return value;
+        return valueFormatter(value);
     }
 
     private _formatGroupValue(groupByName: string, groupValue: any, options: Config.VisualizationOptions) {
-        var fieldOption = options.fields[groupByName] || Config.defaulField,
-            valueFormatter = fieldOption.valueFormatter;
+        var fieldOption = options.fields[groupByName] || Config.defaultField,
+            valueFormatter = Formatters.format(fieldOption.format);
 
-        if (valueFormatter) {
-            return valueFormatter(groupValue);
-        }
-
-        return groupValue;
+        return valueFormatter(groupValue);
     }
 
     private _modifyColor(currentColor: string, datum: any, options: Config.VisualizationOptions): string {

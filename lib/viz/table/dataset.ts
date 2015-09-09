@@ -1,5 +1,4 @@
 import _ = require('underscore');
-import Queries = require('../../core/queries/queries');
 import Config = require('../config');
 import Api = require('../../core/api');
 import Formatters = require('../formatters');
@@ -79,8 +78,8 @@ export class TableDataset {
             var optionsForField: Config.FieldOption = options.fields[key];
             var rawValue = result[key];
             var isNumeric = _.isNumber(rawValue);
-            var defaultFormatter: Config.FormatValueFunction = isNumeric ? Formatters.format(',.2f') : value => value;
-            var valueFormatter = optionsForField && optionsForField.valueFormatter ? optionsForField.valueFormatter : defaultFormatter;
+            var defaultFormatter: Config.ValueFormatter = isNumeric ? Formatters.format(',.2f') : value => value;
+            var valueFormatter = Formatters.format(optionsForField.format || defaultFormatter);
             return {
                 isGrouped: isGrouped,
                 rawValue: rawValue,
@@ -92,21 +91,13 @@ export class TableDataset {
         var createIntervalCell = (result: Api.QueryResultItem): ContentCell => {
             var startDate = <Date>result.interval.start;
             var endDate = <Date>result.interval.end;
-
-            var defaultFormat = (start: Date, end: Date): String => {
-                var timeFormat = options.intervals.formats[metadata.interval];
-                var timezone = options.timezone || metadata.timezone;
-                var startDate = Formatters.formatDate(start, timezone, timeFormat);
-                var endDate = Formatters.formatDate(end, timezone, timeFormat)
-                return startDate + ' - ' + endDate;
-            };
-
-            var intervalFormatter = options.intervals.valueFormatter || defaultFormat;
+            var timezone = options.timezone || metadata.timezone;
+            var valueFormatter = Formatters.formatForInterval(options.intervals.format, metadata.interval, timezone);
 
             return {
                 isGrouped: false,
                 rawValue: result.interval,
-                displayedValue: intervalFormatter(startDate, endDate),
+                displayedValue: valueFormatter(startDate, endDate),
                 isNumeric: false,
                 isInterval: true
             };
