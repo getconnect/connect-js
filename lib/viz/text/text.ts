@@ -1,15 +1,10 @@
 import Config = require('../config');
-import ErrorHandling = require('../error-handling');
-import Queries = require('../../core/queries/queries');
 import Api = require('../../core/api');
-import _ = require('underscore');
 import Common = require('../visualization');
-import Loader = require('../loader');
-import ResultHandling = require('../result-handling');
 import Dom = require('../dom');
 import Counter = require('./counter');
+import Formatters = require('../formatters');
 import Classes = require('../css-classes');
-import deepExtend = require('deep-extend');
 
 class Text implements Common.Visualization {
     private _currentValue: number;
@@ -43,9 +38,8 @@ class Text implements Common.Visualization {
             selects = results.selects(),
             onlyResult = results.results[0],
             aliasOfSelect = selects[0],
-            defaultFieldOption = { valueFormatter: (value) => value },
-            fieldOption = options.fields[aliasOfSelect] || defaultFieldOption,
-            valueFormatter = fieldOption.valueFormatter || defaultFieldOption.valueFormatter,
+            fieldOption = options.fields[aliasOfSelect] || Config.defaultField,
+            valueFormatter = Formatters.format(fieldOption.format),
             value = onlyResult[aliasOfSelect],
             animationElementClassList = container.classList,
             isIncreasing = value > this._currentValue,

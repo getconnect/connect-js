@@ -1,16 +1,10 @@
-import _ = require('underscore');
 import Common = require('../visualization');
 import Config = require('../config');
 import Dataset = require('./dataset');
 import TableRenderer = require('./renderer');
-import Queries = require('../../core/queries/queries');
 import Api = require('../../core/api');
-import Loader = require('../loader');
-import ErrorHandling = require('../error-handling');
 import Dom = require('../dom');
-import ResultHandling = require('../result-handling');
 import Classes = require('../css-classes');
-import deepExtend = require('deep-extend');
 
 class Table implements Common.Visualization {
     private _tableWrapper: HTMLElement;
@@ -30,7 +24,7 @@ class Table implements Common.Visualization {
         var defaultTableOptions: Config.VisualizationOptions = { 
             fields: {},
             intervals: {
-                formats: Config.defaultTimeSeriesFormats
+                format: Config.defaultTimeSeriesFormats
             }
         };
         return defaultTableOptions;
