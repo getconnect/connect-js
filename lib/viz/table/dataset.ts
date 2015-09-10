@@ -75,7 +75,7 @@ export class TableDataset {
 
     private _buildContentRows(metadata: Api.Metadata, selects: string[], results: Api.QueryResultItem[], options: Config.VisualizationOptions) {
         var createContentCell = (isGrouped: boolean, result: Api.QueryResultItem, key: string): ContentCell => {
-            var optionsForField: Config.FieldOption = options.fields[key];
+            var optionsForField: Config.FieldOption = options.fields[key] || Config.defaultField;
             var rawValue = result[key];
             var isNumeric = _.isNumber(rawValue);
             var defaultFormatter: Config.ValueFormatter = isNumeric ? Formatters.format(',.2f') : value => value;

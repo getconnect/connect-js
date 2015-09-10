@@ -1,6 +1,5 @@
 import moment = require('moment-timezone');
 import Config = require('./config');
-console.log(Config);
 import d3 = require('./d3');
 import _ = require('underscore');
 
@@ -22,7 +21,6 @@ export function formatForInterval(format: string|Config.IntervalFormats|Config.I
     }
     
     if (_.isObject(format)) {
-        console.log(Config.defaultTimeSeriesFormats);
         format = format[interval] || Config.defaultTimeSeriesFormats[interval];
     }
     
