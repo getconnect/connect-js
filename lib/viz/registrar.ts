@@ -41,13 +41,21 @@ export function registerViz(name: string, vizualization: Viz.Visualization|VizFa
         return new VizRenderer(targetElement, data, options, viz);
     }
 
-    this[name] = this.prototype[name] = buildVizRenderer;
+    this._visualizations[name] = this.prototype._visualizations[name] = buildVizRenderer;
 };
 
 export function extendConnectWithVizualizations(Connect: any) {
+    Connect._visualizations = Connect.prototype._visualizations = {};
+    
     Connect.registerViz = registerViz;
     Connect.registerViz('chart', () => new Chart());
     Connect.registerViz('gauge', () => new Gauge());
     Connect.registerViz('text', () => new Text());
     Connect.registerViz('table', () => new Table());
+    
+    var deafultVisualizations = ['chart', 'gauge', 'text', 'table'];
+    _.each(deafultVisualizations, (viz) => {
+        Connect[viz] = Connect.prototype[viz] = () => console.error(`Creating a visualization using the ${viz} method has been removed. Please see http://docs.getconnect.io/js#visualizing-data for the new and improved visualization syntax.`);
+    });
+    
 }
