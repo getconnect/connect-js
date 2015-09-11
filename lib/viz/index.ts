@@ -1,12 +1,10 @@
-import Formatters = require('./formatters');
 import Registrar = require('./registrar');
+import Visualize = require('./visualize');
 
 function extendConnect(Connect: any){
-    Connect['Viz'] = {
-        format: Formatters.format
-    };
 
     Registrar.extendConnectWithVizualizations(Connect);
+    Visualize.extendConnectWithVisualize(Connect);
 
     return Connect;
 }

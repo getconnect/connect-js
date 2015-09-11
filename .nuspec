@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package>
+  <metadata>
+    <id>Connect.Javascript.Sdk</id>
+    <version>0.0.1</version>
+    <authors>Connect</authors>
+    <description>Connect Javascript SDK</description>
+    <language>en-US</language>
+    <projectUrl>https://github.com/getconnect/connect-js</projectUrl>
+    <licenseUrl>https://getconnect.io</licenseUrl>
+  </metadata>
+  <files>
+    <file src="dist\**\*.*" target="dist" />
+  </files>
+</package>
