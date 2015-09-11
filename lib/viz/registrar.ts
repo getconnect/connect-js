@@ -25,7 +25,7 @@ function findFirstMissingMethod(vizualization: Viz.Visualization|VizFactory): st
 
 export function registerViz(name: string, vizualization: Viz.Visualization|VizFactory) {
     
-    if (this[name]){
+    if (this._visualizations[name]){
         console.warn(`Warning. There is already a visualization registered under ${name}, this registration will be ignored`);
         return;
     }
