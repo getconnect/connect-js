@@ -10,7 +10,7 @@ var gulp = require('gulp'),
     es = require('event-stream'),
     concat = require('gulp-concat'),
     mocha = require('gulp-mocha'),
-    karma = require('gulp-karma'),
+    karma = require('karma'),
     browserSync = require('browser-sync'),
     autoprefixer = require('gulp-autoprefixer'),
     jeditor = require('gulp-json-editor');
@@ -104,13 +104,11 @@ gulp.task('compile:tests', ['clean:test', 'build'], function() {
         .pipe(gulp.dest(dest.test));
 });
 
-gulp.task('test:karma', ['compile:tests'], function () {
-    return gulp.src(sources.compiledUITest)
-        .pipe(karma({
-            action: 'run',
-            configFile: 'karma.conf.js'
-        }))
-        .on('error', handleError);
+gulp.task('test:karma', ['compile:tests'], function (done) {
+    new karma.Server({
+        configFile: __dirname + '/karma.conf.js',
+        singleRun: true
+    }, done).start();
 });
 
 gulp.task('test:mocha', ['compile:tests'], function () {
