@@ -2,7 +2,6 @@
 /// <reference path="../../typings/mocha/mocha.d.ts" />
 import chai = require('chai');
 
-import d3 = require('../../lib/viz/d3');
 import moment = require('moment-timezone');
 import Config = require('../../lib/viz/config');
 import Formatters = require('../../lib/viz/formatters');
