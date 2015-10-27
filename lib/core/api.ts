@@ -120,8 +120,8 @@ module Api {
         public query(collection: string, query: Api.Query): Q.IPromise<QueryResults> {
             var deferred = Q.defer(),
                 queryJson = JSON.stringify(query),
-                url = this._buildUrl('/events/' + collection + '?query=' + queryJson),
-                get = request.get(url);
+                url = this._buildUrl('/events/' + collection),
+                get = request.get(url).query({ query: queryJson });
 
             return this._send(get, r => new QueryResults(<QueryResponse>r.body));
         }
