@@ -67,7 +67,7 @@ describe('Queries', () => {
 				var QueriesProxy = proxyquire('../../../lib/core/queries/queries', {
 					'./filters': {
 						queryFilterBuilder: builder
-					}	
+					}
 				});
 
 				query = new QueriesProxy.ConnectQuery(client, 'test');
@@ -114,7 +114,7 @@ describe('Queries', () => {
 				expect(query2).to.not.equal(query);
 			});
 
-			it('should use last filter specification of operator and field', () => {				
+			it('should use last filter specification of operator and field', () => {
 				var field1 = 'field1',
 					field1Value =  { eq: 10 },
 					field2Value =  { gt: 20 },
@@ -148,7 +148,7 @@ describe('Queries', () => {
 			it('should set complex timeframe', () => {
 				var query = new Queries.ConnectQuery(client, 'test'),
 					timeframe = {
-						start: new Date(), 
+						start: new Date(),
 						end: new Date()
 					};
 
@@ -166,7 +166,7 @@ describe('Queries', () => {
 		});
 
 		describe('#interval()', () => {
-			var query = new Queries.ConnectQuery(client, 'test');				
+			var query = new Queries.ConnectQuery(client, 'test');
 
 			it('should set the timeframe', () => {
 				var timeframe = 'daily';
@@ -200,7 +200,7 @@ describe('Queries', () => {
 
 			it('should not allow to add timezone when there is no timeframe', () => {
 				var query = new Queries.ConnectQuery(client, 'test');
-				
+
 				expect(() => query.timezone('Australia/Brisbane')).to.throw(Error);
 			});
 
@@ -223,7 +223,7 @@ describe('Queries', () => {
 
 			it('should set multiple groupBy using multiple calls', () => {
 				var field1 = 'field1',
-					field2 = 'field2';	
+					field2 = 'field2';
 
 				query = query.groupBy(field1);
 				query = query.groupBy(field2);
@@ -253,7 +253,7 @@ describe('Queries', () => {
 					'./query-builder': () => builder
 				}),
 				stubClient = sinon.createStubInstance(Api.Client),
-				query = new QueriesProxy.ConnectQuery(stubClient, 'test');		
+				query = new QueriesProxy.ConnectQuery(stubClient, 'test');
 
 			beforeEach(() => {
 				query.select(x => {
@@ -274,13 +274,53 @@ describe('Queries', () => {
 					.returns(apiQuery);
 
 				stubClient['query'].withArgs(query._collection, apiQuery)
-					.returns(new Q(expectedResult));
+					.returns({deferred: new Q(expectedResult), request: sinon.stub()});
 
 				query.execute()
 					.then(result => {
 						expect(result).to.equal(expectedResult);
 						done();
 					});
+			});
+		});
+
+        describe('#abortAll()', () => {
+			var builder = sinon.createStubInstance(QueryBuilder),
+				QueriesProxy = proxyquire('../../../lib/core/queries/queries', {
+					'./query-builder': () => builder
+				}),
+				stubClient = sinon.createStubInstance(Api.Client),
+				query = new QueriesProxy.ConnectQuery(stubClient, 'test');
+
+			beforeEach(() => {
+				query.select(x => {
+					return {
+						sum: x.sum('price')
+					};
+				})
+				.filter(x => x('price').gt(10))
+				.groupBy('product')
+				.timeframe('today');
+			});
+
+			it('should abort all running queries', () => {
+				var apiQuery = sinon.stub(),
+					expectedResult = sinon.stub(),
+                    runningRequest = {abort: function() {}};
+
+                var requestAborted = sinon.spy(runningRequest, "abort");
+
+				builder['build'].withArgs(query._selects, query._filters, query._groups, query._timeframe)
+					.returns(apiQuery);
+
+				stubClient['query'].withArgs(query._collection, apiQuery)
+					.returns({deferred: new Q(expectedResult), request: runningRequest});
+
+				query.execute();
+
+                query.abortAll();
+
+                expect(requestAborted.calledOnce).to.be.true;
 			});
 		});
 	});

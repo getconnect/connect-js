@@ -3,6 +3,7 @@ import Filters = require('./filters');
 import Selects = require('./selects');
 import QueryBuilder = require('./query-builder');
 import Q = require('q');
+import request = require('superagent');
 import _ = require('underscore');
 
 module Queries {
@@ -15,14 +16,15 @@ module Queries {
 		_timeframe: Api.Timeframe;
 		_interval: string;
 		_timezone: Api.Timezone;
+		_runningRequests: Array<request.Request<any>>;
 
 		constructor(
 			client: Api.Client,
-			collection: string, 
-			selects?: Selects.QuerySelects, 
-			filters?: Filters.QueryFilter[], 
-			groups?: string[], 
-			timeframe?: Api.Timeframe, 
+			collection: string,
+			selects?: Selects.QuerySelects,
+			filters?: Filters.QueryFilter[],
+			groups?: string[],
+			timeframe?: Api.Timeframe,
 			interval?: string,
 			timezone?: Api.Timezone) {
 			this._client = client;
@@ -33,6 +35,7 @@ module Queries {
 			this._timeframe = timeframe || null;
 			this._interval = interval || null;
 			this._timezone = timezone || null;
+			this._runningRequests = new Array<request.Request<any>>();
 		}
 
 		public collection(): string {
@@ -86,15 +89,31 @@ module Queries {
 		public timezone(timezone: Api.Timezone): ConnectQuery {
 			if(!this._timeframe && !this._interval)
 				throw new Error('You can only set a timezone when a valid timeframe or interval has been set.');
-			
+
 			return new ConnectQuery(this._client, this._collection, this._selects, this._filters, this._groups, this._timeframe, this._interval, timezone);
 		}
 
 		public execute(): Q.IPromise<Api.QueryResults> {
 			var queryBuilder = new QueryBuilder(),
 				apiQuery = queryBuilder.build(this._selects, this._filters, this._groups, this._timeframe, this._interval, this._timezone);
+			var executeQuery = this._client.query(this._collection, apiQuery);
+			this._addToRunningQueries(executeQuery);
+			return executeQuery.deferred;
+		}
 
-			return this._client.query(this._collection, apiQuery);
+		public abortAll() {
+			var length = this._runningRequests.length;
+			_.each(this._runningRequests, function(request) { request.abort(); });
+			this._runningRequests.slice(0, length);
+		}
+
+		private _addToRunningQueries(executeQuery:Api.ClientDeferredQuery) {
+			this._runningRequests.push(executeQuery.request);
+			executeQuery.deferred.then(function() {
+				var finishedQueryIndex = this._runningRequests.indexOf(executeQuery.request);
+				if(finishedQueryIndex < 0) return;
+				this._runningRequests.slice(finishedQueryIndex, 1);
+			});
 		}
 	}
 }
