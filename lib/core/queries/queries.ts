@@ -103,13 +103,13 @@ module Queries {
 
 		public abortAll() {
 			var length = this._runningRequests.length;
-			_.each(this._runningRequests, function(request) { request.abort(); });
+			_.each(this._runningRequests, request  => request.abort());
 			this._runningRequests.slice(0, length);
 		}
 
 		private _addToRunningQueries(executeQuery:Api.ClientDeferredQuery) {
 			this._runningRequests.push(executeQuery.request);
-			executeQuery.deferred.then(function() {
+			executeQuery.deferred.then(() => {
 				var finishedQueryIndex = this._runningRequests.indexOf(executeQuery.request);
 				if(finishedQueryIndex < 0) return;
 				this._runningRequests.slice(finishedQueryIndex, 1);
