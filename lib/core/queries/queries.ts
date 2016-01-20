@@ -16,7 +16,7 @@ module Queries {
 		_timeframe: Api.Timeframe;
 		_interval: string;
 		_timezone: Api.Timezone;
-		_runningRequests: Array<request.Request<any>>;
+		_runningRequests: Array<Api.ClientDeferredQuery>;
 
 		constructor(
 			client: Api.Client,
@@ -35,7 +35,7 @@ module Queries {
 			this._timeframe = timeframe || null;
 			this._interval = interval || null;
 			this._timezone = timezone || null;
-			this._runningRequests = new Array<request.Request<any>>();
+			this._runningRequests = new Array<Api.ClientDeferredQuery>();
 		}
 
 		public collection(): string {
@@ -98,21 +98,24 @@ module Queries {
 				apiQuery = queryBuilder.build(this._selects, this._filters, this._groups, this._timeframe, this._interval, this._timezone);
 			var executeQuery = this._client.query(this._collection, apiQuery);
 			this._addToRunningQueries(executeQuery);
-			return executeQuery.deferred;
+			return executeQuery.deferred.promise;
 		}
 
-		public abortAll() {
+		public abort() {
 			var length = this._runningRequests.length;
-			_.each(this._runningRequests, request  => request.abort());
-			this._runningRequests.slice(0, length);
+			_.each(this._runningRequests, request  => {
+				request.request.abort();
+				request.deferred.reject('request aborted');
+			});
+			this._runningRequests.splice(0, length);
 		}
 
 		private _addToRunningQueries(executeQuery:Api.ClientDeferredQuery) {
-			this._runningRequests.push(executeQuery.request);
-			executeQuery.deferred.then(() => {
-				var finishedQueryIndex = this._runningRequests.indexOf(executeQuery.request);
+			this._runningRequests.push(executeQuery);
+			executeQuery.deferred.promise.then(() => {
+				var finishedQueryIndex = this._runningRequests.indexOf(executeQuery);
 				if(finishedQueryIndex < 0) return;
-				this._runningRequests.slice(finishedQueryIndex, 1);
+				this._runningRequests.splice(finishedQueryIndex, 1);
 			});
 		}
 	}

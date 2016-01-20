@@ -268,23 +268,26 @@ describe('Queries', () => {
 
 			it('should execute build query using api client', done => {
 				var apiQuery = sinon.stub(),
-					expectedResult = sinon.stub();
+					expectedResult = sinon.stub(),
+                    deferred = Q.defer();
 
 				builder['build'].withArgs(query._selects, query._filters, query._groups, query._timeframe)
 					.returns(apiQuery);
 
 				stubClient['query'].withArgs(query._collection, apiQuery)
-					.returns({deferred: new Q(expectedResult), request: sinon.stub()});
+					.returns({deferred: deferred, request: sinon.stub()});
 
 				query.execute()
 					.then(result => {
 						expect(result).to.equal(expectedResult);
 						done();
 					});
+
+                deferred.resolve(expectedResult);
 			});
 		});
 
-        describe('#abortAll()', () => {
+        describe('#abort()', () => {
 			var builder = sinon.createStubInstance(QueryBuilder),
 				QueriesProxy = proxyquire('../../../lib/core/queries/queries', {
 					'./query-builder': () => builder
@@ -314,14 +317,15 @@ describe('Queries', () => {
 					.returns(apiQuery);
 
 				stubClient['query'].withArgs(query._collection, apiQuery)
-					.returns({deferred: new Q(expectedResult), request: runningRequest});
+					.returns({deferred: Q.defer(), request: runningRequest});
 
-				query.execute();
-
-                query.abortAll();
+				var promise = query.execute();
+                query.abort();
 
                 expect(requestAborted.calledOnce).to.be.true;
+                expect(promise.isRejected()).to.be.true;
 			});
+
 		});
 	});
 });
