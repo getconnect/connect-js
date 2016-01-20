@@ -106,6 +106,12 @@ module Api {
 
     export type QueryResultsFactory = () => Q.IPromise<Api.QueryResults>;
     
+
+    export interface ClientDeferredQuery {
+        deferred: Q.Deferred<any>;
+        request: request.Request<any>;
+    }
+
     export class Client {
         _baseUrl: string;
         _projectId: string;
@@ -117,7 +123,7 @@ module Api {
             this._apiKey = apiKey;
         }
 
-        public query(collection: string, query: Api.Query): Q.IPromise<QueryResults> {
+        public query(collection: string, query: Api.Query): ClientDeferredQuery {
             var deferred = Q.defer(),
                 queryJson = JSON.stringify(query),
                 url = this._buildUrl('/events/' + collection),
@@ -130,17 +136,17 @@ module Api {
             var url = this._buildUrl('/events'),
                 post = request.post(url).send(batches);
 
-            return this._send(post, r => r.body);
+            return this._send(post, r => r.body).deferred.promise;
         }
 
         public push(collection: string, newEvent: any): Q.IPromise<any> {
             var url = this._buildUrl('/events/' + collection),
                 post = request.post(url).send(newEvent);
 
-            return this._send(post, r => r.body);
+            return this._send(post, r => r.body).deferred.promise;
         }
 
-        private _send(requestToSend: request.Request<any>, resultsFactory: (response) => any): Q.IPromise<any>{
+        private _send(requestToSend: request.Request<any>, resultsFactory: (response) => any): ClientDeferredQuery{
             var deferred = Q.defer();
 
             requestToSend
@@ -164,7 +170,7 @@ module Api {
                     deferred.resolve(results);
                 });     
 
-            return deferred.promise;
+            return { deferred: deferred, request: requestToSend };
         }
 
         private _buildUrl(path: string): string {
