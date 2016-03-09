@@ -110,6 +110,10 @@ module Queries {
 			this._runningRequests.splice(0, length);
 		}
 
+		public isExecuting() {
+			return this._runningRequests.length > 0;
+		}
+
 		private _addToRunningQueries(executeQuery:Api.ClientDeferredQuery) {
 			this._runningRequests.push(executeQuery);
 			executeQuery.deferred.promise.then(() => {
