@@ -78,7 +78,7 @@ module Api {
         public results: QueryResultItem[];
         public cacheKey: string;
 
-        constructor(response: QueryResponse, cacheKey: string) {
+        constructor(response: QueryResponse, cacheKey: string = undefined) {
             this.metadata = response.metadata;
             this.results = response.results;
             this.cacheKey = cacheKey;
