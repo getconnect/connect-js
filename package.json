@@ -69,7 +69,7 @@
     "deep-extend": "^0.4.0",
     "moment-timezone": "0.3.0",
     "q": "1.1.2",
-    "superagent": "0.21.0",
+    "superagent": "1.8.0",
     "underscore": "1.7.0"
   }
 }
