@@ -42,9 +42,6 @@ The SDK supports CommonJS (node.js/io.js), browserify and global scope.
 
 All of the documentation can be found at [http://docs.getconnect.io](http://docs.getconnect.io).
 
-## Support
-
-Get your questions answered and join in with the connect community at [http://docs.getconnect.io/discuss](http://docs.getconnect.io/discuss).
 
 ## Contributing
 

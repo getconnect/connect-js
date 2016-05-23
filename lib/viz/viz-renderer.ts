@@ -1,3 +1,4 @@
+import _ = require('underscore');
 import Queries = require('../core/queries/queries');
 import Api = require('../core/api');
 import Common = require('./visualization');
@@ -7,6 +8,7 @@ import ResultHandling = require('./result-handling');
 import Dom = require('./dom');
 import Config = require('./config');
 import Classes = require('./css-classes');
+import deepExtend = require('deep-extend');
 
 class VizRenderer {
     private _visualization: Common.Visualization;
@@ -15,6 +17,7 @@ class VizRenderer {
     private _titleElement: HTMLElement;
     private _targetElement: HTMLElement;
     private _vizElement: HTMLElement;
+    private _resultsElement: HTMLElement;
     private _queryResultsFactory: Api.QueryResultsFactory;
     private _rendered: boolean;
     private _destroyDom: () => void;
@@ -23,11 +26,16 @@ class VizRenderer {
     constructor(targetElement: string|HTMLElement, data: Queries.ConnectQuery|Api.QueryResultsFactory, 
         options: Config.VisualizationOptions, visualization: Common.Visualization) {
 
-        this._queryResultsFactory = this._getQueryResultsFactory(data);
         this._targetElement = Dom.getElement(targetElement);
+        if (!this._targetElement) {
+            console.warn(`Warning: The supplied container ${targetElement} could not be found.`);
+            return;
+        }
+
+        this._queryResultsFactory = this._getQueryResultsFactory(data);
         this._visualization = visualization;
         this._resultHandler = new ResultHandling.ResultHandler(this._targetElement);
-        this._options = options;
+        this._options = this._visualization.defaultOptions ? deepExtend({}, this._visualization.defaultOptions(), options) : options;
 
         this._displayResults(true);
     }
@@ -36,14 +44,13 @@ class VizRenderer {
         this._displayResults(false);
     }
 
-    public _displayResults(isQueryUpdate: boolean) {
+    public _displayResults(hasQueryUpdated: boolean) {
         var resultsPromise = this._queryResultsFactory(),
             canModifyPromise = this._visualization.modifyResults != null,
             modifiedResultsPromise = canModifyPromise ? this._visualization.modifyResults(resultsPromise) : resultsPromise;
 
-        this._renderDom();
-        this._resultHandler.handleResult(this._visualization, modifiedResultsPromise, isQueryUpdate);
-
+        this._initDom();
+        this._resultHandler.handleResult(this._visualization, this._resultsElement, modifiedResultsPromise, this._options, hasQueryUpdated);
     }
 
     public update(data: Queries.ConnectQuery|Api.QueryResultsFactory) {
@@ -52,9 +59,9 @@ class VizRenderer {
         this._displayResults(true);
     }
 
-    public recalculateSize() {
-        if (this._visualization.recalculateSize)
-            this._visualization.recalculateSize();
+    public redraw() {
+        if (this._visualization.redraw)
+            this._visualization.redraw();
     }
 
     public destroy() {
@@ -64,14 +71,14 @@ class VizRenderer {
         if (this._visualization.destroy)
             this._visualization.destroy();
 
-        this._renderDom = VizRenderer.prototype._renderDom;
+        this._initDom = VizRenderer.prototype._initDom;
     }
 
     private _getQueryResultsFactory(data: Queries.ConnectQuery|Api.QueryResultsFactory) : Api.QueryResultsFactory {
         return (<Queries.ConnectQuery>data).execute ? () => (<Queries.ConnectQuery>data).execute() : <Api.QueryResultsFactory>data
     }
 
-    private _renderDom() {            
+    private _initDom() {            
         var options = this._options,
             vizElement = Dom.createElement('div', Classes.viz),
             resultsElement = Dom.createElement('div', Classes.result),
@@ -81,10 +88,17 @@ class VizRenderer {
         vizElement.appendChild(resultsElement);
         this._targetElement.appendChild(vizElement);
 
+        if (this._visualization.cssClasses) {
+            _.each(this._visualization.cssClasses(options), (value) => vizElement.classList.add(value));
+        }
+
         this._titleElement = titleElement;
         this._vizElement = vizElement;
-        this._visualization.renderDom(vizElement, resultsElement);
-        this._renderDom = () => {};
+        this._resultsElement = resultsElement;
+        if (this._visualization.init) {
+            this._visualization.init(resultsElement, options);
+        }
+        this._initDom = () => {};
     }
 }
 

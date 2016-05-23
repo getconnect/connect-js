@@ -16,31 +16,36 @@ module Dataset{
         label: string;
     }
 
-    interface KeyedContext {
+    export interface KeyedContext {
         [resultPropertyName: string]: Config.ChartDataContext;
     }
 
-    interface ResultWithContext {
+    export interface ResultWithContext {
         result: any;
         contexts: KeyedContext;
     }
 
-    interface DatasetMapper {
+    export interface DatasetMapper {
         mapLabels(results: Api.QueryResults):  SelectLabel[];
         mapData(results: Api.QueryResults): any;
     }
 
-    function getGroupValues(result: Api.QueryResultItem, groups: string[], formatter: GroupValueFormatter): string[] {
-        return groups
-            .map(group => formatter(group, result[group]));
+    function getGroupByNameValuePairs(result: Api.QueryResultItem, groups: string[], formatter: GroupValueFormatter): Config.GroupByNameValuePairs {
+        var values = groups.map(group => formatter(group, result[group]));
+        if (values.length < 1) {
+            return null;
+        }
+        return <Config.GroupByNameValuePairs>_.object(groups, values);
     }
 
     function getGroupPath(result: Api.QueryResultItem, groups: string[], formatter: GroupValueFormatter): string {
-        return formatGroupValuesAsGroupPath(getGroupValues(result, groups, formatter));
+        var groupBys = getGroupByNameValuePairs(result, groups, formatter);
+        return formatGroupBysAsGroupPath(groupBys);
     }
 
-    function formatGroupValuesAsGroupPath(groupValues: string[]): string {
-        return groupValues.join(' / ');
+    function formatGroupBysAsGroupPath(groupNameValuePairs: Config.GroupByNameValuePairs): string {
+        var values = _.values(groupNameValuePairs);
+        return values.join(' / ');
     }
 
     export class ChartDataset {
@@ -50,8 +55,9 @@ module Dataset{
         private _selectLabels: Dataset.SelectLabel[] = [];
         private _data: any[] = [];
         private _contexts: KeyedContext[] = [];
+        private _metadata: Api.Metadata;
 
-        constructor(results: Api.QueryResults, formatters: Formatters) {
+        constructor(results: Api.QueryResults, formatters: Formatters) {  
             var metadata = results.metadata,
                 mappedData,
                 isGroupedInterval = metadata.interval && metadata.groups.length,
@@ -62,7 +68,8 @@ module Dataset{
 
             this._selectLabels = mapper.mapLabels();
             this._data = _.pluck(mappedData, 'result');
-            this._contexts = _.pluck(mappedData, 'contexts')
+            this._contexts = _.pluck(mappedData, 'contexts');
+            this._metadata = metadata;
         }
 
         public getLabels(){
@@ -92,15 +99,13 @@ module Dataset{
         private _buildGenericContext(propertyName: string): Config.ChartDataContext {
             var matchingKeyedContext = _.find(this._contexts, (context) => context[propertyName] != null),
                 matchingContext = matchingKeyedContext ? matchingKeyedContext[propertyName] : null,
-                hasInterval = matchingContext && matchingContext.intervalValue,
-                groupByValues = hasInterval ? matchingContext.groupByValues : [];
+                hasInterval = matchingContext && this._metadata.interval,
+                groupBys: Config.GroupByNameValuePairs = hasInterval ? matchingContext.groupBys : null;
 
             if (matchingContext){
                 return {
-                    intervalValue: null,
-                    groupByValues: groupByValues,
-                    select: matchingContext.select,
-                    value: null
+                    groupBys: groupBys,
+                    select: matchingContext.select
                 };
             }
 
@@ -108,7 +113,7 @@ module Dataset{
         }
     }
 
-    class GroupedIntervalMapper implements DatasetMapper{
+    export class GroupedIntervalMapper implements DatasetMapper{
         private _selectLabelFormatter: SelectLabelFormatter;
         private _groupValueFormatter: GroupValueFormatter;
         private _selects: string[];
@@ -161,14 +166,14 @@ module Dataset{
 
         private _mapResult(result: Api.QueryResultItem): ResultWithContext {        
             var metadata = this._metadata,
-                resultWithContext = {
+                resultWithContext: ResultWithContext = {
                     result: {},
                     contexts: <KeyedContext>{}
                 };
 
             return _.reduce<Api.QueryResultItem, any>(result.results, (mappedResult, intervalResult) => {
-                var groupByValues = getGroupValues(intervalResult, metadata.groups, this._groupValueFormatter),
-                    groupPath = formatGroupValuesAsGroupPath(groupByValues);
+                var groupBys = getGroupByNameValuePairs(intervalResult, metadata.groups, this._groupValueFormatter),
+                    groupPath = formatGroupBysAsGroupPath(groupBys);
 
                 _.each(this._selects, select => {
                     var label = this._generateLabelForResult(metadata, select, groupPath);
@@ -176,10 +181,8 @@ module Dataset{
                     resultWithContext.result[label] = intervalResult[select];
 
                     resultWithContext.contexts[label] = {
-                        intervalValue: <Date>result.interval['start'],
-                        groupByValues: groupByValues,
-                        select: label,
-                        value: intervalResult[select]
+                        groupBys: groupBys,
+                        select: select
                     };
                 });
 
@@ -192,7 +195,7 @@ module Dataset{
         }
     }
 
-    class StandardMapper implements DatasetMapper {
+    export class StandardMapper implements DatasetMapper {
         private _selectLabelFormatter: SelectLabelFormatter;
         private _groupValueFormatter: GroupValueFormatter;
         private _selects: string[];
@@ -239,13 +242,13 @@ module Dataset{
 
         private _mapResult(result: Api.QueryResultItem): ResultWithContext{
             var mappedResult = {},
-                resultWithContext = {
+                resultWithContext: ResultWithContext = {
                     result: null,
                     contexts: <KeyedContext>{}
                 },
                 intervalStart = result.interval ? result.interval.start : null,
                 origResult = intervalStart ? result.results[0] : result,
-                groupByValues = getGroupValues(origResult, this._metadata.groups, this._groupValueFormatter);
+                groupBys = getGroupByNameValuePairs(origResult, this._metadata.groups, this._groupValueFormatter);
 
             _.each(this._selects, select => {
                 var formattedSelect = this._selectLabelFormatter(select);
@@ -253,10 +256,8 @@ module Dataset{
                 mappedResult[formattedSelect] = origResult ? origResult[select] : null;
 
                 resultWithContext.contexts[formattedSelect] = {
-                    intervalValue: <Date>intervalStart,
-                    groupByValues: groupByValues,
-                    select: formattedSelect,
-                    value: mappedResult[formattedSelect],
+                    groupBys: groupBys,
+                    select: formattedSelect
                 };
             });
 

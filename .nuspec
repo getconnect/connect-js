@@ -3,11 +3,11 @@
   <metadata>
     <id>Connect.Javascript.Sdk</id>
     <version>0.0.1</version>
-    <authors>TipiHq</authors>
-    <description>Tipi Connect Javascript SDK</description>
+    <authors>Connect</authors>
+    <description>Connect Javascript SDK</description>
     <language>en-US</language>
-    <projectUrl>http://tipihq.com/</projectUrl>
-    <licenseUrl>http://tipihq.com/</licenseUrl>
+    <projectUrl>https://github.com/getconnect/connect-js</projectUrl>
+    <licenseUrl>https://getconnect.io</licenseUrl>
   </metadata>
   <files>
     <file src="dist\**\*.*" target="dist" />

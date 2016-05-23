@@ -1,9 +1,30 @@
 import moment = require('moment-timezone');
+import Config = require('./config');
 import d3 = require('./d3');
 import _ = require('underscore');
 
-export function format(format: string): (any) => string {
+export function format(format: string|Config.ValueFormatter): Config.ValueFormatter {
+    if (!format) {
+        return (value) => value;
+    }
+    
+    if (_.isFunction(format)) {
+        return <Config.IntervalValueFormatter>format;
+    }
+    
     return d3.format(format);
+}
+
+export function formatForInterval(format: string|Config.IntervalFormats|Config.IntervalValueFormatter, interval: string, timezone: string|number): Config.IntervalValueFormatter {
+    if (_.isFunction(format)) {
+        return <Config.IntervalValueFormatter>format;
+    }
+    
+    if (_.isObject(format)) {
+        format = format[interval] || Config.defaultTimeSeriesFormats[interval];
+    }
+    
+    return (value) => formatDate(value, timezone, <string>format);
 }
 
 export function formatDate(dateToFormat: Date, timezone: string|number, format: string): string{
@@ -17,3 +38,6 @@ export function formatDate(dateToFormat: Date, timezone: string|number, format: 
 
     return date.format(format);
 }
+
+
+

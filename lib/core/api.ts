@@ -2,7 +2,7 @@ import request = require('superagent');
 import Q = require('q');
 import _ = require('underscore');
 
-module Api {    
+module Api {
     export interface Query {
         select?: QuerySelects;
         filter?: QueryFilters;
@@ -33,12 +33,12 @@ module Api {
     export interface RelativeTimeframe {
         previous?: Period;
         current?: Period;
-    }    
+    }
 
     export interface Metadata {
-        groups: string[];
-        interval: string;
-        timezone: string | number;
+        groups?: string[];
+        interval?: string;
+        timezone?: string | number;
     }
 
     export interface QuerySelect {
@@ -50,11 +50,11 @@ module Api {
     }
 
     export interface QueryFilter {
-        [index: string]: string;    
+        [index: string]: string;
     }
 
     export interface QueryFilters {
-        [index: string]: Api.QueryFilter;   
+        [index: string]: Api.QueryFilter;
     }
 
     export interface QueryResultInterval {
@@ -63,23 +63,25 @@ module Api {
     }
 
     export interface QueryResultItem {
-        [index: string]: any;       
+        [index: string]: any;
         interval?: QueryResultInterval;
         results?: QueryResultItem[];
     }
 
-    export interface QueryResponse { 
+    export interface QueryResponse {
         metadata: Metadata;
         results: QueryResultItem[];
     }
 
-    export class QueryResults { 
+    export class QueryResults {
         public metadata: Metadata;
         public results: QueryResultItem[];
+        public cacheKey: string;
 
-        constructor(response: QueryResponse) {
+        constructor(response: QueryResponse, cacheKey: string = undefined) {
             this.metadata = response.metadata;
             this.results = response.results;
+            this.cacheKey = cacheKey;
 
             if (this.metadata.interval){
                 _.map(this.results, (intervalResult) => {
@@ -100,12 +102,18 @@ module Api {
             return new QueryResults({
                 metadata: _.clone(this.metadata),
                 results: JSON.parse(JSON.stringify(this.results))
-            });
-        }            
+            }, this.cacheKey);
+        }
     }
 
     export type QueryResultsFactory = () => Q.IPromise<Api.QueryResults>;
-    
+
+
+    export interface ClientDeferredQuery {
+        deferred: Q.Deferred<any>;
+        request: request.Request<any>;
+    }
+
     export class Client {
         _baseUrl: string;
         _projectId: string;
@@ -117,30 +125,30 @@ module Api {
             this._apiKey = apiKey;
         }
 
-        public query(collection: string, query: Api.Query): Q.IPromise<QueryResults> {
+        public query(collection: string, query: Api.Query): ClientDeferredQuery {
             var deferred = Q.defer(),
                 queryJson = JSON.stringify(query),
-                url = this._buildUrl('/events/' + collection + '?query=' + queryJson),
-                get = request.get(url);
+                url = this._buildUrl('/events/' + collection),
+                get = request.get(url).query({ query: queryJson });
 
-            return this._send(get, r => new QueryResults(<QueryResponse>r.body));
+            return this._send(get, r => new QueryResults(<QueryResponse>r.body, r.header["etag"]));
         }
 
         public pushBatch(batches: any): Q.IPromise<any> {
             var url = this._buildUrl('/events'),
                 post = request.post(url).send(batches);
 
-            return this._send(post, r => r.body);
+            return this._send(post, r => r.body).deferred.promise;
         }
 
         public push(collection: string, newEvent: any): Q.IPromise<any> {
             var url = this._buildUrl('/events/' + collection),
                 post = request.post(url).send(newEvent);
 
-            return this._send(post, r => r.body);
+            return this._send(post, r => r.body).deferred.promise;
         }
 
-        private _send(requestToSend: request.Request<any>, resultsFactory: (response) => any): Q.IPromise<any>{
+        private _send(requestToSend: request.Request<any>, resultsFactory: (response) => any): ClientDeferredQuery{
             var deferred = Q.defer();
 
             requestToSend
@@ -153,7 +161,7 @@ module Api {
                         }
                         deferred.reject(err);
                         return;
-                    } 
+                    }
 
                     if (!res.ok) {
                         deferred.reject(res.error);
@@ -162,16 +170,16 @@ module Api {
 
                     var results = resultsFactory(res);
                     deferred.resolve(results);
-                });     
+                });
 
-            return deferred.promise;
+            return { deferred: deferred, request: requestToSend };
         }
 
         private _buildUrl(path: string): string {
             return this._baseUrl + path;
         }
     }
-    
+
 }
 
 export = Api;

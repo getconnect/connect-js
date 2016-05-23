@@ -1,5 +1,6 @@
 import Viz  = require('./visualization');
 import Queries = require('../core/queries/queries');
+import Config = require('./config');
 import Api = require('../core/api');
 import Loader = require('./loader');
 import ErrorHandling = require('./error-handling');
@@ -23,14 +24,14 @@ module ResultHandling{
             this._loader = new Loader(targetElement); 
         }
 
-        handleResult(visualization: Viz.Visualization, resultsPromise: Q.IPromise<Api.QueryResults>, isQueryUpdate: boolean){
+        handleResult(visualization: Viz.Visualization, container: HTMLElement, resultsPromise: Q.IPromise<Api.QueryResults>, options: Config.VisualizationOptions, hasQueryUpdated: boolean){
             var loader = this._loader,
                 targetElement = this._targetElement,                
-                isResultSetSupported = (metadata: Api.Metadata, selects: string[]) => !visualization.isResultSetSupported || visualization.isResultSetSupported(metadata, selects),                
+                isResultSetSupported = (metadata: Api.Metadata, selects: string[]) => !visualization.isSupported || visualization.isSupported(metadata, selects),                
                 requestNumber,
                 lastReloadTime;  
 
-            if (isQueryUpdate || this._lastReloadTime === 0){
+            if (hasQueryUpdated || this._lastReloadTime === 0){
                 ErrorHandling.clearError(targetElement);
                 loader.show();
                 this._lastReloadTime = Date.now();
@@ -63,7 +64,7 @@ module ResultHandling{
                     return;
                 }
                 
-                visualization.displayResults(results, isQueryUpdate);
+                visualization.render(container, results, options, hasQueryUpdated);
             }).then(null, error => {
                 loader.hide();
                 ErrorHandling.clearError(targetElement);
