@@ -3,10 +3,6 @@
   "version": "0.0.1",
   "description": "JavaScript SDK for Connect (http://getconnect.io/)",
   "main": "js/index.js",
-  "browser": {
-    "d3": "./node_modules/d3/d3.js",
-    "connect-js-c3": "./node_modules/connect-js-c3/c3.js"
-  },
   "homepage": "http://getconnect.io/",
   "repository": {
     "type": "git",
