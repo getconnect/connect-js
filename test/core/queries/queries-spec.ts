@@ -285,6 +285,47 @@ describe('Queries', () => {
 
                 deferred.resolve(expectedResult);
 			});
+
+            it('should remove from list when resolved', done => {
+				var apiQuery = sinon.stub(),
+					expectedResult = sinon.stub(),
+                    deferred = Q.defer();
+
+				builder['build'].withArgs(query._selects, query._filters, query._groups, query._timeframe)
+					.returns(apiQuery);
+
+				stubClient['query'].withArgs(query._collection, apiQuery)
+					.returns({deferred: deferred, request: sinon.stub()});
+
+				query.execute()
+					.then(result => {
+						expect(result).to.equal(expectedResult);
+                        expect(query.isExecuting()).to.be.false
+						done();
+					});
+
+                deferred.resolve(expectedResult);
+			});
+
+            it('should remove from list when rejected', done => {
+				var apiQuery = sinon.stub(),
+					expectedResult = sinon.stub(),
+                    deferred = Q.defer();
+
+				builder['build'].withArgs(query._selects, query._filters, query._groups, query._timeframe)
+					.returns(apiQuery);
+
+				stubClient['query'].withArgs(query._collection, apiQuery)
+					.returns({deferred: deferred, request: sinon.stub()});
+
+				query.execute()
+					.then(null, result => {
+                        expect(query.isExecuting()).to.be.false
+						done();
+					});
+
+                deferred.reject(expectedResult);
+			});
 		});
 
         describe('#abort()', () => {

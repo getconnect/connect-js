@@ -116,11 +116,12 @@ module Queries {
 
 		private _addToRunningQueries(executeQuery:Api.ClientDeferredQuery) {
 			this._runningRequests.push(executeQuery);
-			executeQuery.deferred.promise.then(() => {
+			var removeFromRunningQueries = () => {
 				var finishedQueryIndex = this._runningRequests.indexOf(executeQuery);
 				if(finishedQueryIndex < 0) return;
 				this._runningRequests.splice(finishedQueryIndex, 1);
-			});
+			};
+			executeQuery.deferred.promise.then(removeFromRunningQueries, removeFromRunningQueries);
 		}
 	}
 }

@@ -1,8 +1,6 @@
 import cssClasses = require('../../lib/viz/css-classes');
 
 export function getTitle(container: HTMLElement): HTMLElement {
-    console.log('vizt:');
-    console.log(container);
     return <HTMLElement>container.querySelector(`.${cssClasses.title}`);
 }
 
