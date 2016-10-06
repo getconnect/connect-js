@@ -16,6 +16,7 @@ module Queries {
 		_timeframe: Api.Timeframe;
 		_interval: string;
 		_timezone: Api.Timezone;
+		_customQueryOptions: any;
 		_runningRequests: Array<Api.ClientDeferredQuery>;
 
 		constructor(
@@ -26,7 +27,8 @@ module Queries {
 			groups?: string[],
 			timeframe?: Api.Timeframe,
 			interval?: string,
-			timezone?: Api.Timezone) {
+			timezone?: Api.Timezone,
+			customQueryOptions?: any) {
 			this._client = client;
 			this._collection = collection;
 			this._selects = selects || {};
@@ -35,6 +37,7 @@ module Queries {
 			this._timeframe = timeframe || null;
 			this._interval = interval || null;
 			this._timezone = timezone || null;
+			this._customQueryOptions = customQueryOptions || {};
 			this._runningRequests = new Array<Api.ClientDeferredQuery>();
 		}
 
@@ -50,7 +53,7 @@ module Queries {
 					throw new Error('You can only provide one aggregation function per select.');
 			}
 
-			return new ConnectQuery(this._client, this._collection, selects, this._filters, this._groups, this._timeframe, this._interval, this._timezone);
+			return new ConnectQuery(this._client, this._collection, selects, this._filters, this._groups, this._timeframe, this._interval, this._timezone, this._customQueryOptions);
 		}
 
 		public filter(filterSpecification: any): ConnectQuery {
@@ -62,7 +65,7 @@ module Queries {
 
 			filters = _.uniq(filters, filter => filter.field + '|' + filter.operator);
 
-			return new ConnectQuery(this._client, this._collection, this._selects, filters, this._groups, this._timeframe, this._interval, this._timezone);
+			return new ConnectQuery(this._client, this._collection, this._selects, filters, this._groups, this._timeframe, this._interval, this._timezone, this._customQueryOptions);
 		}
 
 		public groupBy(field: string|string[]) {
@@ -74,28 +77,37 @@ module Queries {
 				groups = this._groups.concat(field);
 			}
 
-			return new ConnectQuery(this._client, this._collection, this._selects, this._filters, groups, this._timeframe, this._interval, this._timezone);
+			return new ConnectQuery(this._client, this._collection, this._selects, this._filters, groups, this._timeframe, this._interval, this._timezone, this._customQueryOptions);
 		}
 
 		public timeframe(timeframe: Api.Timeframe): ConnectQuery {
 
-			return new ConnectQuery(this._client, this._collection, this._selects, this._filters, this._groups, timeframe, this._interval, this._timezone);
+			return new ConnectQuery(this._client, this._collection, this._selects, this._filters, this._groups, timeframe, this._interval, this._timezone, this._customQueryOptions);
 		}
 
 		public interval(interval: string): ConnectQuery {
-			return new ConnectQuery(this._client, this._collection, this._selects, this._filters, this._groups, this._timeframe, interval, this._timezone);
+			return new ConnectQuery(this._client, this._collection, this._selects, this._filters, this._groups, this._timeframe, interval, this._timezone, this._customQueryOptions);
 		}
 
 		public timezone(timezone: Api.Timezone): ConnectQuery {
 			if(!this._timeframe && !this._interval)
 				throw new Error('You can only set a timezone when a valid timeframe or interval has been set.');
 
-			return new ConnectQuery(this._client, this._collection, this._selects, this._filters, this._groups, this._timeframe, this._interval, timezone);
+			return new ConnectQuery(this._client, this._collection, this._selects, this._filters, this._groups, this._timeframe, this._interval, timezone, this._customQueryOptions);
+		}
+
+		public custom(options: any): ConnectQuery {
+			var newOptions = {};
+			for (var name in this._customQueryOptions)
+				newOptions[name] = this._customQueryOptions[name];
+			for (var name in options)
+				newOptions[name] = options[name];
+			return new ConnectQuery(this._client, this._collection, this._selects, this._filters, this._groups, this._timeframe, this._interval, this._timezone, newOptions);
 		}
 
 		public execute(): Q.IPromise<Api.QueryResults> {
 			var queryBuilder = new QueryBuilder(),
-				apiQuery = queryBuilder.build(this._selects, this._filters, this._groups, this._timeframe, this._interval, this._timezone);
+				apiQuery = queryBuilder.build(this._selects, this._filters, this._groups, this._timeframe, this._interval, this._timezone, this._customQueryOptions);
 			var executeQuery = this._client.query(this._collection, apiQuery);
 			this._addToRunningQueries(executeQuery);
 			return executeQuery.deferred.promise;

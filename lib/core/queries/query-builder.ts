@@ -3,7 +3,7 @@ import Filters = require('./filters');
 import Selects = require('./selects');
 
 class QueryBuilder {
-	public build(selects: Selects.QuerySelects, filters: Filters.QueryFilter[], groups: string[], timeframe: Api.Timeframe, interval: string, timezone: Api.Timezone): Api.Query {
+	public build(selects: Selects.QuerySelects, filters: Filters.QueryFilter[], groups: string[], timeframe: Api.Timeframe, interval: string, timezone: Api.Timezone, customOptions: any): Api.Query {
 		var query = {
 			select: selects || {}
 		};
@@ -28,6 +28,11 @@ class QueryBuilder {
 			query['timezone'] = timezone;
 		}
 
+		if (customOptions) {
+			for (var name in customOptions)
+				query[name] = customOptions[name];
+		}
+
 		return query;
 	}
 
@@ -42,7 +47,7 @@ class QueryBuilder {
 
 				queryFilter[filter.field] = fieldFilters;
 			}
-			
+
 			fieldFilters[filter.operator] = filter.value;
 		});
 
