@@ -16,7 +16,7 @@ describe('QueryBuilder', () => {
 				average: { avg: 'field2' }
 			};
 
-			var result = builder.build(selects, [], [], null, null, null);
+			var result = builder.build(selects, [], [], null, null, null, null);
 			expect(result.select).to.deep.equal({
 				count: 'count',
 				total: { sum: 'field1' },
@@ -30,7 +30,7 @@ describe('QueryBuilder', () => {
 				new Filters.QueryFilter('age', 'gt', 50)
 			];
 
-			var result = builder.build({}, filters, [], null, null, null);
+			var result = builder.build({}, filters, [], null, null, null, null);
 
 			expect(result.filter).to.deep.equal({
 				age: { gt: 50 },
@@ -40,14 +40,14 @@ describe('QueryBuilder', () => {
 
 		it('should add groupby to query', () => {
 			var groups = ['field1', 'field2'],
-				result = builder.build({}, [], groups, null, null, null);
+				result = builder.build({}, [], groups, null, null, null, null);
 
 			expect(result.groupBy).to.deep.equal(groups);
 		});
 
 		it('should add string timeframe to query', () => {
 			var timeframe = 'today',
-				result = builder.build({}, [], [], timeframe, null, null);
+				result = builder.build({}, [], [], timeframe, null, null, null);
 
 			expect(result.timeframe).to.equal(timeframe);
 		});
@@ -57,11 +57,11 @@ describe('QueryBuilder', () => {
 					start: new Date(),
 					end: new Date()
 				},
-				result = builder.build({}, [], [], timeframe, null, null);
+				result = builder.build({}, [], [], timeframe, null, null, null);
 
 			expect(result.timeframe).to.deep.equal({
 				start: timeframe.start,
-				end: timeframe.end	
+				end: timeframe.end
 			});
 		});
 
@@ -69,7 +69,7 @@ describe('QueryBuilder', () => {
 			var timeframe = {
 					start: new Date()
 				},
-				result = builder.build({}, [], [], timeframe, null, null);
+				result = builder.build({}, [], [], timeframe, null, null, null);
 
 			expect(result.timeframe).to.deep.equal({
 				start: timeframe.start
@@ -80,7 +80,7 @@ describe('QueryBuilder', () => {
 			var timeframe = {
                     end: new Date()
                 },
-				result = builder.build({}, [], [], timeframe, null, null);
+				result = builder.build({}, [], [], timeframe, null, null, null);
 
 			expect(result.timeframe).to.deep.equal({
 				end: timeframe.end
@@ -91,7 +91,7 @@ describe('QueryBuilder', () => {
 			var timeframe = {
                     current: { days: 2 }
                 },
-				result = builder.build({}, [], [], timeframe, null, null);
+				result = builder.build({}, [], [], timeframe, null, null, null);
 
 			expect(result.timeframe).to.deep.equal({
 				current: { days: 2 }
@@ -102,7 +102,7 @@ describe('QueryBuilder', () => {
 			var timeframe = {
                     previous: { weeks: 2 }
                 },
-				result = builder.build({}, [], [], timeframe, null, null);
+				result = builder.build({}, [], [], timeframe, null, null, null);
 
 			expect(result.timeframe).to.deep.equal({
 				previous: { weeks: 2 }
@@ -111,21 +111,21 @@ describe('QueryBuilder', () => {
 
 		it('should add string based timezone', () => {
 			var timezone = 'Australia/Brisbane',
-				result = builder.build({}, [], [], {}, null, timezone);
+				result = builder.build({}, [], [], {}, null, timezone, null);
 
 			expect(result.timezone).to.equal(timezone);
 		});
 
 		it('should add offset based timezone', () => {
 			var timezone = -5,
-				result = builder.build({}, [], [], {}, null, timezone);
+				result = builder.build({}, [], [], {}, null, timezone, null);
 
 			expect(result.timezone).to.equal(timezone);
 		});
 
 		it('should add interval', () => {
 			var interval = 'daily',
-				result = builder.build({}, [], [], null, interval, null);
+				result = builder.build({}, [], [], null, interval, null, null);
 
 			expect(result.interval).to.equal(interval);
 		});
